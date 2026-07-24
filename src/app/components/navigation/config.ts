@@ -6,7 +6,6 @@ import {
   BarChart3, 
   Bookmark, 
   Settings,
-  BookOpen,
   Calendar,
   Award,
   BadgeCheck,
@@ -52,12 +51,7 @@ export const SIDEBAR_ITEMS: NavItem[] = [
     view: "saved", // a view for saved universities or comparing ones
     icon: Bookmark,
   },
-  {
-    id: "methodology",
-    label: "Methodology",
-    view: "methodology",
-    icon: BookOpen,
-  },
+ 
   {
     id: "events",
     label: "Events & Awards",

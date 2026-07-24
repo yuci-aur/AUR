@@ -23,8 +23,6 @@ from schemas import UniversityRegisterRequest
 from database.connections import get_db
 from fastapi import Depends, HTTPException
 import shutil
-import subprocess
-import sys
 import json
 import bcrypt
 from services.cloudinary import upload_university_logo, upload_campus_photo
@@ -137,11 +135,6 @@ async def upload_dataset(
 
     with open(filepath, "wb") as f:
         shutil.copyfileobj(file.file, f)
-
-    try:
-        subprocess.run([sys.executable, "-m", "database.seed"], check=True)
-    except Exception:
-        pass
 
     try:
         await redis.delete("countries:list")

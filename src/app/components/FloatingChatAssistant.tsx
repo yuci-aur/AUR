@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { X, Bot, Send, Sparkles, Loader2 } from "lucide-react";
+import { X, Bot, Send, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,7 @@ export default function FloatingChatAssistant() {
       id: "init",
       role: "assistant",
       content:
-        "Hello! I'm your Asia University Rankings assistant. Ask me about rankings, programs, tuition, or how to use the comparison tools.",
+        "Hi — ask me about rankings, programs, tuition, or how to compare universities.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -70,10 +70,9 @@ export default function FloatingChatAssistant() {
     setIsChatOpen(false);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isThinking) return;
-    const userMsg: Message = { id: `u-${Date.now()}`, role: "user", content: input.trim() };
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || isThinking) return;
+    const userMsg: Message = { id: `u-${Date.now()}`, role: "user", content: text.trim() };
     const query = userMsg.content;
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
@@ -110,18 +109,26 @@ export default function FloatingChatAssistant() {
     }
   };
 
-  // ─── Theme Tokens ─────────────────────────────────────────────────────────
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessage(input);
+  };
+
+  // ─── Theme Tokens (brand navy + amber) ────────────────────────────────────
 
   const panelBg  = "bg-white";
-  const headerBg = "bg-slate-50";
   const border   = "border-slate-200";
   const inputBg  = "bg-slate-50";
   const aiBubble = "bg-slate-100 border border-slate-200 text-slate-700";
-  const accent   = "text-amber-700";
   const muted    = "text-slate-500";
 
-  // Constant subtle glow to make the panel stand out beautifully
-  const dragGlow = "shadow-[0_0_30px_rgba(245,158,11,0.25)] border-amber-500/40";
+  const dragGlow = "shadow-[0_16px_48px_rgba(26,54,93,0.28)] border-slate-200";
+
+  const SUGGESTIONS = [
+    "Top universities in Singapore",
+    "Medical programs in Central Asia",
+    "How are the scores calculated?",
+  ];
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -150,31 +157,18 @@ export default function FloatingChatAssistant() {
           >
 
             {/* ── Header ─────────────────────────────────────── */}
-            <div
-              className={[
-                "flex items-center justify-between px-4 py-3",
-                headerBg,
-                "border-b",
-                border,
-                "shrink-0",
-              ].join(" ")}
-            >
+            <div className="flex items-center justify-between px-4 py-3 bg-aur-primary shrink-0">
               {/* Branding */}
               <div className="flex items-center gap-2.5">
-                <div
-                  className={[
-                    "flex h-7 w-7 items-center justify-center rounded-full",
-                    "bg-amber-50 border border-amber-200",
-                  ].join(" ")}
-                >
-                  <Sparkles className={`h-3.5 w-3.5 ${accent}`} />
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-400">
+                  <Bot className="h-4 w-4 text-aur-primary" />
                 </div>
                 <div>
-                  <p className={`text-[11px] font-bold uppercase tracking-widest ${"text-slate-900"}`}>
-                    AUR Helping Hand
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-white">
+                    AUR Assistant
                   </p>
-                  <p className={`text-[9px] font-mono ${muted}`}>
-                    {isThinking ? "Analyzing…" : "Drag · Swirl · Ask anything"}
+                  <p className="text-[9px] text-slate-300">
+                    {isThinking ? "Thinking…" : "Answers from the rankings dataset"}
                   </p>
                 </div>
               </div>
@@ -186,11 +180,9 @@ export default function FloatingChatAssistant() {
                 size="icon-sm"
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={handleClose}
-                className={[
-                  "p-1.5 rounded-full transition-colors",
-                  "hover:bg-slate-200 dark:hover:bg-slate-200 text-slate-400 hover:text-slate-800",
-                ].join(" ")}
+                className="p-1.5 rounded-full transition-colors text-slate-300 hover:text-white hover:bg-white/15 dark:hover:bg-white/15"
                 title="Close"
+                aria-label="Close chat"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -209,20 +201,15 @@ export default function FloatingChatAssistant() {
                   className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   {msg.role === "assistant" && (
-                    <div
-                      className={[
-                        "flex h-6 w-6 shrink-0 items-center justify-center rounded-full mr-2 mt-0.5",
-                        "bg-amber-50 border border-amber-200",
-                      ].join(" ")}
-                    >
-                      <Bot className={`h-3 w-3 ${accent}`} />
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full mr-2 mt-0.5 bg-aur-primary/10 border border-aur-primary/15">
+                      <Bot className="h-3 w-3 text-aur-primary" />
                     </div>
                   )}
                   <div
                     className={[
                       "max-w-[78%] rounded-xl px-3.5 py-2.5 text-xs leading-relaxed",
                       msg.role === "user"
-                        ? "bg-amber-600 dark:bg-cyber-yellow text-white dark:text-cyber-black font-semibold"
+                        ? "bg-aur-primary text-white font-semibold"
                         : aiBubble,
                     ].join(" ")}
                   >
@@ -231,19 +218,30 @@ export default function FloatingChatAssistant() {
                 </div>
               ))}
 
+              {/* Quick-start suggestions — only before the first question */}
+              {messages.length === 1 && !isThinking && (
+                <div className="flex flex-wrap gap-1.5 pl-8">
+                  {SUGGESTIONS.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => sendMessage(s)}
+                      className="rounded-full border border-aur-primary/25 bg-white px-3 py-1.5 text-[11px] font-semibold text-aur-primary transition-colors hover:bg-aur-primary hover:text-white"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {/* Thinking indicator */}
               {isThinking && (
                 <div className="flex justify-start">
-                  <div
-                    className={[
-                      "flex h-6 w-6 shrink-0 items-center justify-center rounded-full mr-2 mt-0.5",
-                      "bg-amber-50 border border-amber-200",
-                    ].join(" ")}
-                  >
-                    <Bot className={`h-3 w-3 ${accent}`} />
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full mr-2 mt-0.5 bg-aur-primary/10 border border-aur-primary/15">
+                    <Bot className="h-3 w-3 text-aur-primary" />
                   </div>
                   <div className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2.5 text-xs ${aiBubble}`}>
-                    <Loader2 className={`h-3 w-3 ${accent} animate-spin`} />
+                    <Loader2 className="h-3 w-3 text-aur-primary animate-spin" />
                     <span className={muted}>Thinking…</span>
                   </div>
                 </div>
@@ -258,7 +256,7 @@ export default function FloatingChatAssistant() {
               className={[
                 "shrink-0 p-3 border-t",
                 border,
-                headerBg,
+                "bg-white",
                 "flex items-center gap-2",
               ].join(" ")}
             >
@@ -275,7 +273,7 @@ export default function FloatingChatAssistant() {
                   "dark:bg-slate-50",
                   border,
                   "text-slate-800 placeholder-slate-400 placeholder:text-slate-400",
-                  "focus:border-amber-600 focus-visible:border-amber-600 focus-visible:ring-0",
+                  "focus:border-aur-primary focus-visible:border-aur-primary focus-visible:ring-0",
                   "focus:outline-none transition-colors disabled:opacity-50",
                   "disabled:bg-slate-50 dark:disabled:bg-slate-50",
                 ].join(" ")}
@@ -285,7 +283,7 @@ export default function FloatingChatAssistant() {
                 size="icon"
                 disabled={!input.trim() || isThinking}
                 aria-label="Send message"
-                className="shrink-0 flex h-8 w-8 items-center justify-center rounded-lg bg-amber-600 dark:bg-cyber-yellow hover:bg-amber-600 dark:hover:bg-cyber-yellow text-white dark:text-cyber-black hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="shrink-0 flex h-8 w-8 items-center justify-center rounded-lg bg-aur-primary hover:bg-aur-primary/90 dark:bg-aur-primary dark:hover:bg-aur-primary/90 text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Send className="h-3.5 w-3.5" />
               </Button>
@@ -306,19 +304,19 @@ export default function FloatingChatAssistant() {
               pointerEvents: isIdle ? "auto" : "none",
             }}
           >
-            {/* "Come talk to me" tooltip — only on homepage */}
+            {/* Invitation label — only on homepage */}
             {activeView === "home" && (
               <div
                 className={[
-                  "relative px-3.5 py-2.5 rounded-2xl text-[11px] font-bold shadow-xl transition-transform hover:scale-105 pointer-events-none mr-2",
-                  "bg-white border border-cyber-black/10 text-cyber-black shadow-cyber-black/10",
+                  "relative px-3.5 py-2.5 rounded-2xl text-[11px] font-bold pointer-events-none mr-2",
+                  "bg-white border border-slate-200 text-aur-primary shadow-[0_8px_24px_rgba(26,54,93,0.16)]",
                 ].join(" ")}
               >
-                Come talk to me!
+                Ask about any university
                 <div
                   className={[
                     "absolute right-4 -bottom-1.5 w-3.5 h-3.5 rotate-45 border-r border-b",
-                    "bg-white border-cyber-black/10",
+                    "bg-white border-slate-200",
                   ].join(" ")}
                 />
               </div>
@@ -330,14 +328,14 @@ export default function FloatingChatAssistant() {
               type="button"
               size="icon"
               onClick={() => setIsChatOpen(true)}
-              aria-label="Open AUR Helping Hand chat assistant"
-              className="shrink-0 h-14 w-14 rounded-full bg-cyber-black dark:bg-white hover:bg-cyber-black dark:hover:bg-white text-white dark:text-cyber-black shadow-[0_0_20px_rgba(127,86,217,0.6)] dark:shadow-[0_0_20px_rgba(255,255,255,0.7)] hover:shadow-[0_0_30px_rgba(127,86,217,0.8)] dark:hover:shadow-[0_0_30px_rgba(255,255,255,0.9)] flex items-center justify-center relative hover:scale-105 transition-all"
-              title="Open AUR Helping Hand"
+              aria-label="Open the AUR assistant"
+              className="shrink-0 h-14 w-14 rounded-full bg-amber-400 hover:bg-amber-300 dark:bg-amber-400 dark:hover:bg-amber-300 text-aur-primary border-2 border-white/80 shadow-[0_10px_30px_rgba(7,26,47,0.4)] hover:shadow-[0_14px_40px_rgba(7,26,47,0.5)] flex items-center justify-center relative hover:scale-105 transition-all"
+              title="Ask about any university"
             >
               <Bot className="h-6 w-6 pointer-events-none" />
               {/* Pulsing ring only on home */}
               {activeView === "home" && (
-                <span className="absolute inset-0 rounded-full motion-safe:animate-ping bg-cyber-black/20 dark:bg-white/20 pointer-events-none" />
+                <span className="absolute inset-0 rounded-full motion-safe:animate-ping bg-amber-400/40 pointer-events-none" />
               )}
             </Button>
           </motion.div>

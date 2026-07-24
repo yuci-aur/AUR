@@ -268,6 +268,12 @@ useEffect(() => {
 
   return (
     <div className={`${view === "home" ? "bg-gradient-to-b from-amber-50/50 via-white to-blue-50 dark:bg-none dark:bg-cyber-black" : "aur-page"} flex min-h-screen flex-col transition-colors duration-300`}>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[110] focus:rounded-lg focus:bg-aur-primary focus:px-4 focus:py-2.5 focus:text-sm focus:font-bold focus:text-white"
+      >
+        Skip to main content
+      </a>
       {/* Top Navigation Bar */}
       {view !== "login" && view !== "admin" && (
         <Navbar
@@ -282,6 +288,7 @@ useEffect(() => {
       <div className="flex w-full grow">
         {/* Main Content Area — Full Width */}
         <main
+          id="main-content"
           className={`flex-1 flex flex-col min-w-0 pb-20 md:pb-0 ${
             view === "home" || view === "login" ? "p-0" : "px-4 pt-4 lg:px-8 lg:pt-8"
           }`}

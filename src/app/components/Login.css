@@ -39,7 +39,8 @@
   width: 45%;
   height: 100vh;
   padding: 3rem 4rem;
-  background: #1C2531;
+  /* Brand navy — same family as the homepage hero and CTA banner */
+  background: #1A365D;
   color: #FFFFFF;
 }
 
@@ -109,15 +110,15 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem 0.75rem 0.75rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 0px; /* Make them boxy to match your new tables */
-  box-shadow: 0 8px 32px rgba(127, 86, 217, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(7, 26, 47, 0.35);
 }
 .lp-chip-1 { top: 15%;  left: 5%; }
-.lp-chip-2 { top: 45%;  right: -5%; }
+.lp-chip-2 { top: 45%;  right: 4%; }
 .lp-chip-3 { bottom: 20%; left: 10%; }
 
 .lp-chip-icon {
@@ -162,14 +163,14 @@
   font-weight: 800;
   letter-spacing: 0.25em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.5);
+  color: #E8A020; /* amber, matching the homepage hero eyebrow */
   margin-bottom: 0.75rem;
 }
 .lp-hero-eyebrow::before {
   content: "";
   width: 32px;
   height: 2px;
-  background: rgba(255,255,255,0.5);
+  background: #E8A020;
   margin: 0 auto 0.4rem;
   display: block;
 }
@@ -183,7 +184,7 @@
   margin-bottom: 0.75rem;
 }
 .lp-hero-title span {
-  color: rgba(255,255,255,0.4);
+  color: rgba(255,255,255,0.55);
 }
 .lp-hero-sub {
   font-size: 0.85rem;
@@ -209,12 +210,13 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--aur-text-muted);
+  color: rgba(255, 255, 255, 0.75);
 }
 .lp-trust-dot {
   width: 6px;
   height: 6px;
-  background: var(--aur-text);
+  border-radius: 9999px;
+  background: #E8A020;
   flex-shrink: 0;
 }
 
@@ -426,7 +428,7 @@
   width: 100%;
   padding: 1rem;
   margin-top: 0.75rem;
-  background: #1C2531; /* Charcoal */
+  background: #1A365D; /* Brand navy */
   color: #ffffff;
   border: none;
   border-radius: 4px;

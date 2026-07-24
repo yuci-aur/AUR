@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert } from "@/components/ui/alert";
 import { useSidebar } from "./navigation/SidebarContext";
+import { useUniversityData } from "./data/UniversityDataProvider";
 import { CanvasRevealEffect } from "./ui/canvas-reveal-effect";
 import LoginGlobe from "./LoginGlobe";
 
@@ -104,6 +105,8 @@ function GoogleIcon() {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function Login({ initialMode = "login" }: { initialMode?: "login" | "signup" }) {
   const { handleViewChange} = useSidebar();
+  const { universities, loading: dataLoading } = useUniversityData();
+  const countryCount = new Set(universities.map((u) => u.location)).size;
 
   const [isLogin, setIsLogin]             = useState(initialMode === "login");
   const [dir, setDir]                     = useState(1);
@@ -209,10 +212,11 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
     }
   };
 
+  // Real dataset facts — the same trust numbers the homepage cites.
   const chips = [
-    { icon: Network,    value: "1.2M", label: "Data Points Processed", delay: 0.2, cls: "lp-chip-1" },
-    { icon: Activity,   value: "58+",  label: "Institutions Live",     delay: 0.4, cls: "lp-chip-2" },
-    { icon: TrendingUp, value: "QS",   label: "World Rankings API",    delay: 0.6, cls: "lp-chip-3" },
+    { icon: BarChart3, value: dataLoading ? "—" : universities.length.toLocaleString(), label: "Universities ranked", delay: 0.2, cls: "lp-chip-1" },
+    { icon: Network,   value: dataLoading ? "—" : String(countryCount),                 label: "Countries & territories", delay: 0.4, cls: "lp-chip-2" },
+    { icon: Activity,  value: "11",                                                     label: "Weighted indicators", delay: 0.6, cls: "lp-chip-3" },
   ];
 
   return (
@@ -259,14 +263,14 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
         {/* Hero copy */}
         <div className="lp-hero"   >
           <div className="lp-hero-eyebrow" >
-            Intelligence Platform
+            Asia University Rankings
           </div>
           <h2 className="lp-hero-title">
-            Asia's Premier<br/>
-            <span>University Analytics</span>
+            Every university.<br/>
+            <span>One honest formula.</span>
           </h2>
           <div className="lp-trust-row" >
-            {["Certified Data", "Institutional Access", "Real-time Processing"].map(t => (
+            {["Save shortlists", "Compare side by side", "Free forever"].map(t => (
               <div key={t} className="lp-trust-badge">
                 <div className="lp-trust-dot"/>
                 {t}
@@ -286,8 +290,6 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
             </div>
           </div>
 
-          {/* Tab bar removed as per request */}
-
           {/* Animated form swap */}
           <>
             <div
@@ -297,12 +299,12 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
               {/* Header */}
               <div className="lp-form-header">
                 <h1 className="lp-form-title">
-                  {isLogin ? "Welcome Back" : "Get Started"}
+                  {isLogin ? "Welcome back" : "Create your free account"}
                 </h1>
                 <p className="lp-form-sub">
                   {isLogin
-                    ? "Access the Asia University Intelligence Hub"
-                    : "Create your institutional research account"}
+                    ? "Pick up your shortlists and comparisons where you left off."
+                    : "Save universities, compare side by side, and keep your research in one place."}
                 </p>
               </div>
 

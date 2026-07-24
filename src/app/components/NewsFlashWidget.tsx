@@ -32,6 +32,12 @@ export default function NewsFlashWidget() {
     );
   }
 
+  // A landing page shouldn't showcase emptiness — when there's no news to
+  // show (or the feed failed), render nothing and let the page flow on.
+  if (error || articles.length === 0) {
+    return null;
+  }
+
   return (
     <div className="w-full bg-aur-primary border border-aur-primary rounded-2xl p-8 lg:p-10 shadow-sm relative overflow-hidden">
       {/* Subtle background decoration */}
@@ -57,18 +63,6 @@ export default function NewsFlashWidget() {
           <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
-
-      {!loading && !error && articles.length === 0 && (
-        <div className="relative z-10 bg-white/10 rounded-xl p-8 text-center text-blue-100">
-          No news available right now. Check back soon.
-        </div>
-      )}
-
-      {!loading && error && (
-        <div className="relative z-10 bg-white/10 rounded-xl p-8 text-center text-blue-100">
-          Couldn't load the latest news. Check back soon.
-        </div>
-      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
         {articles.map((item, idx) => (

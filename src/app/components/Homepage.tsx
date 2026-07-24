@@ -573,7 +573,7 @@ export default function Homepage({
 
           {/* Search */}
           <div className="relative w-full max-w-2xl mx-auto mb-4" ref={suggestionRef}>
-            <form onSubmit={handleSearchSubmit} className="flex rounded-full overflow-hidden border border-slate-200 shadow-sm focus-within:ring-2 focus-within:ring-[#0514b5] focus-within:border-transparent transition-all">
+            <form onSubmit={handleSearchSubmit} className="flex rounded-full overflow-hidden border border-slate-200 shadow-sm focus-within:ring-2 focus-within:ring-amber-400 focus-within:border-transparent transition-all">
               <div className="relative flex-grow">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--ref-muted)]" />
                 <Input
@@ -695,6 +695,15 @@ export default function Homepage({
               </Badge>
             ))}
           </div>
+
+          <Button
+            type="button"
+            onClick={() => onViewChange("rankings")}
+            className="mt-8 h-auto gap-2 border-0 bg-white hover:bg-slate-100 text-aur-primary font-bold rounded-lg px-8 py-3.5 text-sm transition-colors active:translate-y-0!"
+          >
+            Browse all rankings
+            <ArrowRight className="size-4" aria-hidden />
+          </Button>
 
           {/* Dataset facts — the trust strip */}
           <div className="mt-10 flex flex-wrap items-center justify-center gap-x-10 gap-y-3 border-t border-white/20 pt-6">
@@ -956,10 +965,9 @@ export default function Homepage({
         </div>
       </RevealSection>
 
-      {/* ── How we rank (trust block) ── */}
-      <RevealSection className="ref-section pt-0">
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 md:p-10 shadow-sm">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+      {/* ── How we rank (trust block) — the ledger band ── */}
+      <RevealSection className="ref-section ref-section-alt">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center max-w-6xl mx-auto">
           <div>
             <span className="ref-label">Methodology</span>
             <h2 className="text-2xl font-bold mt-1 mb-4">How we rank</h2>
@@ -969,20 +977,10 @@ export default function Homepage({
               methodology is applied to every institution in the dataset — no paid placement,
               no editorial overrides.
             </p>
-            <div className="flex flex-wrap gap-6 text-sm">
-              <div>
-                <div className="text-2xl font-bold text-aur-primary">{dataLoading ? "—" : universities.length.toLocaleString()}</div>
-                <div className="text-xs uppercase tracking-wider text-slate-500 mt-0.5">Universities ranked</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-aur-primary">{dataLoading ? "—" : countryCount}</div>
-                <div className="text-xs uppercase tracking-wider text-slate-500 mt-0.5">Countries &amp; territories</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-aur-primary">11</div>
-                <div className="text-xs uppercase tracking-wider text-slate-500 mt-0.5">Weighted indicators</div>
-              </div>
-            </div>
+            <p className="text-xs text-slate-500">
+              Reputation surveys are weighted half of every score; research impact and
+              international outlook carry the rest. The same formula, every institution.
+            </p>
           </div>
           <div className="space-y-3">
             {METHODOLOGY_WEIGHTS.map((w) => (
@@ -991,9 +989,9 @@ export default function Homepage({
                   <span className="font-semibold text-slate-700">{w.label}</span>
                   <span className="font-mono text-slate-500">{w.pct}%</span>
                 </div>
-                <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                <div className="h-2 rounded-full bg-white overflow-hidden border border-slate-200/70">
                   <div
-                    className="h-full rounded-full bg-aur-primary/80"
+                    className="h-full rounded-full bg-amber-400"
                     style={{ width: `${w.pct}%` }}
                     aria-hidden
                   />
@@ -1003,20 +1001,19 @@ export default function Homepage({
             <p className="text-[10px] text-slate-400 pt-1">Methodology version QS-Asia-2026 · full breakdown applied uniformly across all institutions.</p>
           </div>
         </div>
-        </div>
       </RevealSection>
 
-      {/* ── Audience split ── */}
+      {/* ── Audience split: two tinted doorways ── */}
       <RevealSection className="ref-section pt-0">
-        <div className="grid grid-cols-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:grid-cols-2 md:divide-x divide-y md:divide-y-0 divide-slate-200">
-          <div className="flex flex-col p-7 md:p-8">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="flex flex-col rounded-2xl border border-aur-primary/15 bg-aur-primary/5 p-7 md:p-8">
             <div className="mb-4 flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-aur-primary/10">
-                <Users className="h-5 w-5 text-aur-primary" aria-hidden />
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-aur-primary text-white">
+                <Users className="h-5 w-5" aria-hidden />
               </span>
-              <h3 className="text-lg font-bold text-slate-800">I&apos;m choosing a university</h3>
+              <h3 className="text-lg font-bold text-aur-primary">I&apos;m choosing a university</h3>
             </div>
-            <p className="mb-5 flex-1 text-sm leading-relaxed text-slate-500">
+            <p className="mb-5 flex-1 text-sm leading-relaxed text-slate-600">
               Filter by country, program and tuition, read full institution profiles, and
               shortlist the ones that fit — comparisons and saved lists come free with an account.
             </p>
@@ -1029,14 +1026,14 @@ export default function Homepage({
               <ArrowRight className="size-4" aria-hidden />
             </Button>
           </div>
-          <div className="flex flex-col p-7 md:p-8">
+          <div className="flex flex-col rounded-2xl border border-amber-200 bg-amber-50/70 p-7 md:p-8">
             <div className="mb-4 flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100">
-                <Building2 className="h-5 w-5 text-amber-700" aria-hidden />
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-400 text-aur-primary">
+                <Building2 className="h-5 w-5" aria-hidden />
               </span>
-              <h3 className="text-lg font-bold text-slate-800">I represent an institution</h3>
+              <h3 className="text-lg font-bold text-amber-900">I represent an institution</h3>
             </div>
-            <p className="mb-5 flex-1 text-sm leading-relaxed text-slate-500">
+            <p className="mb-5 flex-1 text-sm leading-relaxed text-slate-600">
               Claim and verify your university&apos;s profile, submit data corrections, and take
               part in AUR events and awards through an institutional account.
             </p>
@@ -1044,7 +1041,7 @@ export default function Homepage({
               type="button"
               variant="outline"
               onClick={() => onViewChange("login")}
-              className="h-auto self-start border-slate-300 text-aur-primary font-bold rounded-lg px-6 py-3 text-sm hover:bg-slate-50 active:translate-y-0!"
+              className="h-auto self-start border-amber-400 bg-white text-amber-900 font-bold rounded-lg px-6 py-3 text-sm hover:bg-amber-100 active:translate-y-0!"
             >
               Register your institution
               <ArrowRight className="size-4" aria-hidden />
@@ -1057,29 +1054,46 @@ export default function Homepage({
       <RevealSection className="ref-section pt-0">
         <NewsFlashWidget />
 
-        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-6 py-5">
-          <div>
-            <p className="text-sm font-bold text-aur-primary">Get the rankings update</p>
-            <p className="text-xs text-slate-500 mt-0.5">Ranking movements and admissions insights, straight to your inbox. No spam.</p>
+        <div className="mt-6 grid grid-cols-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:grid-cols-[minmax(220px,1fr)_2fr]">
+          {/* Nameplate */}
+          <div className="relative flex flex-col justify-center gap-1 bg-aur-primary px-7 py-6 text-white">
+            <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-300">
+              <Mail className="mr-1.5 inline size-3.5 -translate-y-px" aria-hidden />
+              Monthly
+            </span>
+            <span className="aur-serif text-2xl font-bold leading-tight">The Rankings Brief</span>
+            <span aria-hidden className="absolute inset-y-0 right-0 hidden w-1 bg-amber-400 md:block" />
           </div>
-          <form onSubmit={handleSubscribe} className="flex w-full sm:w-auto items-center gap-2">
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              aria-label="Email address for newsletter"
-              required
-              className="h-auto w-full sm:w-64 rounded-full border-slate-300 bg-slate-50 px-4 py-2.5 text-sm"
-            />
-            <Button
-              type="submit"
-              disabled={loading}
-              className="h-auto border-0 bg-aur-primary hover:bg-aur-primary/90 text-white font-bold text-xs px-6 py-2.5 rounded-full transition-colors disabled:opacity-50 whitespace-nowrap active:translate-y-0!"
-            >
-              {loading ? "..." : "Subscribe"}
-            </Button>
-          </form>
+          {/* Pitch + form */}
+          <div className="flex flex-col justify-center gap-3 px-6 py-5 md:px-8">
+            <p className="text-sm leading-relaxed text-slate-600">
+              One email a month: who moved, who&apos;s new to the table, and anything that changed
+              in the methodology. Unsubscribe anytime.
+            </p>
+            <form onSubmit={handleSubscribe} className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                aria-label="Email address for The Rankings Brief"
+                required
+                className="h-auto w-full sm:max-w-xs rounded-lg border-slate-300 bg-slate-50 px-4 py-2.5 text-sm"
+              />
+              <Button
+                type="submit"
+                disabled={loading}
+                className="h-auto shrink-0 self-start sm:self-auto border-0 bg-aur-primary hover:bg-aur-primary/90 text-white font-bold text-xs px-6 py-2.5 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap active:translate-y-0!"
+              >
+                {loading ? "Subscribing..." : "Subscribe"}
+              </Button>
+            </form>
+            {status && (
+              <p className={`text-xs ${status.includes("Thank") ? "text-emerald-600" : "text-amber-700"}`} role="status" aria-live="polite">
+                {status}
+              </p>
+            )}
+          </div>
         </div>
       </RevealSection>
 

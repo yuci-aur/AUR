@@ -28,7 +28,7 @@ export default function AdminLogin() {
       // For mock purposes, any valid-looking input works if it's not empty
       if (email.includes("@") && password.length >= 6) {
         localStorage.setItem("adminToken", "mock-secure-token-12345");
-        router.push("/admin/register-university");
+        router.push("/admin/dashboard");
       } else {
         setError("Invalid credentials. Use a valid email and 6+ char password.");
         setLoading(false);

@@ -5,6 +5,7 @@ import React from "react";
 import { Search, Globe, Award, DollarSign, BookOpen, Trophy, RotateCcw, ShieldCheck, Check, ChevronDown } from "lucide-react";
 import { useSidebar } from "../navigation/SidebarContext";
 import { useUniversityData } from "../data/UniversityDataProvider";
+import { RANK_FILTER_MAX } from "../navigation/config";
 
 // List of all unique subjects in the mock data
 const ALL_SUBJECTS = ["Medicine", "Engineering", "Sciences", "Business", "Humanities", "Law", "Social Sciences"];
@@ -12,6 +13,9 @@ const ALL_SUBJECTS = ["Medicine", "Engineering", "Sciences", "Business", "Humani
 export default function FilterPanel() {
   const { filters, setFilters, clearFilters } = useSidebar();
   const { universities } = useUniversityData();
+
+  // Rank slider spans the whole dataset (min 50 for a sane empty-state).
+  const rankMax = Math.max(universities.length, 50);
 
   const [openSections, setOpenSections] = React.useState({
     search: true,
@@ -28,7 +32,7 @@ export default function FilterPanel() {
     if (filters.searchQuery.trim()) count += 1;
     if (filters.country) count += 1;
     if (filters.subjects.length > 0) count += filters.subjects.length;
-    if (filters.qsRange[0] !== 1 || filters.qsRange[1] !== 50) count += 1;
+    if (filters.qsRange[0] !== 1 || filters.qsRange[1] < rankMax) count += 1;
     if (filters.tuitionRange[0] !== 0 || filters.tuitionRange[1] !== 25000) count += 1;
     if (filters.isPublic !== null) count += 1;
     if (filters.scholarshipOnly) count += 1;
@@ -212,7 +216,7 @@ export default function FilterPanel() {
                   Calculated Rank
                 </span>
                 <span className="font-mono text-[10px] font-bold text-slate-700 dark:text-cyber-yellow-bright">
-                  #{filters.qsRange[0]} - #{filters.qsRange[1]}
+                  #{filters.qsRange[0]} - #{Math.min(filters.qsRange[1], rankMax)}
                 </span>
               </div>
               <div className="relative h-6 mt-1 flex items-center">
@@ -221,25 +225,25 @@ export default function FilterPanel() {
                   <div
                     className="absolute h-full bg-slate-800 dark:bg-cyber-yellow rounded"
                     style={{
-                      left: `${((filters.qsRange[0] - 1) / 49) * 100}%`,
-                      right: `${100 - ((filters.qsRange[1] - 1) / 49) * 100}%`,
+                      left: `${((filters.qsRange[0] - 1) / (rankMax - 1)) * 100}%`,
+                      right: `${100 - ((Math.min(filters.qsRange[1], rankMax) - 1) / (rankMax - 1)) * 100}%`,
                     }}
                   />
                   <input
                     type="range"
                     min="1"
-                    max="50"
+                    max={rankMax}
                     value={filters.qsRange[0]}
                     onChange={handleRankMinChange}
                     className="absolute pointer-events-none appearance-none w-full h-1 bg-transparent top-0 left-0 accent-slate-900 dark:accent-cyber-yellow"
                     style={{
-                      zIndex: filters.qsRange[0] > 40 ? 5 : 3,
+                      zIndex: filters.qsRange[0] > rankMax * 0.8 ? 5 : 3,
                     }}
                   />
                   <input
                     type="range"
                     min="1"
-                    max="50"
+                    max={rankMax}
                     value={filters.qsRange[1]}
                     onChange={handleRankMaxChange}
                     className="absolute pointer-events-none appearance-none w-full h-1 bg-transparent top-0 left-0 accent-slate-900 dark:accent-cyber-yellow"

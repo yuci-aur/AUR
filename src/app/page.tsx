@@ -3,6 +3,7 @@ import AppContent from "./AppContent";
 import { SidebarProvider } from "./components/navigation/SidebarContext";
 import { ToastProvider } from "./components/feedback/ToastContext";
 import { UniversityDataProvider } from "./components/data/UniversityDataProvider";
+import { AuthGateProvider } from "./components/auth/AuthGate";
 
 export default function Home() {
   return (
@@ -24,13 +25,15 @@ export default function Home() {
         </div>
       </div>
     }>
-      <SidebarProvider>
-        <ToastProvider>
-          <UniversityDataProvider>
-            <AppContent />
-          </UniversityDataProvider>
-        </ToastProvider>
-      </SidebarProvider>
+      <ToastProvider>
+        <SidebarProvider>
+          <AuthGateProvider>
+            <UniversityDataProvider>
+              <AppContent />
+            </UniversityDataProvider>
+          </AuthGateProvider>
+        </SidebarProvider>
+      </ToastProvider>
     </Suspense>
   );
 }

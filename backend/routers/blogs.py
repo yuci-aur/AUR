@@ -26,16 +26,22 @@ async def create_blog(blog: BlogCreate, db: AsyncSession = Depends(get_db)):
     """
     Create a new blog post.
     """
-    slug = generate_slug(blog.title)
-    
-    # Check if a blog with this slug already exists to prevent duplicate slugs
-    existing = await db.scalar(select(Blog).where(Blog.slug == slug))
-    if existing:
-        # Append a unique suffix if slug exists (simple implementation)
-        slug = f"{slug}-{blog.publish_date or 'draft'}"
-        
+    base_slug = generate_slug(blog.title) or "untitled-blog"
+
+    # Ensure a unique slug by appending an incrementing suffix if needed.
+    slug = base_slug
+    counter = 1
+    while await db.scalar(select(Blog).where(Blog.slug == slug)):
+        slug = f"{base_slug}-{counter}"
+        counter += 1
+
+    # model_dump() may include its own `slug` (optional on BlogCreate); drop it so
+    # the generated unique slug is the single source of truth.
+    payload = blog.model_dump()
+    payload.pop("slug", None)
+
     db_blog = Blog(
-        **blog.model_dump(),
+        **payload,
         slug=slug
     )
     

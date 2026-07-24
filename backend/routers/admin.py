@@ -34,6 +34,8 @@ from database.models import (
     Event,
     Application,
     JudgeScore,
+    Blog,
+    NewsletterSubscriber,
 )
 
 from schemas import (
@@ -42,6 +44,10 @@ from schemas import (
     AdminLoginRequest,
     AdminLoginResponse,
     AdminVerifyResponse,
+    AdminUserResponse,
+    AdminUserListResponse,
+    AdminStatsResponse,
+    BlogResponse,
 )
 
 from typing import List
@@ -120,6 +126,141 @@ async def verify_admin(
         email=current_admin.email,
         role=current_admin.role,
     )
+
+# --- Dashboard stats ---
+@router.get("/stats", response_model=AdminStatsResponse)
+async def admin_stats(
+    current_admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    total_users = await db.scalar(select(func.count()).select_from(User))
+    total_admins = await db.scalar(
+        select(func.count()).select_from(User).where(User.role == "admin")
+    )
+    total_universities = await db.scalar(
+        select(func.count()).select_from(University)
+    )
+    total_blogs = await db.scalar(select(func.count()).select_from(Blog))
+    published_blogs = await db.scalar(
+        select(func.count()).select_from(Blog).where(Blog.status == "Published")
+    )
+    total_events = await db.scalar(select(func.count()).select_from(Event))
+    total_applications = await db.scalar(
+        select(func.count()).select_from(Application)
+    )
+    newsletter_subscribers = await db.scalar(
+        select(func.count()).select_from(NewsletterSubscriber)
+    )
+
+    return AdminStatsResponse(
+        total_users=total_users or 0,
+        total_admins=total_admins or 0,
+        total_universities=total_universities or 0,
+        total_blogs=total_blogs or 0,
+        published_blogs=published_blogs or 0,
+        total_events=total_events or 0,
+        total_applications=total_applications or 0,
+        newsletter_subscribers=newsletter_subscribers or 0,
+    )
+
+
+# --- User management ---
+@router.get("/users", response_model=AdminUserListResponse)
+async def list_users(
+    q: str | None = Query(None, description="Search by name or email"),
+    role: str | None = Query(None, description="Filter by role: user / admin"),
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    current_admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    base = select(User)
+
+    if role:
+        base = base.where(User.role == role)
+
+    if q:
+        like = f"%{q.lower()}%"
+        base = base.where(
+            func.lower(User.first_name).like(like)
+            | func.lower(User.last_name).like(like)
+            | func.lower(User.email).like(like)
+        )
+
+    total = await db.scalar(
+        select(func.count()).select_from(base.subquery())
+    )
+
+    result = await db.execute(
+        base.order_by(User.created_at.desc()).limit(limit).offset(offset)
+    )
+    users = result.scalars().all()
+
+    return AdminUserListResponse(total=total or 0, data=users)
+
+
+@router.get("/users/{user_id}", response_model=AdminUserResponse)
+async def get_user(
+    user_id: PyUUID,
+    current_admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
+@router.patch("/users/{user_id}/role", response_model=AdminUserResponse)
+async def update_user_role(
+    user_id: PyUUID,
+    role: str = Body(..., embed=True),
+    current_admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    if role not in {"user", "admin"}:
+        raise HTTPException(status_code=400, detail="role must be 'user' or 'admin'")
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.id == current_admin.id and role != "admin":
+        raise HTTPException(
+            status_code=400, detail="You cannot revoke your own admin access"
+        )
+
+    user.role = role
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
+# --- Blog management (admin view) ---
+@router.get("/blogs", response_model=List[BlogResponse])
+async def admin_list_blogs(
+    current_admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(Blog).order_by(Blog.created_at.desc()))
+    return result.scalars().all()
+
+
+@router.delete("/blogs/{blog_id}")
+async def admin_delete_blog(
+    blog_id: PyUUID,
+    current_admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    blog = await db.get(Blog, blog_id)
+    if blog is None:
+        raise HTTPException(status_code=404, detail="Blog not found")
+    await db.delete(blog)
+    await db.commit()
+    return {"status": "success", "message": "Blog deleted"}
+
 
 @router.post("/upload")
 async def upload_dataset(
@@ -833,12 +974,31 @@ async def register_university(
     # Generate slug
     slug = payload.name.lower().replace(" ", "-")
 
-    # Create University
+    # Create University with all provided fields.
+    # Only name / registration_code / ranking_score / description are required;
+    # everything else is optional and stored when supplied.
     university = University(
         slug=slug,
         name=payload.name,
-        country="Unknown",
+        country=payload.country or "Unknown",
+        subregion=payload.subregion,
+        state=payload.state,
+        city=payload.city,
+        size=payload.size,
+        focus=payload.focus,
+        research_level=payload.research_level,
+        is_public=payload.is_public if payload.is_public is not None else True,
+        established_year=payload.established_year,
+        total_students=payload.total_students,
+        total_faculty=payload.total_faculty,
+        avg_fees=payload.avg_fees,
+        placement_percentage=payload.placement_percentage,
         description=payload.description,
+        website_url=payload.website_url,
+        logo_url=payload.logo_url,
+        campus_photo=payload.campus_photo,
+        has_medicine=payload.has_medicine,
+        has_scholarship=payload.has_scholarship,
     )
 
     db.add(university)

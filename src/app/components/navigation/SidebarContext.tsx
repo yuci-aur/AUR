@@ -1,7 +1,12 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+
+import { useToast } from "../feedback/ToastContext";
+
+/** Maximum number of universities that can be compared at once (shared across the compare flow). */
+export const MAX_COMPARE = 4;
 
 export interface FilterState {
   searchQuery: string;
@@ -50,9 +55,16 @@ const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const { showToast } = useToast();
 
-  // Active view sync from URL
-  const activeView = searchParams.get("view") || "home";
+  // Active view sync from URL. On the root page the view lives in `?view=`; on
+  // real sub-routes (e.g. /blogs, /blogs/[id]) there is no view param, so we
+  // derive the active tab from the pathname instead of defaulting to "home"
+  // (which would wrongly highlight HOME while reading a blog).
+  const activeView =
+    searchParams.get("view") ||
+    (pathname?.startsWith("/blogs") ? "blog" : "home");
   const selectedUniId = searchParams.get("id");
 
   // State initialization
@@ -62,7 +74,6 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUniIds, setSelectedUniIds] = useState<string[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [previousView, setPreviousView] = useState<string>("rankings");
 
   // Read localStorage for isCollapsed and theme (safe for SSR)
   useEffect(() => {
@@ -89,8 +100,8 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
         ? prev.filter((id) => id !== uniId)
         : [...prev, uniId];
 
-      if (next.length > 4) {
-        alert("You can compare a maximum of 4 universities at a time.");
+      if (next.length > MAX_COMPARE) {
+        showToast(`You can compare up to ${MAX_COMPARE} universities at a time.`, "warning");
         return prev;
       }
 
@@ -146,33 +157,42 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // View changing routing helper
   const handleViewChange = (view: string) => {
+    // The in-app "views" (home, rankings, blog, …) are only rendered by the
+    // root page ("/"). When a navbar tab is clicked from a real sub-route like
+    // /blogs/[id], a relative `?view=` push would just stick the param on that
+    // sub-route (which ignores it), so the tabs would appear dead. Always route
+    // through "/" so the target view actually renders.
     const current = new URLSearchParams(Array.from(searchParams.entries()));
     current.set("view", view);
     if (view !== "university-profile") {
       current.delete("id");
     }
-    
+
     // Auto-expand sidebar when navigating to rankings engine
     if (view === "rankings") {
       setIsCollapsed(false);
     }
 
-    router.push(`?${current.toString()}`);
+    const query = current.toString();
+    if (pathname === "/") {
+      router.push(`?${query}`);
+    } else {
+      router.push(`/?${query}`);
+    }
     setIsMobileOpen(false); // Close mobile drawer when navigating
   };
 
   const setSelectedUniId = (id: string | null) => {
-  const current = new URLSearchParams(Array.from(searchParams.entries()));
-  if (id) {
-    setPreviousView(activeView);
-    current.set("view", "university-profile");
-    current.set("id", id);
-  } else {
-    current.set("view", previousView);
-    current.delete("id");
-  }
-  router.push(`?${current.toString()}`);
-};
+    const current = new URLSearchParams(Array.from(searchParams.entries()));
+    if (id) {
+      current.set("view", "university-profile");
+      current.set("id", id);
+    } else {
+      current.set("view", "rankings");
+      current.delete("id");
+    }
+    router.push(`?${current.toString()}`);
+  };
 
   return (
     <SidebarContext.Provider

@@ -21,6 +21,8 @@ import UniversitiesList from "./components/UniversitiesList";
 import Methodology from "./components/Methodology";
 import EventsAndAwards from "./components/EventsAndAwards";
 import FacultyStudentAwards from "./components/FacultyStudentAwards";
+import NewsFeed from "./components/NewsFeed";
+import BlogFeed from "./components/BlogFeed";
 import BlogForm from "./components/blog/BlogForm";
 import { useSidebar } from "./components/navigation/SidebarContext";
 import { useUniversityData } from "./components/data/UniversityDataProvider";
@@ -29,16 +31,14 @@ import { Bookmark, ShieldAlert } from "lucide-react";
 import { API_BASE_URL } from "./lib/universities";
 import DiscoveryJoinModal from "./components/DiscoveryJoinModal";
 import ProfileSection from "./components/ProfileSection";
-
-// Views anonymous visitors can browse read-only; sticky features (saving,
-// comparisons, settings, profile) still require an account.
-const isPublicView = (v: string) =>
-  ["home", "login", "rankings", "countries", "universities", "university-profile", "analytics", "events", "faculty-awards"].includes(v);
+import { isProtectedView } from "./components/navigation/config";
+import { useAuthGate } from "./components/auth/AuthGate";
 
 export default function AppContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { universities } = useUniversityData();
+  const { requireAuth } = useAuthGate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authReady, setAuthReady] = useState(false);
 
@@ -160,7 +160,9 @@ useEffect(() => {
   return () => controller.abort();
 }, [uniDirectory, universities]);
   // Derived state from URL (synced with context)
-  const view = isAuthenticated || isPublicView(activeView) ? activeView : "login";
+  const view = !isAuthenticated && isProtectedView(activeView)
+    ? "login"
+    : activeView;
   const id = selectedUniId;
 
   // A key to force AnimatePresence re-mount on view change
@@ -169,7 +171,7 @@ useEffect(() => {
   const handleToggleSave = async (uniId: string) => {
   const token = sessionStorage.getItem("aur_access_token");
   if (!token) {
-    handleViewChange("login");
+    requireAuth(undefined, "Sign in to save universities to your shortlist.");
     return;
   }
 
@@ -208,8 +210,17 @@ useEffect(() => {
 };
 
   const handleUniversitySelect = (uniId: string) => {
-  setSelectedUniId(uniId);
-};
+    requireAuth(() => {
+      setSelectedUniId(uniId);
+    }, "Sign in to view full university profiles, metrics, and admissions details.");
+  };
+
+  const handleGatedToggleCompare = (uniId: string) => {
+    requireAuth(
+      () => handleToggleCompare(uniId),
+      "Sign in to compare universities side by side."
+    );
+  };
 
   const handleBackToRankings = () => {
     setSelectedUniId(null);
@@ -234,7 +245,7 @@ useEffect(() => {
   }, []);
 
   useEffect(() => {
-    if (authReady && !isAuthenticated && !isPublicView(activeView)) {
+    if (authReady && !isAuthenticated && isProtectedView(activeView)) {
       router.replace("?view=login&mode=login");
     }
   }, [activeView, authReady, isAuthenticated, router]);
@@ -275,7 +286,7 @@ useEffect(() => {
         Skip to main content
       </a>
       {/* Top Navigation Bar */}
-      {view !== "login" && view !== "admin" && (
+      {view !== "login" && (
         <Navbar
           isAuthenticated={isAuthenticated}
           onLogIn={() => openAuth("login")}
@@ -318,7 +329,7 @@ useEffect(() => {
               searchQuery={searchQuery}
               onSearchQueryChange={setSearchQuery}
               selectedUniIds={selectedUniIds}
-              onToggleCompare={handleToggleCompare}
+              onToggleCompare={handleGatedToggleCompare}
               onUniversitySelect={handleUniversitySelect}
             />
           )}
@@ -342,6 +353,12 @@ useEffect(() => {
 
           {/* Analytics Dashboard */}
           {view === "analytics" && <AnalyticsDashboard />}
+
+          {/* News (in-app feed) */}
+          {view === "news" && <NewsFeed />}
+
+          {/* Blog (in-app feed) */}
+          {view === "blog" && <BlogFeed />}
 
           {/* Methodology */}
           {/* {view === "methodology" && <Methodology />} */}

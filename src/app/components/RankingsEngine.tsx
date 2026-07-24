@@ -14,7 +14,6 @@ import {
   SortingState,
 } from "@tanstack/react-table";
 import {
-  SlidersHorizontal,
   ChevronDown,
   ChevronUp,
   RotateCcw,
@@ -23,24 +22,18 @@ import {
   CheckSquare,
   Square,
   ChevronRight,
-  TrendingUp,
   DollarSign,
   Globe,
-  Award,
   X,
   FilterX,
+  Lock,
 } from "lucide-react";
 import { University } from "../data";
 import { useUniversityData } from "./data/UniversityDataProvider";
+import { useAuthGate } from "./auth/AuthGate";
+import { PREVIEW_LIMIT } from "./navigation/config";
 import { useSidebar } from "./navigation/SidebarContext";
 import MultiSelectDropdown from "./ui/MultiSelectDropdown";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-
-// Shared classes for the removable filter tag pills (visual parity with the previous hand-rolled spans)
-const FILTER_TAG_CLASS =
-  "h-auto max-w-full gap-0 overflow-visible whitespace-normal rounded-full border-[var(--aur-border)] bg-[var(--aur-surface-2)] px-2 py-0.5 font-mono text-[10px] font-normal text-[var(--aur-text)] cursor-pointer transition-colors hover:border-red-500 hover:text-red-500 [&>svg]:size-2.5!";
 
 interface RankingsEngineProps {
   searchQuery: string;
@@ -66,7 +59,8 @@ export default function RankingsEngine({
   onToggleCompare,
   onUniversitySelect,
 }: RankingsEngineProps) {
-  const { universities } = useUniversityData();
+  const { universities, error: dataError } = useUniversityData();
+  const { isAuthenticated, promptSignIn } = useAuthGate();
   const focusRing =
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--aur-text)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]";
   const router = useRouter();
@@ -288,62 +282,19 @@ export default function RankingsEngine({
     });
   }, [processedData, deferredSearchQuery, locations, selectedSubjects, selectedLanguages, filters]);
 
+  // Preview gating: logged-out visitors see at most PREVIEW_LIMIT institutions.
+  const totalMatches = filteredData.length;
+  const isPreviewCapped = !isAuthenticated && totalMatches > PREVIEW_LIMIT;
+  const previewData = useMemo(
+    () => (isPreviewCapped ? filteredData.slice(0, PREVIEW_LIMIT) : filteredData),
+    [filteredData, isPreviewCapped]
+  );
+
   // 6. Extract unique values for filter dropdown options
   const uniqueLocations = useMemo(() => Array.from(new Set(universities.map((u) => u.location))).sort(), [universities]);
   const uniqueSubjects = useMemo(() => Array.from(new Set(universities.flatMap((u) => u.subjects))).sort(), [universities]);
   const uniqueLanguages = useMemo(() => Array.from(new Set(universities.flatMap((u) => u.languages))).sort(), [universities]);
 
-  const rankingInsights = useMemo(() => {
-    const data = filteredData;
-    const total = data.length || 1;
-    const countryCounts = data.reduce((acc, uni) => {
-      acc.set(uni.location, (acc.get(uni.location) ?? 0) + 1);
-      return acc;
-    }, new Map<string, number>());
-
-    const topCountry =
-      Array.from(countryCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "N/A";
-    const averageScore =
-      data.reduce((sum, uni) => sum + uni.calculatedScore, 0) / total;
-    const medicineCount = data.filter((uni) => uni.hasMedicine).length;
-    const mostImproved = data
-      .map((uni) => ({
-        uni,
-        improvement:
-          uni.history.length > 1 ? uni.history[uni.history.length - 1] - uni.history[0] : 0,
-      }))
-      .sort((a, b) => b.improvement - a.improvement)[0];
-
-    return [
-      {
-        label: "Top Country",
-        value: topCountry,
-        detail: `${countryCounts.get(topCountry) ?? 0} matching institutions`,
-        icon: Globe,
-      },
-      {
-        label: "Average Score",
-        value: averageScore.toFixed(1),
-        detail: "Across visible results",
-        icon: Award,
-      },
-      {
-        label: "Medicine Programs",
-        value: medicineCount.toString(),
-        detail: `${Math.round((medicineCount / total) * 100)}% of current index`,
-        icon: Filter,
-      },
-      {
-        label: "Most Improved",
-        value: mostImproved?.uni.name.split(" ")[0] ?? "N/A",
-        detail:
-          mostImproved && mostImproved.improvement > 0
-            ? `+${mostImproved.improvement} rank movement`
-            : "Stable ranking set",
-        icon: TrendingUp,
-      },
-    ];
-  }, [filteredData]);
 
   // 7. Column Definitions for @tanstack/react-table
   const columns = useMemo<ColumnDef<typeof filteredData[0]>[]>(
@@ -415,12 +366,9 @@ export default function RankingsEngine({
         header: "Tuition / Yr",
         accessorKey: "tuition",
         cell: ({ row }) => (
-          <Badge
-            variant="outline"
-            className="h-auto min-w-[5.5rem] justify-end gap-0 rounded-none border-[var(--aur-border)] bg-[var(--aur-surface-2)] px-1.5 py-0.5 font-mono text-xs font-normal text-[var(--aur-text-muted)]"
-          >
+          <span className="inline-flex min-w-[5.5rem] justify-end font-mono text-xs text-[var(--aur-text-muted)] bg-[var(--aur-surface-2)] border border-[var(--aur-border)] px-1.5 py-0.5">
             {row.original.tuition}
-          </Badge>
+          </span>
         ),
       },
       {
@@ -457,10 +405,15 @@ export default function RankingsEngine({
 
   // 8. TanStack Table Instance
   const table = useReactTable({
-    data: filteredData,
+    data: previewData,
     columns,
     state: {
       sorting,
+    },
+    // Logged-out preview shows all PREVIEW_LIMIT rows on one page (no confusing
+    // pagination); logged-in users get a standard page size.
+    initialState: {
+      pagination: { pageSize: PREVIEW_LIMIT, pageIndex: 0 },
     },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
@@ -475,90 +428,51 @@ export default function RankingsEngine({
       {/* Ambient Liquid Glass Orb */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-5xl h-full max-h-[600px] bg-gradient-to-b from-blue-400/10 via-cyan-300/5 to-transparent rounded-[100%] blur-[120px] pointer-events-none -z-10" />
 
-      {/* Editorial Title */}
-      <div className="aur-rankings-hero mb-6 sm:mb-8 aur-hero-accent flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-6">
-        <div className="min-w-0">
-          <span className="aur-caption">Engine & Analytics Database</span>
-          <h2 className="aur-section-title text-3xl md:text-4xl leading-tight mt-2">
+      {/* Combined navy header + filter card */}
+      <div className="aur-rankings-panel relative z-20 mb-6 sm:mb-8 rounded-3xl bg-[#1A365D] p-6 sm:p-8 shadow-(--aur-shadow-lg)">
+        {/* Editorial Title */}
+        <div className="mb-6 sm:mb-8">
+          <span className="text-[10px] uppercase font-bold tracking-widest text-white/50">Engine & Analytics Database</span>
+          <h2 className="text-3xl md:text-4xl font-bold leading-tight mt-2 text-white">
             Asia Institutional Ranking Table
           </h2>
-          <p className="text-[11px] text-[var(--aur-text-muted)] font-mono mt-3 tracking-wide">
-            Index refreshed Â· Jun 2026 Â· {filteredData.length} institutions indexed
+          <p className="text-[11px] text-white/50 font-mono mt-3 tracking-wide">
+            {dataError ? "Sample data" : "Live index"} &middot; Top {filteredData.length} of {universities.length} universities
           </p>
         </div>
-        
-        {/* Recalculator Drawer Trigger button */}
-        <button
-          type="button"
-          onClick={() => setIsWeightsDrawerOpen(true)}
-          className={`aur-rankings-action mt-2 md:mt-0 inline-flex w-full sm:w-auto items-center justify-center px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider transition-all aur-focus-ring ${focusRing}`}
-        >
-          <SlidersHorizontal className="h-4 w-4 mr-2" />
-          Weights Recalculator
-        </button>
-      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8 relative z-10">
-        {rankingInsights.map((insight, idx) => (
-          <motion.div 
-            key={insight.label} 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: idx * 0.1, ease: "easeOut" }}
-            className="group relative overflow-hidden bg-white/40 backdrop-blur-xl border border-white/60 rounded-2xl p-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500"
-          >
-            {/* Hover Glow */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-[#1A365D]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-            
-            <div className="relative z-10 flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500">
-                  {insight.label}
-                </span>
-                <div className="mt-1 truncate text-2xl font-black text-slate-800">
-                  {insight.value}
-                </div>
-              </div>
-              <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/60 border border-white text-[#1A365D] shadow-sm group-hover:scale-110 transition-transform duration-500">
-                <insight.icon className="h-5 w-5" />
-              </div>
+        {/* Divider between header and filters */}
+        <div className="mb-6 h-px w-full bg-white/10" />
+
+        {/* 9. Elite Filtering Bar Layout */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5 items-start">
+          <p className="sm:col-span-2 xl:col-span-4 text-[10px] uppercase font-bold tracking-widest text-white/50 -mb-2">
+            Refine index
+          </p>
+
+          {/* Search Field */}
+          <div className="relative flex min-h-[5.75rem] flex-col">
+            <label className="text-[10px] uppercase font-bold tracking-widest text-white/60 mb-2">
+              Search
+            </label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="w-full h-11 rounded-xl bg-white border border-white/20 px-4 text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-white/40 transition-all placeholder:text-slate-400"
+                style={{ paddingLeft: "2.75rem" }}
+              />
             </div>
-            <p className="relative z-10 mt-4 text-[10px] font-mono uppercase tracking-widest text-slate-500">
-              {insight.detail}
-            </p>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* 9. Elite Filtering Bar Layout */}
-      <div className="aur-filter-deck grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5 mb-6 sm:mb-8 items-start relative z-10 bg-white/40 backdrop-blur-xl border border-white/60 p-5 rounded-2xl shadow-sm">
-        <p className="sm:col-span-2 xl:col-span-4 text-[10px] uppercase font-bold tracking-widest text-slate-500 -mb-2">
-          Refine index
-        </p>
-        
-        {/* Search Field */}
-        <div className="relative flex min-h-[5.75rem] flex-col">
-          <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-2">
-            Search
-          </label>
-          <div className="relative">
-<Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"/>
-            <Input
-              type="text"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className="h-11 rounded-xl bg-white/60 dark:bg-white/60 border-white/80 px-4 text-sm text-slate-800 shadow-sm focus-visible:border-white/80 focus-visible:ring-2 focus-visible:ring-[#1A365D]/20 transition-all placeholder:text-slate-400"
-              style={{ paddingLeft: "2.75rem" }}
-            />
           </div>
-        </div>
 
-        {/* Location Dropdown */}
-        <div className="flex min-h-[5.75rem] flex-col">
-          <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-2">
-            Location
-          </label>
+          {/* Location Dropdown */}
+          <div className="flex min-h-[5.75rem] flex-col">
+            <label className="text-[10px] uppercase font-bold tracking-widest text-white/60 mb-2">
+              Location
+            </label>
           <div className="relative z-30">
             <MultiSelectDropdown
               options={uniqueLocations}
@@ -574,14 +488,13 @@ export default function RankingsEngine({
           {locations.length > 0 && (
             <div className="min-h-6 flex flex-wrap gap-1 mt-1.5">
               {locations.map((loc) => (
-                <Badge
+                <span
                   key={loc}
-                  variant="outline"
                   onClick={() => handleLocationToggle(loc)}
-                  className={FILTER_TAG_CLASS}
+                  className="inline-flex max-w-full items-center rounded-full text-[10px] font-mono border border-white/20 bg-white/10 text-white/90 px-2 py-0.5 cursor-pointer hover:border-red-400 hover:text-red-300 transition-colors"
                 >
                   {loc} <X className="h-2.5 w-2.5 ml-1" />
-                </Badge>
+                </span>
               ))}
             </div>
           )}
@@ -607,14 +520,13 @@ export default function RankingsEngine({
           {selectedSubjects.length > 0 && (
             <div className="min-h-6 flex flex-wrap gap-1 mt-1.5">
               {selectedSubjects.map((sub) => (
-                <Badge
+                <span
                   key={sub}
-                  variant="outline"
                   onClick={() => handleSubjectToggle(sub)}
-                  className={FILTER_TAG_CLASS}
+                  className="inline-flex max-w-full items-center rounded-full text-[10px] font-mono border border-white/20 bg-white/10 text-white/90 px-2 py-0.5 cursor-pointer hover:border-red-400 hover:text-red-300 transition-colors"
                 >
                   {sub} <X className="h-2.5 w-2.5 ml-1" />
-                </Badge>
+                </span>
               ))}
             </div>
           )}
@@ -640,19 +552,25 @@ export default function RankingsEngine({
           {selectedLanguages.length > 0 && (
             <div className="min-h-6 flex flex-wrap gap-1 mt-1.5">
               {selectedLanguages.map((lang) => (
-                <Badge
+                <span
                   key={lang}
-                  variant="outline"
                   onClick={() => handleLanguageToggle(lang)}
-                  className={FILTER_TAG_CLASS}
+                  className="inline-flex max-w-full items-center rounded-full text-[10px] font-mono border border-white/20 bg-white/10 text-white/90 px-2 py-0.5 cursor-pointer hover:border-red-400 hover:text-red-300 transition-colors"
                 >
                   {lang} <X className="h-2.5 w-2.5 ml-1" />
-                </Badge>
+                </span>
               ))}
             </div>
           )}
+          </div>
         </div>
       </div>
+
+      {dataError && (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Live rankings couldn&apos;t be loaded right now — showing a bundled sample instead. Please try again later.
+        </div>
+      )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4">
         <span className="text-[10px] text-[var(--aur-text-muted)] font-bold uppercase tracking-wider">
@@ -745,20 +663,50 @@ export default function RankingsEngine({
               <p className="text-xs text-slate-500 leading-relaxed mb-6 max-w-sm">
                 Try widening location, subject, or rank ranges—or reset all filters to browse the full index.
               </p>
-              <Button
+              <button
                 type="button"
                 onClick={handleResetFilters}
-                className="h-auto border-0 bg-[#1A365D] text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-900 transition-colors shadow-md"
+                className="bg-[#1A365D] text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-900 transition-colors shadow-md"
               >
                 Reset all filters
-              </Button>
+              </button>
             </div>
           )}
         </div>
       </div>
 
+      {/* Locked preview CTA — logged-out visitors capped at PREVIEW_LIMIT */}
+      {isPreviewCapped && (
+        <div className="relative mt-2 overflow-hidden rounded-2xl border border-[#1A365D]/15 bg-gradient-to-b from-white/60 to-[#1A365D]/[0.06] px-6 py-10 text-center">
+          {/* Faded teaser rows behind the CTA */}
+          <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-6 flex flex-col gap-2 px-6 opacity-40 blur-[2px]">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-10 rounded-lg bg-white/70 border border-white/80" style={{ opacity: 1 - i * 0.3 }} />
+            ))}
+          </div>
+          <div className="relative">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#1A365D]/10 text-[#1A365D]">
+              <Lock className="h-6 w-6" />
+            </div>
+            <h3 className="font-serif text-xl font-bold text-[#1A365D]">
+              {totalMatches - PREVIEW_LIMIT} more institutions
+            </h3>
+            <p className="mx-auto mt-2 mb-6 max-w-sm text-sm leading-relaxed text-slate-500">
+              You&apos;re viewing the top {PREVIEW_LIMIT} of {totalMatches}. Create a free account to unlock the full ranking, compare institutions, and save your shortlist.
+            </p>
+            <button
+              type="button"
+              onClick={() => promptSignIn(`Sign in to see all ${totalMatches} ranked institutions.`)}
+              className="rounded-lg bg-[#1A365D] px-6 py-3 text-sm font-bold text-white shadow-md transition-colors hover:bg-blue-900"
+            >
+              Unlock all {totalMatches} universities
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Pagination Controls */}
-      <div className="aur-panel aur-rankings-pagination flex items-center justify-between px-3 sm:px-4 py-3 mt-4 rounded-sm">
+      <div className={`aur-panel aur-rankings-pagination flex items-center justify-between px-3 sm:px-4 py-3 mt-4 rounded-sm ${isPreviewCapped ? "hidden" : ""}`}>
         <div className="flex flex-1 justify-between sm:hidden">
           <button
             onClick={() => table.previousPage()}
@@ -821,14 +769,12 @@ export default function RankingsEngine({
                       Recalculate Rank Weights
                     </h3>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
+                  <button
                     onClick={() => setIsWeightsDrawerOpen(false)}
-                    className="size-7 rounded-lg border-0 text-[var(--aur-text-muted)] hover:bg-[var(--aur-hover)] hover:text-[var(--aur-text)] dark:hover:bg-[var(--aur-hover)]"
+                    className="p-1 hover:bg-[var(--aur-hover)] rounded-lg text-[var(--aur-text-muted)] hover:text-[var(--aur-text)]"
                   >
-                    <X className="size-5" />
-                  </Button>
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
                 <p className="text-[var(--aur-text-secondary)] text-xs mt-3 leading-relaxed">
                   Modify the relative priority weights below. The system automatically recalculates total scores using instant frontend arithmetic.

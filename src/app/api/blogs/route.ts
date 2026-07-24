@@ -36,7 +36,21 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { title, subtitle, source, content, category, tags, image } = body;
+    // Accept both the canonical Article field names and the BlogForm field names
+    // (description → contentSummary, author → source, coverImage/cover_image → image).
+    const title = body.title;
+    const content = body.content;
+    const category = body.category;
+    const subtitle = body.subtitle ?? body.description ?? "";
+    const source = body.source ?? body.author ?? "";
+    const image = body.image ?? body.coverImage ?? body.cover_image ?? "";
+    const readTimeInput = body.readTime ?? body.read_time ?? "";
+    const rawTags = body.tags;
+    const tags = Array.isArray(rawTags)
+      ? rawTags
+      : typeof rawTags === "string"
+        ? rawTags.split(",").map((t: string) => t.trim()).filter(Boolean)
+        : [];
 
     // Validation
     if (!title || !title.trim()) {
@@ -70,22 +84,22 @@ export async function POST(request: Request) {
     ];
     const formattedDate = `${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
 
-    // Read time
-    const readTime = calculateReadTime(content);
+    // Read time (respect an explicit value, otherwise estimate from content)
+    const readTime = readTimeInput && readTimeInput.trim() ? readTimeInput.trim() : calculateReadTime(content);
 
     // Build final article object
     const newArticle: Article = {
       id: uniqueId,
       title: title.trim(),
       subtitle: (subtitle || "").trim(),
-      source: (source || "Dr. John Doe").trim(),
+      source: (source || "AUR Editorial").trim(),
       date: formattedDate,
       readTime,
       contentSummary: content.replace(/<\/?[^>]+(>|$)/g, "").substring(0, 180) + "...",
       image: image || "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=800&q=80",
       content,
       category,
-      tags: Array.isArray(tags) ? tags : [],
+      tags,
     };
 
     blogs.unshift(newArticle); // Prepend to show immediately at the top

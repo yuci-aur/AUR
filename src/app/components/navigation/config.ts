@@ -12,6 +12,29 @@ import {
   BadgeCheck,
 } from "lucide-react";
 
+/**
+ * Views that require an authenticated user (personal / account features).
+ * Every other view — rankings, analytics, universities, saved comparison,
+ * events, methodology, etc. — is open for logged-out visitors to browse.
+ */
+export const PROTECTED_VIEWS = new Set<string>(["profile", "settings"]);
+
+/** True when a view can only be accessed by an authenticated user. */
+export const isProtectedView = (view: string): boolean => PROTECTED_VIEWS.has(view);
+
+/**
+ * Number of universities logged-out visitors can browse before hitting the
+ * "sign in to see all" wall. Applied to the rankings table and directory grid.
+ */
+export const PREVIEW_LIMIT = 20;
+
+/**
+ * Upper bound for the "Calculated Rank" filter slider. The dataset holds ~972
+ * institutions today; this leaves generous headroom so the rank filter never
+ * silently hides universities beyond an arbitrary cap.
+ */
+export const RANK_FILTER_MAX = 2000;
+
 export interface NavItem {
   id: string;
   label: string;
@@ -85,5 +108,6 @@ export const TOP_NAV_LINKS = [
   // { label: "Methodology", view: "methodology" },
   { label: "Comparison Matrix", view: "saved" },
   { label: "Events & Awards", view: "events" },
+  { label: "Blog", view: "blog" },
   { label: "News", view: "news" },
 ];

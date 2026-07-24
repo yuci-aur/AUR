@@ -12,15 +12,15 @@ export default function CreateBlogPage() {
         Loading Editor...
       </div>
     }>
-      <SidebarProvider>
-        <ToastProvider>
+      <ToastProvider>
+        <SidebarProvider>
           <UniversityDataProvider>
             <AppLayout>
               <BlogForm />
             </AppLayout>
           </UniversityDataProvider>
-        </ToastProvider>
-      </SidebarProvider>
+        </SidebarProvider>
+      </ToastProvider>
     </React.Suspense>
   );
 }

@@ -27,19 +27,31 @@
 }
 
 :root {
-  /* TRUSTWORTHY & PROFESSIONAL (60-30-10 Rule) */ /* 60% Background: Off-White/Light Cream */ /* Text: Dark Slate */
+  /* TRUSTWORTHY & PROFESSIONAL (60-30-10 Rule)
+     60% dominant neutral → page background (tinted blue-grey, recedes behind cards)
+     30% secondary        → navy structure (navbar, footer, headers)
+     10% accent           → crimson + gold (scores, CTAs, highlights) */
 
-  --aur-accent: #990000;
-  /* 10% Accent: Crimson Red */
-  --aur-accent-muted: #C59B27;
-  /* Gold Accent */
+  /* 60% — dominant neutral. Deliberately cooler/darker than white so that the
+     white surfaces below sit *on* it with real separation instead of blending. */
+  --background: #E9EEF4;
+  --foreground: #2D3748; /* Text: Dark Slate */
 
+  /* 10% — accent */
+  --aur-accent: #990000;        /* Crimson Red */
+  --aur-accent-muted: #C59B27;  /* Gold */
+
+  /* 30% — secondary structural navy (used as a real surface, not just text) */
+  --aur-navy: #14213D;
+  --aur-navy-2: #1A365D;
+
+  /* Surfaces (the white cards that ride on the 60% background) */
   --aur-surface: #FFFFFF;
-  --aur-surface-2: #EDF2F7;
+  --aur-surface-2: #EEF2F7;
   --aur-surface-hover: #E2E8F0;
 
-  --aur-border: rgba(45, 55, 72, 0.1);
-  --aur-border-strong: rgba(45, 55, 72, 0.2);
+  --aur-border: rgba(20, 33, 61, 0.12);
+  --aur-border-strong: rgba(20, 33, 61, 0.22);
 
   /* Soft, Diffused Shadows */
   --aur-shadow-sm: 0 4px 12px rgba(26, 54, 93, 0.04);
@@ -56,8 +68,6 @@
 
   --aur-hover: #EDF2F7;
   --aur-ring: rgba(5, 20, 181, 0.2);
-  --background: #F7FAFC; /* 60% Background: Off-White/Light Cream */
-  --foreground: #2D3748; /* Text: Dark Slate */
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
@@ -742,8 +752,17 @@ img {
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    /* Don't retain keyframe endpoints — with `both`, entrance animations
+       (fadeInUp starts at opacity:0) would otherwise stay stuck invisible. */
+    animation-fill-mode: none !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  /* Entrance animations resolve instantly to their visible resting state. */
+  .animate-fadeIn {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
 

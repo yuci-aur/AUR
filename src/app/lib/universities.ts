@@ -3,12 +3,6 @@ import type { University } from "../data";
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_AUR_API_BASE_URL ?? "https://aur-38ce.onrender.com";
 
-const FALLBACK_CAMPUS_PHOTOS = [
-  "https://images.unsplash.com/photo-1562774053-f5a02f6da861?auto=format&fit=crop&w=800&q=80",
-  "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=800&q=80",
-  "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=800&q=80",
-  "https://images.unsplash.com/photo-1498243691581-b145c3f54a5a?auto=format&fit=crop&w=800&q=80",
-];
 
 type BackendUniversity = Record<string, unknown> & {
   id?: string;
@@ -34,6 +28,7 @@ type BackendUniversity = Record<string, unknown> & {
   description?: string | null;
   programs?: string[];
   campusPhoto?: string | null;
+  logoUrl?: string | null;
   hasMedicine?: boolean | null;
   hasScholarship?: boolean | null;
   website?: string;
@@ -142,7 +137,10 @@ export function mapBackendUniversity(uni: BackendUniversity, index: number): Uni
     programs: Array.isArray(uni.programs) && uni.programs.length > 0
       ? uni.programs
       : subjects.map((subject) => `${subject} programs`),
-    campusPhoto: uni.campusPhoto ?? FALLBACK_CAMPUS_PHOTOS[index % FALLBACK_CAMPUS_PHOTOS.length],
+    // Real images only — no stock/placeholder fallback. Empty string when the
+    // backend has no photo; consumers must guard before rendering.
+    campusPhoto: uni.campusPhoto ?? "",
+    logo: uni.logoUrl ?? undefined,
     website: uni.website,
     hasMedicine:
       typeof uni.hasMedicine === "boolean" ? uni.hasMedicine : subjects.includes("Medicine"),

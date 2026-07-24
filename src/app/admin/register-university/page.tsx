@@ -3,10 +3,16 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { 
-  Building2, Image as ImageIcon, Users, BookOpen, 
-  Plus, Trash2, CheckCircle2, Save, LogOut
+import {
+  Building2, Image as ImageIcon, Users, BookOpen,
+  Plus, Trash2, CheckCircle2, Save, LogOut, ArrowLeft
 } from "lucide-react";
+import {
+  clearAdminToken,
+  getAdminToken,
+  registerUniversity,
+  verifyAdmin,
+} from "../../lib/admin-api";
 
 type Course = {
   name: string;
@@ -19,6 +25,7 @@ export default function RegisterUniversity() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   // Form State
   const [basicInfo, setBasicInfo] = useState({
@@ -39,13 +46,17 @@ export default function RegisterUniversity() {
   const [galleryCount, setGalleryCount] = useState(0);
 
   useEffect(() => {
-    // Basic route protection
-    const token = localStorage.getItem("adminToken");
-    if (!token) {
-      router.push("/admin/login");
-    } else {
-      setLoading(false);
+    // Route protection — verify the admin JWT with the backend.
+    if (!getAdminToken()) {
+      router.replace("/admin/login");
+      return;
     }
+    verifyAdmin()
+      .then(() => setLoading(false))
+      .catch(() => {
+        clearAdminToken();
+        router.replace("/admin/login");
+      });
   }, [router]);
 
   // Handlers for dynamic arrays
@@ -82,25 +93,36 @@ export default function RegisterUniversity() {
     return true;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError("");
     if (!isFormValid()) return;
 
     setSubmitting(true);
-    // Mock submission
-    setTimeout(() => {
-      setSubmitting(false);
+    try {
+      await registerUniversity({
+        name: basicInfo.name.trim(),
+        registration_code: basicInfo.registrationNumber.trim(),
+        ranking_score: Number(basicInfo.rankingScore),
+        description: basicInfo.description.trim(),
+      });
       setSuccess(true);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      // Redirect to dashboard after 2 seconds
+      window.scrollTo({ top: 0, behavior: "smooth" });
       setTimeout(() => {
         router.push("/admin/dashboard");
       }, 2000);
-    }, 1500);
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : "Failed to register university."
+      );
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("adminToken");
+    clearAdminToken();
     router.push("/admin/login");
   };
 
@@ -114,10 +136,17 @@ export default function RegisterUniversity() {
       {/* Header */}
       <div className="flex justify-between items-center mb-10 border-b border-slate-200 pb-6">
         <div>
+          <button
+            onClick={() => router.push("/admin/dashboard")}
+            className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-[#1A365D] transition-colors mb-2"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back to Dashboard
+          </button>
           <h1 className="text-3xl font-bold text-[#1A365D] mb-2 tracking-tight">University Registration</h1>
           <p className="text-slate-500 font-medium">Add a new university profile to the platform.</p>
         </div>
-        <button 
+        <button
           onClick={handleLogout}
           className="flex items-center space-x-2 px-4 py-2 bg-white hover:bg-slate-100 text-slate-600 rounded-lg transition-colors text-sm font-semibold border border-slate-200 shadow-sm"
         >
@@ -125,6 +154,12 @@ export default function RegisterUniversity() {
           <span>Logout</span>
         </button>
       </div>
+
+      {submitError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-2xl mb-8 font-semibold text-sm">
+          {submitError}
+        </div>
+      )}
 
       {success && (
         <motion.div 

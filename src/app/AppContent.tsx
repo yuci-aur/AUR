@@ -259,7 +259,7 @@ useEffect(() => {
   return (
     <div className={`${view === "home" ? "bg-gradient-to-b from-amber-50/50 via-white to-blue-50 dark:bg-none dark:bg-cyber-black" : "aur-page"} flex min-h-screen flex-col transition-colors duration-300`}>
       {/* Top Navigation Bar */}
-      {view !== "login" && view !== "admin" && (
+      {view !== "login" && (
         <Navbar
           isAuthenticated={isAuthenticated}
           onLogIn={() => openAuth("login")}
@@ -383,7 +383,7 @@ useEffect(() => {
       </div>
 
       {/* Mobile Responsive Navigation Drawer & Bottom Bar */}
-      {view !== "login" && view !== "admin" && (
+      {view !== "login" && (
         <MobileMenu
           isAuthenticated={isAuthenticated}
           onLogIn={() => openAuth("login")}

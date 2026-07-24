@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Lock, Mail, ArrowRight, ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
+import { adminLogin, getAdminToken, verifyAdmin } from "../../lib/admin-api";
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -11,6 +12,16 @@ export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // If already authenticated, skip straight to the dashboard.
+  useEffect(() => {
+    if (!getAdminToken()) return;
+    verifyAdmin()
+      .then(() => router.replace("/admin/dashboard"))
+      .catch(() => {
+        /* stale/invalid token — stay on login */
+      });
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,18 +33,15 @@ export default function AdminLogin() {
     }
 
     setLoading(true);
-
-    // Mock API call
-    setTimeout(() => {
-      // For mock purposes, any valid-looking input works if it's not empty
-      if (email.includes("@") && password.length >= 6) {
-        localStorage.setItem("adminToken", "mock-secure-token-12345");
-        router.push("/admin/register-university");
-      } else {
-        setError("Invalid credentials. Use a valid email and 6+ char password.");
-        setLoading(false);
-      }
-    }, 800);
+    try {
+      await adminLogin(email.trim(), password);
+      router.push("/admin/dashboard");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Login failed. Please try again.";
+      setError(message);
+      setLoading(false);
+    }
   };
 
   return (

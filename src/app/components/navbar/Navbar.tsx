@@ -232,12 +232,6 @@ export default function Navbar({
 
             {!isAuthenticated && (
               <div className="hidden items-center gap-1 sm:flex">
-                <a
-                  href="/admin/login"
-                  className="relative px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-amber-400/90 transition-all duration-300 hover:text-amber-400 mr-2 border border-amber-400/30 rounded hover:bg-amber-400/10"
-                >
-                  Admin Console
-                </a>
                 <button
                   type="button"
                   onClick={onLogIn}
@@ -258,12 +252,6 @@ export default function Navbar({
             {/* Notification bell */}
             {isAuthenticated && (
               <div className="flex items-center gap-2">
-                <a
-                  href="/admin/login"
-                  className="hidden sm:inline-flex relative px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-amber-400/90 transition-all duration-300 hover:text-amber-400 border border-amber-400/30 rounded hover:bg-amber-400/10"
-                >
-                  Admin Console
-                </a>
                 <div className="relative" ref={notifRef}>
                   <button
                     type="button"
@@ -347,7 +335,7 @@ export default function Navbar({
                   </div>
                   {[
                     { label: "My Profile", icon: User, action: () => handleViewChange("profile") },
-                    ...(currentUser?.role === "admin" ? [{ label: "Admin Console", icon: Shield, action: () => handleViewChange("admin") }] : []),
+                    ...(currentUser?.role === "admin" ? [{ label: "Admin Console", icon: Shield, action: () => { window.location.href = "/admin/dashboard"; } }] : []),
                     { label: "Settings", icon: Shield, action: () => handleViewChange("settings") },
                   ].map((item) => (
                     <button

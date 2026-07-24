@@ -411,12 +411,14 @@ export default function UniversitiesList({
               >
                 {/* ── Image Banner ── */}
                 <div className="relative h-44 overflow-hidden bg-[var(--aur-surface-2)]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={uni.campusPhoto}
-                    alt={uni.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
-                  />
+                  {uni.campusPhoto && (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={uni.campusPhoto}
+                      alt={uni.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
+                    />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-[#000000]/80 via-[#000000]/20 to-transparent pointer-events-none" />
 
                   {/* University identity overlay */}

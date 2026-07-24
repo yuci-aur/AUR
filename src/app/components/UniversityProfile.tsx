@@ -85,13 +85,15 @@ export default function UniversityProfile({ universityId, onBack, onViewChange, 
 
       {/* ── Masthead ── full-bleed campus band with a contained identity plate ── */}
       <div className="relative w-full min-h-[340px] md:min-h-[400px] flex items-center overflow-hidden bg-[var(--aur-text)]">
-        <Image
-          src={uni.campusPhoto}
-          alt={`${uni.name} campus`}
-          fill
-          className="object-cover"
-          priority
-        />
+        {uni.campusPhoto && (
+          <Image
+            src={uni.campusPhoto}
+            alt={`${uni.name} campus`}
+            fill
+            className="object-cover"
+            priority
+          />
+        )}
         {/* Directional scrim: dark at the left where the plate sits, clearing to the right */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#0a1628]/95 via-[#0a1628]/70 to-[#0a1628]/20" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628]/80 via-transparent to-transparent" />

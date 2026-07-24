@@ -46,6 +46,7 @@ class University(BaseModel):
     description: Optional[str] = None
     programs: List[str] = []
     campusPhoto: Optional[str] = None
+    logoUrl: Optional[str] = None
     hasMedicine: Optional[bool] = None
     hasScholarship: Optional[bool] = None
 
@@ -355,7 +356,63 @@ class AdminVerifyResponse(BaseModel):
         from_attributes = True        
 
 class UniversityRegisterRequest(BaseModel):
+    # Required
     name: str
     registration_code: str
     ranking_score: float
-    description: str     
+    description: str
+
+    # Location (optional)
+    country: Optional[str] = None
+    subregion: Optional[str] = None
+    state: Optional[str] = None
+    city: Optional[str] = None
+
+    # Classification (optional)
+    size: Optional[str] = None
+    focus: Optional[str] = None
+    research_level: Optional[str] = None
+    is_public: Optional[bool] = None
+
+    # Institutional facts (optional)
+    established_year: Optional[int] = None
+    total_students: Optional[int] = None
+    total_faculty: Optional[int] = None
+    avg_fees: Optional[float] = None
+    placement_percentage: Optional[float] = None
+
+    # Enrichment (optional)
+    website_url: Optional[str] = None
+    logo_url: Optional[str] = None
+    campus_photo: Optional[str] = None
+    has_medicine: Optional[bool] = None
+    has_scholarship: Optional[bool] = None
+
+
+# --- Admin: Users & Dashboard ---
+class AdminUserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    first_name: str
+    last_name: str
+    email: EmailStr
+    role: str
+    oauth_provider: Optional[str] = None
+    created_at: datetime
+
+
+class AdminUserListResponse(BaseModel):
+    total: int
+    data: List[AdminUserResponse]
+
+
+class AdminStatsResponse(BaseModel):
+    total_users: int
+    total_admins: int
+    total_universities: int
+    total_blogs: int
+    published_blogs: int
+    total_events: int
+    total_applications: int
+    newsletter_subscribers: int

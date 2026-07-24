@@ -28,6 +28,13 @@ export const isProtectedView = (view: string): boolean => PROTECTED_VIEWS.has(vi
  */
 export const PREVIEW_LIMIT = 20;
 
+/**
+ * Upper bound for the "Calculated Rank" filter slider. The dataset holds ~972
+ * institutions today; this leaves generous headroom so the rank filter never
+ * silently hides universities beyond an arbitrary cap.
+ */
+export const RANK_FILTER_MAX = 2000;
+
 export interface NavItem {
   id: string;
   label: string;

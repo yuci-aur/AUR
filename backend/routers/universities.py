@@ -61,6 +61,7 @@ def serialize(uni: UniversityModel, current: RankingScore | None, previous: Rank
         "description": uni.description,
         "programs": [],
         "campusPhoto": uni.campus_photo,
+        "logoUrl": uni.logo_url,
         "hasMedicine": uni.has_medicine,
         "hasScholarship": uni.has_scholarship,
     }

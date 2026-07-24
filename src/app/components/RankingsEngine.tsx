@@ -22,10 +22,8 @@ import {
   CheckSquare,
   Square,
   ChevronRight,
-  TrendingUp,
   DollarSign,
   Globe,
-  Award,
   X,
   FilterX,
   Lock,
@@ -297,57 +295,6 @@ export default function RankingsEngine({
   const uniqueSubjects = useMemo(() => Array.from(new Set(universities.flatMap((u) => u.subjects))).sort(), [universities]);
   const uniqueLanguages = useMemo(() => Array.from(new Set(universities.flatMap((u) => u.languages))).sort(), [universities]);
 
-  const rankingInsights = useMemo(() => {
-    const data = filteredData;
-    const total = data.length || 1;
-    const countryCounts = data.reduce((acc, uni) => {
-      acc.set(uni.location, (acc.get(uni.location) ?? 0) + 1);
-      return acc;
-    }, new Map<string, number>());
-
-    const topCountry =
-      Array.from(countryCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "N/A";
-    const averageScore =
-      data.reduce((sum, uni) => sum + uni.calculatedScore, 0) / total;
-    const medicineCount = data.filter((uni) => uni.hasMedicine).length;
-    const mostImproved = data
-      .map((uni) => ({
-        uni,
-        improvement:
-          uni.history.length > 1 ? uni.history[uni.history.length - 1] - uni.history[0] : 0,
-      }))
-      .sort((a, b) => b.improvement - a.improvement)[0];
-
-    return [
-      {
-        label: "Top Country",
-        value: topCountry,
-        detail: `${countryCounts.get(topCountry) ?? 0} matching institutions`,
-        icon: Globe,
-      },
-      {
-        label: "Average Score",
-        value: averageScore.toFixed(1),
-        detail: "Across visible results",
-        icon: Award,
-      },
-      {
-        label: "Medicine Programs",
-        value: medicineCount.toString(),
-        detail: `${Math.round((medicineCount / total) * 100)}% of current index`,
-        icon: Filter,
-      },
-      {
-        label: "Most Improved",
-        value: mostImproved?.uni.name.split(" ")[0] ?? "N/A",
-        detail:
-          mostImproved && mostImproved.improvement > 0
-            ? `+${mostImproved.improvement} rank movement`
-            : "Stable ranking set",
-        icon: TrendingUp,
-      },
-    ];
-  }, [filteredData]);
 
   // 7. Column Definitions for @tanstack/react-table
   const columns = useMemo<ColumnDef<typeof filteredData[0]>[]>(
@@ -463,6 +410,11 @@ export default function RankingsEngine({
     state: {
       sorting,
     },
+    // Logged-out preview shows all PREVIEW_LIMIT rows on one page (no confusing
+    // pagination); logged-in users get a standard page size.
+    initialState: {
+      pagination: { pageSize: PREVIEW_LIMIT, pageIndex: 0 },
+    },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -476,80 +428,51 @@ export default function RankingsEngine({
       {/* Ambient Liquid Glass Orb */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-5xl h-full max-h-[600px] bg-gradient-to-b from-blue-400/10 via-cyan-300/5 to-transparent rounded-[100%] blur-[120px] pointer-events-none -z-10" />
 
-      {/* Editorial Title */}
-      <div className="aur-rankings-hero mb-6 sm:mb-8 aur-hero-accent flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-6">
-        <div className="min-w-0">
-          <span className="aur-caption">Engine & Analytics Database</span>
-          <h2 className="aur-section-title text-3xl md:text-4xl leading-tight mt-2">
+      {/* Combined navy header + filter card */}
+      <div className="aur-rankings-panel relative z-20 mb-6 sm:mb-8 rounded-3xl bg-[#1A365D] p-6 sm:p-8 shadow-(--aur-shadow-lg)">
+        {/* Editorial Title */}
+        <div className="mb-6 sm:mb-8">
+          <span className="text-[10px] uppercase font-bold tracking-widest text-white/50">Engine & Analytics Database</span>
+          <h2 className="text-3xl md:text-4xl font-bold leading-tight mt-2 text-white">
             Asia Institutional Ranking Table
           </h2>
-          <p className="text-[11px] text-[var(--aur-text-muted)] font-mono mt-3 tracking-wide">
-            Index refreshed Â· Jun 2026 Â· {filteredData.length} institutions indexed
+          <p className="text-[11px] text-white/50 font-mono mt-3 tracking-wide">
+            {dataError ? "Sample data" : "Live index"} &middot; Top {filteredData.length} of {universities.length} universities
           </p>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8 relative z-10">
-        {rankingInsights.map((insight, idx) => (
-          <motion.div 
-            key={insight.label} 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: idx * 0.1, ease: "easeOut" }}
-            className="group relative overflow-hidden bg-white/40 backdrop-blur-xl border border-white/60 rounded-2xl p-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500"
-          >
-            {/* Hover Glow */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-[#1A365D]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-            
-            <div className="relative z-10 flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500">
-                  {insight.label}
-                </span>
-                <div className="mt-1 truncate text-2xl font-black text-slate-800">
-                  {insight.value}
-                </div>
-              </div>
-              <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/60 border border-white text-[#1A365D] shadow-sm group-hover:scale-110 transition-transform duration-500">
-                <insight.icon className="h-5 w-5" />
-              </div>
+        {/* Divider between header and filters */}
+        <div className="mb-6 h-px w-full bg-white/10" />
+
+        {/* 9. Elite Filtering Bar Layout */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5 items-start">
+          <p className="sm:col-span-2 xl:col-span-4 text-[10px] uppercase font-bold tracking-widest text-white/50 -mb-2">
+            Refine index
+          </p>
+
+          {/* Search Field */}
+          <div className="relative flex min-h-[5.75rem] flex-col">
+            <label className="text-[10px] uppercase font-bold tracking-widest text-white/60 mb-2">
+              Search
+            </label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="w-full h-11 rounded-xl bg-white border border-white/20 px-4 text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-white/40 transition-all placeholder:text-slate-400"
+                style={{ paddingLeft: "2.75rem" }}
+              />
             </div>
-            <p className="relative z-10 mt-4 text-[10px] font-mono uppercase tracking-widest text-slate-500">
-              {insight.detail}
-            </p>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* 9. Elite Filtering Bar Layout */}
-      <div className="aur-filter-deck grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5 mb-6 sm:mb-8 items-start relative z-10 bg-white/40 backdrop-blur-xl border border-white/60 p-5 rounded-2xl shadow-sm">
-        <p className="sm:col-span-2 xl:col-span-4 text-[10px] uppercase font-bold tracking-widest text-slate-500 -mb-2">
-          Refine index
-        </p>
-        
-        {/* Search Field */}
-        <div className="relative flex min-h-[5.75rem] flex-col">
-          <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-2">
-            Search
-          </label>
-          <div className="relative">
-<Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"/>
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-full h-11 rounded-xl bg-white/60 border border-white/80 px-4 text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1A365D]/20 transition-all placeholder:text-slate-400"
-              style={{ paddingLeft: "2.75rem" }}
-            />
           </div>
-        </div>
 
-        {/* Location Dropdown */}
-        <div className="flex min-h-[5.75rem] flex-col">
-          <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-2">
-            Location
-          </label>
+          {/* Location Dropdown */}
+          <div className="flex min-h-[5.75rem] flex-col">
+            <label className="text-[10px] uppercase font-bold tracking-widest text-white/60 mb-2">
+              Location
+            </label>
           <div className="relative z-30">
             <MultiSelectDropdown
               options={uniqueLocations}
@@ -568,7 +491,7 @@ export default function RankingsEngine({
                 <span
                   key={loc}
                   onClick={() => handleLocationToggle(loc)}
-                  className="inline-flex max-w-full items-center rounded-full text-[10px] font-mono border border-[var(--aur-border)] bg-[var(--aur-surface-2)] text-[var(--aur-text)] px-2 py-0.5 cursor-pointer hover:border-red-500 hover:text-red-500 transition-colors"
+                  className="inline-flex max-w-full items-center rounded-full text-[10px] font-mono border border-white/20 bg-white/10 text-white/90 px-2 py-0.5 cursor-pointer hover:border-red-400 hover:text-red-300 transition-colors"
                 >
                   {loc} <X className="h-2.5 w-2.5 ml-1" />
                 </span>
@@ -600,7 +523,7 @@ export default function RankingsEngine({
                 <span
                   key={sub}
                   onClick={() => handleSubjectToggle(sub)}
-                  className="inline-flex max-w-full items-center rounded-full text-[10px] font-mono border border-[var(--aur-border)] bg-[var(--aur-surface-2)] text-[var(--aur-text)] px-2 py-0.5 cursor-pointer hover:border-red-500 hover:text-red-500 transition-colors"
+                  className="inline-flex max-w-full items-center rounded-full text-[10px] font-mono border border-white/20 bg-white/10 text-white/90 px-2 py-0.5 cursor-pointer hover:border-red-400 hover:text-red-300 transition-colors"
                 >
                   {sub} <X className="h-2.5 w-2.5 ml-1" />
                 </span>
@@ -632,13 +555,14 @@ export default function RankingsEngine({
                 <span
                   key={lang}
                   onClick={() => handleLanguageToggle(lang)}
-                  className="inline-flex max-w-full items-center rounded-full text-[10px] font-mono border border-[var(--aur-border)] bg-[var(--aur-surface-2)] text-[var(--aur-text)] px-2 py-0.5 cursor-pointer hover:border-red-500 hover:text-red-500 transition-colors"
+                  className="inline-flex max-w-full items-center rounded-full text-[10px] font-mono border border-white/20 bg-white/10 text-white/90 px-2 py-0.5 cursor-pointer hover:border-red-400 hover:text-red-300 transition-colors"
                 >
                   {lang} <X className="h-2.5 w-2.5 ml-1" />
                 </span>
               ))}
             </div>
           )}
+          </div>
         </div>
       </div>
 

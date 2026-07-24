@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Search, MapPin, Lock } from "lucide-react";
+import { Search, MapPin, Lock, ChevronRight } from "lucide-react";
 import { University } from "../data";
 import { useSidebar } from "./navigation/SidebarContext";
 import { useUniversityData } from "./data/UniversityDataProvider";
@@ -21,20 +21,22 @@ function UniversityCard({ uni, rank, onClick }: { uni: University; rank: number;
   return (
     <div
       onClick={onClick}
-      className="group bg-[var(--aur-surface)] border border-[var(--aur-border)] hover:border-[var(--aur-border-strong)] rounded-[20px] overflow-hidden cursor-pointer transition-all duration-300 shadow-[var(--aur-shadow)] hover:shadow-[var(--aur-shadow-lg)] hover:-translate-y-1 flex flex-col h-full"
+      className="group bg-[var(--aur-surface)] border border-[var(--aur-border)] hover:border-[var(--aur-border-strong)] rounded-xl overflow-hidden cursor-pointer transition-all duration-300 shadow-[var(--aur-shadow-sm)] hover:shadow-[var(--aur-shadow)] hover:-translate-y-1 flex flex-col h-full"
     >
       {/* Top Image Section */}
       <div className="relative h-44 w-full bg-slate-100 overflow-hidden">
-        <img
-          src={uni.campusPhoto}
-          alt={`${uni.name} Campus`}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          loading="lazy"
-        />
+        {uni.campusPhoto && (
+          <img
+            src={uni.campusPhoto}
+            alt={`${uni.name} Campus`}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/30 via-transparent to-transparent" />
         
         {/* Rank Badge */}
-        <div className="absolute top-3 left-3 px-2.5 py-1 rounded-md bg-amber-500 text-white font-mono text-[11px] font-bold shadow-sm">
+        <div className="absolute top-3 left-3 px-2.5 py-1 rounded-md bg-[var(--aur-navy)]/90 text-white font-mono text-[11px] font-bold shadow-sm backdrop-blur-sm">
           #{rank}
         </div>
 
@@ -59,28 +61,72 @@ function UniversityCard({ uni, rank, onClick }: { uni: University; rank: number;
       </div>
 
       {/* Info Section */}
-      <div className="p-5 flex-1 flex flex-col justify-between">
+      <div className="p-5 flex-1 flex flex-col">
+        {/* Name + location */}
         <div>
-          <h3 className="aur-section-title text-[18px] group-hover:text-[var(--aur-accent)] transition-colors leading-snug line-clamp-2">
+          <h3 className="aur-section-title text-[17px] group-hover:text-[var(--aur-navy)] transition-colors leading-snug line-clamp-2">
             {uni.name}
           </h3>
-          <div className="flex items-center gap-1.5 mt-2 text-[13px] text-slate-500">
-            <span>{COUNTRY_FLAGS[uni.location] ?? ""}</span>
-            <span className="font-medium">{uni.location}</span>
+          <div className="mt-1.5 flex items-center gap-2 text-[13px] text-slate-500">
+            <span className="inline-flex items-center gap-1 font-medium">
+              <MapPin className="h-3.5 w-3.5 text-slate-400" />
+              {uni.location}
+            </span>
+            {typeof uni.isPublic === "boolean" && (
+              <>
+                <span className="h-1 w-1 rounded-full bg-slate-300" />
+                <span className="text-[11px] font-semibold text-slate-400">{uni.isPublic ? "Public" : "Private"}</span>
+              </>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
+        {/* Subject chips */}
+        {uni.subjects.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {uni.subjects.slice(0, 2).map((s) => (
+              <span key={s} className="rounded-full bg-[var(--aur-surface-2)] px-2 py-0.5 text-[10px] font-semibold text-[var(--aur-text-secondary)]">
+                {s}
+              </span>
+            ))}
+            {uni.hasMedicine && !uni.subjects.slice(0, 2).includes("Medicine") && (
+              <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-600">Medicine</span>
+            )}
+          </div>
+        )}
+
+        {/* Key metrics — real 0-100 scores */}
+        <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+          <Metric label="Academic" value={uni.academicReputation ?? uni.research} />
+          <Metric label="Careers" value={uni.employerReputation ?? uni.employability} />
+          <Metric label="Intl" value={uni.intlStudents} />
+        </div>
+
+        {/* Footer — overall score */}
+        <div className="mt-4 flex items-end justify-between border-t border-slate-100 pt-3">
           <div>
-            <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tuition</div>
-            <div className="text-[12px] font-bold text-slate-700 font-mono mt-0.5">{uni.tuition}</div>
+            <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Overall</div>
+            <div className="mt-0.5 flex items-baseline gap-1">
+              <span className="text-[22px] font-extrabold leading-none text-[var(--aur-navy)] font-mono">{uni.overall.toFixed(1)}</span>
+              <span className="text-[11px] font-bold text-slate-400">/100</span>
+            </div>
           </div>
-          <div className="text-right">
-            <div className="text-[10px] text-[var(--aur-text-muted)] uppercase font-bold tracking-wider">Score</div>
-            <div className="text-[16px] font-extrabold text-[var(--aur-accent)] font-mono mt-0.5">{uni.overall.toFixed(1)}</div>
-          </div>
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-[var(--aur-navy)] group-hover:gap-2 transition-all">
+            View <ChevronRight className="h-3.5 w-3.5" />
+          </span>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Compact labeled metric (0-100) shown in the directory card. */
+function Metric({ label, value }: { label: string; value?: number }) {
+  const v = typeof value === "number" ? Math.round(value) : null;
+  return (
+    <div className="rounded-lg bg-[var(--aur-surface-2)] py-1.5">
+      <div className="text-[15px] font-bold leading-none text-[var(--aur-text)] font-mono">{v ?? "—"}</div>
+      <div className="mt-1 text-[9px] font-bold uppercase tracking-wider text-slate-400">{label}</div>
     </div>
   );
 }
@@ -114,16 +160,18 @@ export default function InstitutionDirectory({ onUniversitySelect }: Props) {
   const visible = isPreviewCapped ? filtered.slice(0, PREVIEW_LIMIT) : filtered;
 
   return (
-    <div className="w-full min-h-screen bg-slate-50/60 pb-12">
-      {/* ── TOP BAR ── */}
-      <div className="bg-white border-b border-slate-100 px-4 md:px-8 py-5">
-        <div className="max-w-6xl mx-auto">
+    <div className="w-full min-h-screen bg-[var(--background)] pb-12">
+      {/* ── HERO BAND (navy) ── */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-[var(--aur-navy)] to-[var(--aur-navy-2)] px-4 md:px-8 pt-7 pb-8 mx-3 md:mx-6 mt-4 rounded-2xl shadow-[var(--aur-shadow)]">
+        {/* subtle decorative glow */}
+        <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/[0.04] blur-2xl" />
+        <div className="relative max-w-[1600px] mx-auto">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
-            <div>
-              <h1 className="font-serif text-2xl font-bold text-slate-900">Institution Directory</h1>
-              <p className="text-[12px] text-slate-400 mt-0.5">{universities.length} universities across Asia</p>
+            <div className="border-l-[3px] border-[var(--aur-accent-muted)] pl-4">
+              <h1 className="font-serif text-2xl md:text-3xl font-bold text-white">Institution Directory</h1>
+              <p className="text-[12px] text-white/60 mt-1">{universities.length} universities across Asia</p>
             </div>
-            <span className="text-[11px] text-slate-400 font-semibold bg-slate-50 border border-slate-200/60 px-3 py-1.5 rounded-lg self-start md:self-auto">
+            <span className="text-[11px] text-white font-bold bg-white/10 border border-white/15 px-3 py-1.5 rounded-lg self-start md:self-auto backdrop-blur-sm">
               {filtered.length} result{filtered.length !== 1 ? "s" : ""}
             </span>
           </div>
@@ -138,7 +186,7 @@ export default function InstitutionDirectory({ onUniversitySelect }: Props) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name or country…"
-                className="w-full pl-9 pr-4 py-2 rounded-lg bg-slate-50 border border-slate-200 text-[13px] text-slate-700 placeholder-slate-400 focus:outline-none focus:border-amber-400 transition-colors"
+                className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-white border border-transparent text-[13px] text-[var(--aur-text)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--aur-accent)]/40 shadow-sm transition"
               />
             </div>
 
@@ -146,7 +194,7 @@ export default function InstitutionDirectory({ onUniversitySelect }: Props) {
             <select
               value={country}
               onChange={(e) => setCountry(e.target.value)}
-              className="text-[12px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-400 cursor-pointer"
+              className="text-[12px] font-semibold text-[var(--aur-text)] bg-white border border-transparent rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[var(--aur-accent)]/40 shadow-sm cursor-pointer"
             >
               {ALL_COUNTRIES.map((c) => (
                 <option key={c} value={c}>
@@ -158,10 +206,10 @@ export default function InstitutionDirectory({ onUniversitySelect }: Props) {
             {/* Med toggle */}
             <button
               onClick={() => setMedOnly((v) => !v)}
-              className={`text-[11px] font-bold px-3.5 py-2 rounded-lg border transition-all ${
+              className={`text-[11px] font-bold px-3.5 py-2.5 rounded-lg border transition-all ${
                 medOnly
                   ? "bg-rose-500 text-white border-rose-500 shadow-sm"
-                  : "bg-slate-50 text-slate-500 border-slate-200 hover:border-rose-300 hover:text-rose-500"
+                  : "bg-white/10 text-white/80 border-white/15 hover:bg-white/20 hover:text-white backdrop-blur-sm"
               }`}
             >
               Medicine Only
@@ -171,14 +219,14 @@ export default function InstitutionDirectory({ onUniversitySelect }: Props) {
       </div>
 
       {/* ── CARD GRID ── */}
-      <div className="max-w-6xl mx-auto px-4 md:px-8 py-8">
+      <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-8">
         {error && !loading && (
           <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             Live rankings couldn&apos;t be loaded right now — showing a bundled sample instead. Please try again later.
           </div>
         )}
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
@@ -205,7 +253,7 @@ export default function InstitutionDirectory({ onUniversitySelect }: Props) {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {visible.map((uni, i) => (
                 <UniversityCard
                   key={uni.id}

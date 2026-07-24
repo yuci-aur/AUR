@@ -16,13 +16,10 @@ import {
   BarChart3,
   Database,
   Clock,
-  TrendingUp,
-  TrendingDown,
   ArrowRight,
   Bell,
   Building2,
   LineChart,
-  Activity,
   Mail,
 } from "lucide-react";
 import { FEATURED_ARTICLES, University, Article } from "../data";
@@ -96,183 +93,41 @@ const socialLinks = [
 ];
 
 /** Light cards themed around each country's iconic monument */
-const COUNTRY_THEME: Record<
-  string,
-  { code: string; monument: string; accent: string; bg: string; image: string; imagePos?: string }
-> = {
-  Singapore: {
-    code: "SG",
-    monument: "Marina Bay Sands",
-    accent: "#ef4444",
-    bg: "linear-gradient(135deg, #fff5f5 0%, #ffffff 62%)",
-    image: "/university_images/Singapore/National University of Singapore image.jpg",
-    imagePos: "70% center",
-  },
-  "Hong Kong": {
-    code: "HK",
-    monument: "Victoria Harbour",
-    accent: "#dc2626",
-    bg: "linear-gradient(135deg, #fff7f7 0%, #ffffff 62%)",
-    image: "/university_images/Hong-kong/The University of Hong Kong image.jpg",
-    imagePos: "center 40%",
-  },
-  "South Korea": {
-    code: "KR",
-    monument: "Gyeongbokgung Palace",
-    accent: "#2563eb",
-    bg: "linear-gradient(135deg, #eff6ff 0%, #ffffff 62%)",
-    image: "/university_images/South-Korea/Seoul National University image.jpg",
-    imagePos: "center",
-  },
-  China: {
-    code: "CN",
-    monument: "Great Wall of China",
-    accent: "#dc2626",
-    bg: "linear-gradient(135deg, #fffbeb 0%, #ffffff 62%)",
-    image: "/university_images/China/Fudan University image.jpg",
-    imagePos: "center",
-  },
-  Japan: {
-    code: "JP",
-    monument: "Mount Fuji",
-    accent: "#be123c",
-    bg: "linear-gradient(135deg, #fff1f2 0%, #ffffff 62%)",
-    image: "/university_images/Japan/Kyoto University image.jpg",
-    imagePos: "center 35%",
-  },
-  India: {
-    code: "IN",
-    monument: "Taj Mahal",
-    accent: "#ea580c",
-    bg: "linear-gradient(135deg, #fff7ed 0%, #ffffff 55%, #f0fdf4 100%)",
-    image: "/university_images/India/IIT Delhi image.jpg",
-    imagePos: "center",
-  },
-  Taiwan: {
-    code: "TW",
-    monument: "Taipei 101",
-    accent: "#1d4ed8",
-    bg: "linear-gradient(135deg, #eff6ff 0%, #ffffff 62%)",
-    image: "/university_images/Taiwan/National Taiwan University image.jpg",
-    imagePos: "center bottom",
-  },
-  Malaysia: {
-    code: "MY",
-    monument: "Petronas Towers",
-    accent: "#1e40af",
-    bg: "linear-gradient(135deg, #eff6ff 0%, #ffffff 55%, #fefce8 100%)",
-    image: "/university_images/Malaysia/Universiti Malaya image.jpg",
-    imagePos: "center",
-  },
-  Thailand: {
-    code: "TH",
-    monument: "Wat Arun",
-    accent: "#b45309",
-    bg: "linear-gradient(135deg, #fffbeb 0%, #ffffff 62%)",
-    image: "/university_images/Thailand/Mahidol University image.jpg",
-    imagePos: "center",
-  },
-  Vietnam: {
-    code: "VN",
-    monument: "Ha Long Bay",
-    accent: "#059669",
-    bg: "linear-gradient(135deg, #ecfdf5 0%, #ffffff 62%)",
-    image: "/university_images/Thailand/Mahidol University image.jpg",
-    imagePos: "center",
-  },
-  Indonesia: {
-    code: "ID",
-    monument: "Borobudur Temple",
-    accent: "#c2410c",
-    bg: "linear-gradient(135deg, #fff7ed 0%, #ffffff 62%)",
-    image: "/university_images/Indonesia/Universitas Indonesia image.jpg",
-    imagePos: "center",
-  },
-  Uzbekistan: {
-    code: "UZ",
-    monument: "Registan, Samarkand",
-    accent: "#0284c7",
-    bg: "linear-gradient(135deg, #f0f9ff 0%, #ffffff 62%)",
-    image: "/university_images/Uzbekistan/Central Asian University (former AKFA) image.jpg",
-    imagePos: "center",
-  },
-  Kazakhstan: {
-    code: "KZ",
-    monument: "Bayterek Tower",
-    accent: "#0891b2",
-    bg: "linear-gradient(135deg, #ecfeff 0%, #ffffff 62%)",
-    image: "/university_images/South-Korea/Seoul National University image.jpg",
-    imagePos: "center",
-  },
-  Philippines: {
-    code: "PH",
-    monument: "Mayon Volcano",
-    accent: "#2563eb",
-    bg: "linear-gradient(135deg, #eff6ff 0%, #ffffff 62%)",
-    image: "/university_images/Indonesia/Universitas Indonesia image.jpg",
-    imagePos: "center",
-  },
-  Pakistan: {
-    code: "PK",
-    monument: "Faisal Mosque",
-    accent: "#16a34a",
-    bg: "linear-gradient(135deg, #f0fdf4 0%, #ffffff 62%)",
-    image: "/university_images/India/IIT Delhi image.jpg",
-    imagePos: "center",
-  },
-  Bangladesh: {
-    code: "BD",
-    monument: "Sixty Dome Mosque",
-    accent: "#15803d",
-    bg: "linear-gradient(135deg, #f0fdf4 0%, #ffffff 62%)",
-    image: "/university_images/Thailand/Mahidol University image.jpg",
-    imagePos: "center",
-  },
-  Nepal: {
-    code: "NP",
-    monument: "Boudhanath Stupa",
-    accent: "#dc2626",
-    bg: "linear-gradient(135deg, #fff7ed 0%, #ffffff 62%)",
-    image: "/university_images/Japan/Kyoto University image.jpg",
-    imagePos: "center",
-  },
-  Myanmar: {
-    code: "MM",
-    monument: "Shwedagon Pagoda",
-    accent: "#ca8a04",
-    bg: "linear-gradient(135deg, #fefce8 0%, #ffffff 62%)",
-    image: "/university_images/Thailand/Mahidol University image.jpg",
-    imagePos: "center",
-  },
-  Cambodia: {
-    code: "KH",
-    monument: "Angkor Wat",
-    accent: "#b45309",
-    bg: "linear-gradient(135deg, #fff7ed 0%, #ffffff 62%)",
-    image: "/university_images/Indonesia/Universitas Indonesia image.jpg",
-    imagePos: "center",
-  },
-  Mongolia: {
-    code: "MN",
-    monument: "Genghis Khan Statue",
-    accent: "#1d4ed8",
-    bg: "linear-gradient(135deg, #eff6ff 0%, #ffffff 62%)",
-    image: "/university_images/China/Fudan University image.jpg",
-    imagePos: "center",
-  },
+// Per-country identity: ISO-2 code + national flag + an accent colour.
+// No campus photos here — reusing one country's photo for another was
+// misleading, so each card now leads with its own flag and colour instead.
+const COUNTRY_THEME: Record<string, { code: string; accent: string }> = {
+  Singapore: { code: "SG", accent: "#ef4444" },
+  "Hong Kong": { code: "HK", accent: "#dc2626" },
+  "South Korea": { code: "KR", accent: "#2563eb" },
+  China: { code: "CN", accent: "#dc2626" },
+  Japan: { code: "JP", accent: "#be123c" },
+  India: { code: "IN", accent: "#ea580c" },
+  Taiwan: { code: "TW", accent: "#1d4ed8" },
+  Malaysia: { code: "MY", accent: "#1e40af" },
+  Thailand: { code: "TH", accent: "#b45309" },
+  Vietnam: { code: "VN", accent: "#059669" },
+  Indonesia: { code: "ID", accent: "#c2410c" },
+  Uzbekistan: { code: "UZ", accent: "#0284c7" },
+  Kazakhstan: { code: "KZ", accent: "#0891b2" },
+  Kyrgyzstan: { code: "KG", accent: "#dc2626" },
+  Philippines: { code: "PH", accent: "#2563eb" },
+  Pakistan: { code: "PK", accent: "#16a34a" },
+  Bangladesh: { code: "BD", accent: "#15803d" },
+  "Sri Lanka": { code: "LK", accent: "#d97706" },
+  Lebanon: { code: "LB", accent: "#dc2626" },
+  Brunei: { code: "BN", accent: "#ca8a04" },
+  Nepal: { code: "NP", accent: "#dc2626" },
+  Myanmar: { code: "MM", accent: "#ca8a04" },
+  Cambodia: { code: "KH", accent: "#b45309" },
+  Mongolia: { code: "MN", accent: "#1d4ed8" },
 };
 
 function getCountryTheme(country: string) {
-  return (
-    COUNTRY_THEME[country] ?? {
-      code: country.slice(0, 2).toUpperCase(),
-      monument: country,
-      accent: "#f97316",
-      bg: "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)",
-      image: "/university_images/China/Fudan University image.jpg",
-      imagePos: "center",
-    }
-  );
+  const known = COUNTRY_THEME[country];
+  if (known) return known;
+  // Unknown / unmapped location: neutral slate accent, first two letters as code.
+  return { code: country.slice(0, 2).toUpperCase(), accent: "#64748b" };
 }
 
 const LIVE_UPDATES = [
@@ -287,15 +142,6 @@ const METHODOLOGY = [
   { label: "Employability", pct: 15, color: "#f59e0b" },
   { label: "International Outlook", pct: 15, color: "#8b5cf6" },
   { label: "Industry Income", pct: 5, color: "#64748b" },
-];
-
-const PULSE_ITEMS = [
-  "Tsinghua leads research output index",
-  "NUS tops employability in ASEAN",
-  "Uzbekistan medical programs surge +18%",
-  "Japan universities rise in citations",
-  "Singapore avg score hits 94.2",
-  "New English-medium tracks in Central Asia",
 ];
 
 function highlightMatch(text: string, query: string) {
@@ -313,21 +159,21 @@ function highlightMatch(text: string, query: string) {
   );
 }
 
-function Sparkline({ values, color = "#3b82f6" }: { values: number[]; color?: string }) {
-  const max = Math.max(...values);
-  const min = Math.min(...values);
-  const range = max - min || 1;
-  const pts = values
-    .map((v, i) => {
-      const x = (i / (values.length - 1)) * 48;
-      const y = 14 - ((v - min) / range) * 12;
-      return `${x},${y}`;
-    })
-    .join(" ");
+/** Real metric score (0–100) shown as a number with a slim colored progress bar. */
+function MetricBar({ value, color }: { value: number; color: string }) {
+  const pct = Math.max(0, Math.min(100, value));
   return (
-    <svg width="52" height="16" className="inline-block" aria-hidden>
-      <polyline fill="none" stroke={color} strokeWidth="1.5" points={pts} />
-    </svg>
+    <div className="w-full max-w-20">
+      <div className="font-mono text-sm font-semibold text-slate-700 leading-none">
+        {value.toFixed(1)}
+      </div>
+      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-200/70">
+        <div
+          className="h-full rounded-full transition-[width] duration-500"
+          style={{ width: `${pct}%`, background: color }}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -437,15 +283,6 @@ function getCountryStats(universities: University[]) {
     .slice(0, 8);
 }
 
-function rankTrend(uni: University) {
-  const delta = (uni.history[1] ?? uni.history[0]) - uni.history[0];
-  return { delta, improved: delta > 0 };
-}
-
-function scoreHistory(uni: University, metric: "research" | "employability" | "overall") {
-  const base = metric === "research" ? uni.research : metric === "employability" ? uni.employability : uni.overall;
-  return uni.history.map((rank, i) => Math.min(100, base - i * 0.8 + (5 - rank) * 0.5));
-}
 
 type FooterLinkItem = {
   label: string;
@@ -889,12 +726,11 @@ export default function Homepage({
           
           <div className="flex flex-col gap-3">
             {/* Header Row */}
-            <div className="grid grid-cols-[3rem_minmax(120px,1fr)_120px_60px_60px] md:grid-cols-[3rem_minmax(140px,1.5fr)_120px_70px_80px_1fr_1fr] lg:grid-cols-[3rem_minmax(140px,2fr)_120px_70px_80px_1fr_1fr_1fr] gap-4 px-6 pb-2 text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase">
+            <div className="grid grid-cols-[3rem_minmax(120px,1fr)_120px_60px] md:grid-cols-[3rem_minmax(140px,1.5fr)_120px_70px_1fr_1fr] lg:grid-cols-[3rem_minmax(140px,2fr)_120px_70px_1fr_1fr_1fr] gap-4 px-6 pb-2 text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase">
               <div className="text-center">Rank</div>
               <div>University</div>
               <div>Country</div>
               <div>Score</div>
-              <div>Trend</div>
               <div className="hidden md:block">Research</div>
               <div className="hidden md:block">Employability</div>
               <div className="hidden lg:block">International</div>
@@ -902,7 +738,6 @@ export default function Homepage({
 
             {/* List Items */}
             {topTen.map((uni, idx) => {
-              const trend = rankTrend(uni);
               return (
                 <motion.div
                   key={uni.id}
@@ -917,7 +752,7 @@ export default function Homepage({
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-[#1A365D]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
 
                   {/* Content Grid */}
-                  <div className="relative z-10 grid grid-cols-[3rem_minmax(120px,1fr)_120px_60px_60px] md:grid-cols-[3rem_minmax(140px,1.5fr)_120px_70px_80px_1fr_1fr] lg:grid-cols-[3rem_minmax(140px,2fr)_120px_70px_80px_1fr_1fr_1fr] gap-4 items-center px-6 py-4 md:py-5">
+                  <div className="relative z-10 grid grid-cols-[3rem_minmax(120px,1fr)_120px_60px] md:grid-cols-[3rem_minmax(140px,1.5fr)_120px_70px_1fr_1fr] lg:grid-cols-[3rem_minmax(140px,2fr)_120px_70px_1fr_1fr_1fr] gap-4 items-center px-6 py-4 md:py-5">
                     
                     {/* Rank */}
                     <div className="flex justify-center">
@@ -942,23 +777,16 @@ export default function Homepage({
                       {uni.overall.toFixed(1)}
                     </div>
 
-                    {/* Trend */}
-                    <div className="flex items-center">
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold bg-white/50 backdrop-blur-sm shadow-sm transition-transform duration-300 group-hover:scale-105 ${trend.improved ? "text-emerald-600" : "text-rose-500"}`}>
-                        {trend.improved ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                        {Math.abs(trend.delta).toFixed(1)}
-                      </span>
-                    </div>
 
-                    {/* Sparklines */}
-                    <div className="hidden md:block opacity-50 group-hover:opacity-100 transition-opacity duration-500">
-                      <Sparkline values={scoreHistory(uni, "research")} color="#3b82f6" />
+                    {/* Metric scores — real 0–100 values with a colored bar */}
+                    <div className="hidden md:block">
+                      <MetricBar value={uni.research} color="#3b82f6" />
                     </div>
-                    <div className="hidden md:block opacity-50 group-hover:opacity-100 transition-opacity duration-500">
-                      <Sparkline values={scoreHistory(uni, "employability")} color="#10b981" />
+                    <div className="hidden md:block">
+                      <MetricBar value={uni.employability} color="#10b981" />
                     </div>
-                    <div className="hidden lg:block opacity-50 group-hover:opacity-100 transition-opacity duration-500">
-                      <Sparkline values={[uni.intlStudents - 8, uni.intlStudents - 4, uni.intlStudents - 2, uni.intlStudents - 1, uni.intlStudents]} color="#8b5cf6" />
+                    <div className="hidden lg:block">
+                      <MetricBar value={uni.intlStudents} color="#8b5cf6" />
                     </div>
 
                   </div>
@@ -971,42 +799,89 @@ export default function Homepage({
       </RevealSection>
 
       {/* ── Explore by Country (light cards, per-country theme) ── */}
-      <RevealSection className="ref-section pt-0 ref-country-section">
+      <RevealSection className="ref-section pt-0">
         <span className="ref-label">Regional Intelligence</span>
         <h2 className="text-2xl font-bold mt-1 mb-6">Explore by Country</h2>
-        <div className="ref-country-grid"    >
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {countryStats.map((c) => {
             const theme = getCountryTheme(c.country);
             return (
               <button
                 key={c.country}
                 type="button"
-                className="ref-country-card ref-country-card--light text-left"
-                style={
-                  {
-                    "--country-accent": theme.accent,
-                    "--country-bg": theme.bg,
-                    "--country-image": `url("${theme.image}")`,
-                    "--country-image-pos": theme.imagePos ?? "center",
-                  } as React.CSSProperties
-                }
+                style={{ "--country-accent": theme.accent } as React.CSSProperties}
+                className="group flex w-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-(--aur-border) bg-(--aur-surface) text-left text-(--aur-text) shadow-(--aur-shadow-sm) transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:shadow-(--aur-shadow-lg)"
                 onClick={() => {
                   onSearchSubmit(c.country);
                   onViewChange("rankings");
                 }}
               >
-                <div className="ref-country-monument" aria-hidden="true" />
-                <div className="ref-country-body">
-                  <span className="ref-country-code">{theme.code}</span>
-                  <span className="ref-country-monument-label">{theme.monument}</span>
-                  <div className="ref-country-name">{c.country}</div>
-                  <div className="ref-country-meta">{c.count} universities</div>
-                  <div className="ref-country-avg">Avg {c.avgScore.toFixed(1)}</div>
-                  <div className="ref-country-top truncate">Top: {c.topUni.name}</div>
+                {/* Image banner — top university's campus photo with an accent tint */}
+                <div className="relative h-36 overflow-hidden bg-(--aur-surface-2)">
+                  {c.topUni.campusPhoto && (
+                    <img
+                      src={c.topUni.campusPhoto}
+                      alt={`${c.topUni.name} campus`}
+                      loading="lazy"
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  )}
+                  {/* Accent + dark gradient wash for legibility of the overlaid text */}
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background:
+                        "linear-gradient(to top, rgba(11,18,32,0.72) 0%, rgba(11,18,32,0.15) 45%, color-mix(in srgb, var(--country-accent) 30%, transparent) 100%)",
+                    }}
+                  />
+                  <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-7xl font-black tracking-tight text-white/10">
+                    {theme.code}
+                  </span>
+                  <span className="absolute right-3 top-3 rounded-full bg-black/40 px-2.5 py-1 text-[0.6875rem] font-semibold text-white/95 backdrop-blur-sm">
+                    {c.count} {c.count === 1 ? "university" : "universities"}
+                  </span>
+                </div>
+
+                {/* Info block — meta line + big title */}
+                <div className="flex flex-1 flex-col px-5 pb-4 pt-4">
+                  <div className="text-xs font-medium text-(--aur-text-muted)">
+                    Rank {theme.code} · Avg {c.avgScore.toFixed(1)}
+                  </div>
+                  <h3 className="mt-1 truncate text-xl font-bold leading-tight text-(--aur-text)">
+                    {c.country}
+                  </h3>
+
+                  {/* Divider */}
+                  <div className="my-4 h-px w-full bg-(--aur-border)" />
+
+                  {/* Footer row — top university on the left, action on the right */}
+                  <div className="mt-auto flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold text-(--aur-text)">
+                        {c.topUni.name}
+                      </div>
+                      <div className="text-xs text-(--aur-text-muted)">Top ranked</div>
+                    </div>
+                    <span className="shrink-0 rounded-lg border border-(--aur-border-strong) px-3.5 py-2 text-xs font-semibold text-(--aur-text) transition-colors group-hover:border-(--country-accent) group-hover:text-(--country-accent)">
+                      Explore
+                    </span>
+                  </div>
                 </div>
               </button>
             );
           })}
+        </div>
+
+        {/* Section-level CTA — jump to the full rankings/directory */}
+        <div className="mt-8 flex justify-center">
+          <button
+            type="button"
+            onClick={() => onViewChange("rankings")}
+            className="inline-flex items-center gap-2 rounded-lg border border-(--aur-border-strong) px-6 py-3 text-sm font-semibold text-(--aur-text) transition-colors hover:border-(--aur-text) hover:bg-(--aur-surface-hover)"
+          >
+            Explore more
+            <ArrowRight className="h-4 w-4" />
+          </button>
         </div>
       </RevealSection>
 
@@ -1015,32 +890,6 @@ export default function Homepage({
         <NewsFlashWidget />
       </RevealSection>
 
-
-      {/* ── Pulse Ticker ── */}
-      <div className="ref-pulse-ticker">
-        <div className="ref-pulse-track">
-          {[...PULSE_ITEMS, ...PULSE_ITEMS].map((item, i) => (
-            <span key={`${item}-${i}`} className="text-xs text-[var(--ref-muted)] inline-flex items-center gap-2">
-              <Activity className="h-3 w-3 text-amber-500" />
-              {item}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Trusted By ── */}
-      <section className="ref-section py-8">
-        <p className="text-center text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ref-muted)] mb-6">
-          Trusted by Leading Institutions
-        </p>
-        <div className="flex flex-wrap justify-center gap-8 items-center opacity-60">
-          {topTen.slice(0, 6).map((u) => (
-            <span key={u.id} className="text-sm font-bold tracking-wide text-slate-500">
-              {u.name.split(" ")[0].toUpperCase()}
-            </span>
-          ))}
-        </div>
-      </section>
 
       {/* ── CTA Banner ── */}
       <RevealSection className="ref-section pt-0 pb-8">

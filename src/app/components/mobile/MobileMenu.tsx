@@ -112,7 +112,7 @@ export default function MobileMenu({
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {activeTab === "menu" ? (
                   <nav className="space-y-1">
-                    {SIDEBAR_ITEMS.filter((item) => isAuthenticated || !["saved", "settings", "methodology"].includes(item.view)).map((item) => {
+                    {SIDEBAR_ITEMS.filter((item) => isAuthenticated || !["settings", "methodology"].includes(item.view)).map((item) => {
                       const Icon = item.icon;
                       const isActive = activeView === item.view;
                       return (

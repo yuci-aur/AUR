@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { Search, Bell, Menu, X, ChevronDown, User, Shield, LogOut } from "lucide-react";
 import { BrandLogo } from "../BrandLogo";
 import { useSidebar } from "../navigation/SidebarContext";
@@ -194,20 +193,8 @@ export default function Navbar({
 
           {/* ── Navigation Links - Desktop ── */}
           <nav className="hidden lg:flex space-x-1 items-center">
-            {TOP_NAV_LINKS.filter(link => isAuthenticated || link.view !== "saved").map((link) => {
+            {TOP_NAV_LINKS.map((link) => {
               const isActive = activeView === link.view;
-
-              if (link.view === "news") {
-                return (
-                  <Link
-                    key={link.label}
-                    href="/news"
-                    className="relative px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-300 rounded-none text-aur-primary hover:text-aur-primary/80 after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-aur-primary after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300 after:origin-left"
-                  >
-                    {link.label}
-                  </Link>
-                );
-              }
 
               return (
                 <Button
@@ -237,12 +224,6 @@ export default function Navbar({
 
             {!isAuthenticated && (
               <div className="hidden items-center gap-1 sm:flex">
-                <a
-                  href="/admin/login"
-                  className="relative px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-amber-400/90 transition-all duration-300 hover:text-amber-400 mr-2 border border-amber-400/30 rounded hover:bg-amber-400/10"
-                >
-                  Admin Console
-                </a>
                 <Button
                   type="button"
                   variant="ghost"
@@ -265,12 +246,6 @@ export default function Navbar({
             {/* Notification bell */}
             {isAuthenticated && (
               <div className="flex items-center gap-2">
-                <a
-                  href="/admin/login"
-                  className="hidden sm:inline-flex relative px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-amber-400/90 transition-all duration-300 hover:text-amber-400 border border-amber-400/30 rounded hover:bg-amber-400/10"
-                >
-                  Admin Console
-                </a>
                 <DropdownMenu onOpenChange={setShowNotifMenu}>
                   <DropdownMenuTrigger asChild>
                     <Button

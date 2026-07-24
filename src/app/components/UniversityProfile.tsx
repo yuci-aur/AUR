@@ -10,6 +10,9 @@ import {
 } from "lucide-react";
 
 import { useUniversityData } from "./data/UniversityDataProvider";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 // Lazy load the heavy charting component
 const TrendChart = dynamic(() => import("./TrendChart"), {
@@ -54,13 +57,13 @@ export default function UniversityProfile({ universityId, onBack, onViewChange, 
       
       {/* Top Navigation */}
       <div className="px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between border-b border-[var(--aur-border)] bg-[var(--aur-surface)]/80 backdrop-blur-md sticky top-0 z-40">
-        <button
+        <Button
           onClick={onBack}
-          className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider text-[var(--aur-text-secondary)] hover:text-[var(--aur-text)] transition-colors bg-[var(--aur-surface-hover)] border border-[var(--aur-border)] px-4 py-2 rounded-lg"
+          className="h-auto gap-0 text-[10px] font-bold uppercase tracking-wider text-[var(--aur-text-secondary)] hover:text-[var(--aur-text)] transition-colors bg-[var(--aur-surface-hover)] hover:bg-[var(--aur-surface-hover)] border-[var(--aur-border)] px-4 py-2 rounded-lg"
         >
           <ArrowLeft className="h-4 w-4 mr-1.5" />
           Back to Directory
-        </button>
+        </Button>
         
         <span className="text-[10px] uppercase font-bold tracking-widest text-[var(--aur-text-muted)]">
           Institutional Profile
@@ -101,16 +104,16 @@ export default function UniversityProfile({ universityId, onBack, onViewChange, 
                 </div>
               </div>
               <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mt-4 sm:mt-6 md:mt-0 shrink-0">
-                <button 
+                <Button
                   onClick={() => onToggleSave(universityId)}
-                  className={`${isShortlisted ? "bg-red-500 text-white" : "bg-cyber-black/50 hover:bg-cyber-black/70 text-white border border-white/20"} font-bold px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl text-[10px] sm:text-xs uppercase tracking-wider flex items-center gap-2 transition-all shadow-lg backdrop-blur-sm`}>
+                  className={`${isShortlisted ? "border-0 bg-red-500 hover:bg-red-500 text-white" : "bg-cyber-black/50 hover:bg-cyber-black/70 text-white border-white/20"} h-auto font-bold px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl text-[10px] sm:text-xs uppercase tracking-wider gap-2 transition-all shadow-lg backdrop-blur-sm`}>
                   <Bookmark className={`h-4 w-4 ${isShortlisted ? "fill-current" : ""}`} /> {isShortlisted ? "Saved" : "Save"}
-                </button>
-                <button 
+                </Button>
+                <Button
                   onClick={() => onViewChange("rankings")}
-                  className="bg-cyber-black/50 hover:bg-cyber-black/70 text-white border border-white/20 font-bold px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl text-[10px] sm:text-xs uppercase tracking-wider flex items-center gap-2 transition-all shadow-lg backdrop-blur-sm">
+                  className="h-auto bg-cyber-black/50 hover:bg-cyber-black/70 text-white border-white/20 font-bold px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl text-[10px] sm:text-xs uppercase tracking-wider gap-2 transition-all shadow-lg backdrop-blur-sm">
                   <Square className="h-4 w-4" /> Compare
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -203,7 +206,7 @@ export default function UniversityProfile({ universityId, onBack, onViewChange, 
                               <span className="block text-[10px] uppercase tracking-widest text-[var(--aur-text-muted)] font-bold mb-1">World Rank</span>
                               <span className="font-mono text-lg font-bold text-[var(--aur-text)]">#{qs.worldRank}</span>
                             </div>
-                            <div className="w-px h-10 bg-[var(--aur-border)]"></div>
+                            <Separator orientation="vertical" className="h-10 bg-[var(--aur-border)]" />
                             <div className="text-right min-w-[4rem]">
                               <span className="block text-[10px] uppercase tracking-widest text-[var(--aur-text-muted)] font-bold mb-1">Score</span>
                               <span className="font-mono text-lg font-bold text-[var(--aur-text)]">{qs.score.toFixed(1)}</span>
@@ -446,12 +449,12 @@ export default function UniversityProfile({ universityId, onBack, onViewChange, 
                   </div>
                   
                   {!showEligibility && !eligibilityResult && (
-                    <button 
+                    <Button
                       onClick={() => setShowEligibility(true)}
-                      className="bg-[var(--aur-text)] text-[var(--background)] hover:opacity-80 font-bold text-xs uppercase tracking-wider py-3 px-6 rounded-xl transition-all shadow-md shrink-0 w-full md:w-auto text-center"
+                      className="h-auto border-0 bg-[var(--aur-text)] hover:bg-[var(--aur-text)] text-[var(--background)] hover:opacity-80 font-bold text-xs uppercase tracking-wider py-3 px-6 rounded-xl transition-all shadow-md shrink-0 w-full md:w-auto"
                     >
                       Calculate Chances
-                    </button>
+                    </Button>
                   )}
                 </div>
 
@@ -476,13 +479,14 @@ export default function UniversityProfile({ universityId, onBack, onViewChange, 
                       </div>
                     </div>
                     <div className="flex gap-3 justify-end">
-                      <button 
+                      <Button
+                        variant="outline"
                         onClick={() => setShowEligibility(false)}
-                        className="font-bold text-xs uppercase tracking-wider py-3 px-6 rounded-xl border border-[var(--aur-border)] text-[var(--aur-text-secondary)] hover:text-[var(--aur-text)] hover:bg-[var(--aur-surface-hover)] transition-all"
+                        className="h-auto font-bold text-xs uppercase tracking-wider py-3 px-6 rounded-xl border-[var(--aur-border)] dark:border-[var(--aur-border)] bg-transparent dark:bg-transparent text-[var(--aur-text-secondary)] hover:text-[var(--aur-text)] hover:bg-[var(--aur-surface-hover)] dark:hover:bg-[var(--aur-surface-hover)] transition-all"
                       >
                         Cancel
-                      </button>
-                      <button 
+                      </Button>
+                      <Button
                         onClick={() => {
                           setShowEligibility(false);
                           setEligibilityResult({
@@ -490,10 +494,10 @@ export default function UniversityProfile({ universityId, onBack, onViewChange, 
                             message: "Your academic profile is competitive. To maximize your chances, focus on highlighting your extracurricular achievements and securing strong letters of recommendation."
                           });
                         }}
-                        className="bg-[var(--aur-text)] text-[var(--background)] hover:opacity-80 font-bold text-xs uppercase tracking-wider py-3 px-8 rounded-xl transition-all shadow-md"
+                        className="h-auto border-0 bg-[var(--aur-text)] hover:bg-[var(--aur-text)] text-[var(--background)] hover:opacity-80 font-bold text-xs uppercase tracking-wider py-3 px-8 rounded-xl transition-all shadow-md"
                       >
                         Analyze Profile
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -512,15 +516,15 @@ export default function UniversityProfile({ universityId, onBack, onViewChange, 
                     <div className="flex-1 text-center md:text-left">
                       <h4 className="font-bold text-lg text-[var(--aur-text)] mb-2">Estimated Admission Chance</h4>
                       <p className="text-[var(--aur-text-secondary)] text-sm leading-relaxed mb-4">{eligibilityResult.message}</p>
-                      <button 
+                      <Button
                         onClick={() => {
                           setEligibilityResult(null);
                           setShowEligibility(true);
                         }}
-                        className="text-[11px] font-bold uppercase tracking-wider text-[#10b981] hover:text-white bg-[#10b981]/10 hover:bg-[#10b981] px-5 py-2.5 rounded-lg transition-all border border-[#10b981]/20 inline-flex items-center gap-2"
+                        className="h-auto text-[11px] font-bold uppercase tracking-wider text-[#10b981] hover:text-white bg-[#10b981]/10 hover:bg-[#10b981] px-5 py-2.5 rounded-lg transition-all border-[#10b981]/20 gap-2"
                       >
-                        Recalculate <ArrowLeft className="w-3 h-3 rotate-180" />
-                      </button>
+                        Recalculate <ArrowLeft className="size-3 rotate-180" />
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -531,12 +535,13 @@ export default function UniversityProfile({ universityId, onBack, onViewChange, 
                 <Globe className="h-4 w-4 text-[var(--aur-text-muted)] shrink-0" />
                 <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--aur-text-muted)] mr-2">Languages of Instruction</span>
                 {uni.languages.map((lang) => (
-                  <span
+                  <Badge
                     key={lang}
-                    className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--aur-border-strong)] bg-[var(--aur-surface-2)] text-[var(--aur-text)]"
+                    variant="outline"
+                    className="h-auto text-xs font-bold px-3 py-1.5 rounded-lg border-[var(--aur-border-strong)] bg-[var(--aur-surface-2)] text-[var(--aur-text)]"
                   >
                     {lang}
-                  </span>
+                  </Badge>
                 ))}
               </div>
 

@@ -5,6 +5,8 @@ import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { Camera, Check, Loader2, Mail, MapPin, Pencil, UserRound, X } from "lucide-react";
 import { API_BASE_URL } from "../lib/universities";
 import { useToast } from "./feedback/ToastContext";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 type ProfileRole = "Student" | "Faculty";
 type Profile = { id: string; email: string; first_name: string; last_name: string; country: string; profile_role: ProfileRole; profile_photo: string | null };
@@ -98,7 +100,7 @@ export default function ProfileSection() {
             {photo ? <Image src={photo} alt={`${fullName(profile)} profile`} fill unoptimized sizes="(min-width: 640px) 128px, 112px" className="object-cover" /> : <span className="flex h-full items-center justify-center bg-gradient-to-br from-slate-100 to-blue-100 text-[#1a365d]" aria-label="Default profile avatar"><UserRound className="h-14 w-14" strokeWidth={1.5} /></span>}
             {editing && <button type="button" onClick={() => fileRef.current?.click()} className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 bg-[#102a4c]/90 py-2 text-[11px] font-semibold text-white transition-colors hover:bg-[#102a4c]"><Camera className="h-3.5 w-3.5" />Change</button>}
           </div>
-          {!editing && <button type="button" onClick={() => { setDraft(toDraft(profile)); setErrors({}); setError(null); setEditing(true); }} className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#1a365d] px-5 py-2.5 text-xs font-semibold text-white shadow-md transition-colors hover:bg-[#102a4c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"><Pencil className="h-4 w-4" />Edit Profile</button>}
+          {!editing && <Button type="button" onClick={() => { setDraft(toDraft(profile)); setErrors({}); setError(null); setEditing(true); }} className="h-auto border-0 gap-2 rounded-lg bg-[#1a365d] px-5 py-2.5 text-xs font-semibold text-white shadow-md transition-colors hover:bg-[#102a4c] focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"><Pencil className="h-4 w-4" />Edit Profile</Button>}
         </div>
         <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={selectPhoto} className="sr-only" aria-label="Upload profile photo" />
         {errors.photo && <p className="mt-2 text-xs text-red-600">{errors.photo}</p>}
@@ -107,11 +109,11 @@ export default function ProfileSection() {
           <Field icon={UserRound} label="Name" error={errors.name}>{editing ? <input className="aur-input" value={draft.name} maxLength={100} required onChange={(e) => setDraft({ ...draft, name: e.target.value })} /> : <Value>{fullName(profile)}</Value>}</Field>
           <Field icon={Mail} label="Email"><Value>{profile.email}</Value>{editing && <p className="mt-1 text-[11px] text-[var(--aur-text-muted)]">Email cannot be changed.</p>}</Field>
           <Field icon={MapPin} label="Country" error={errors.country}>{editing ? <input className="aur-input" value={draft.country} maxLength={100} required placeholder="Enter your country" onChange={(e) => setDraft({ ...draft, country: e.target.value })} /> : <Value>{profile.country || "Not provided"}</Value>}</Field>
-          <Field icon={UserRound} label="Role">{editing ? <select className="aur-input" value={draft.profile_role} required onChange={(e) => setDraft({ ...draft, profile_role: e.target.value as ProfileRole })}><option>Student</option><option>Faculty</option></select> : <span className="inline-flex rounded-full bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-800 ring-1 ring-amber-500/25 dark:text-amber-300">{profile.profile_role}</span>}</Field>
+          <Field icon={UserRound} label="Role">{editing ? <select className="aur-input" value={draft.profile_role} required onChange={(e) => setDraft({ ...draft, profile_role: e.target.value as ProfileRole })}><option>Student</option><option>Faculty</option></select> : <Badge className="h-auto border-0 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-800 ring-1 ring-amber-500/25 dark:text-amber-300">{profile.profile_role}</Badge>}</Field>
         </div>
         {editing && <div className="mt-8 flex flex-col-reverse gap-3 border-t border-[var(--aur-border)] pt-6 sm:flex-row sm:justify-end">
-          <button type="button" disabled={saving} onClick={() => { setDraft(toDraft(profile)); setErrors({}); setError(null); setEditing(false); }} className="inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--aur-border-strong)] px-5 py-2.5 text-xs font-semibold text-[var(--aur-text)] transition-colors hover:bg-[var(--aur-hover)]"><X className="h-4 w-4" />Cancel</button>
-          <button type="submit" disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#1a365d] px-5 py-2.5 text-xs font-semibold text-white shadow-md transition-colors hover:bg-[#102a4c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 disabled:opacity-60">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}{saving ? "Saving…" : "Save Changes"}</button>
+          <Button type="button" variant="outline" disabled={saving} onClick={() => { setDraft(toDraft(profile)); setErrors({}); setError(null); setEditing(false); }} className="h-auto gap-2 rounded-lg border-[var(--aur-border-strong)] dark:border-[var(--aur-border-strong)] bg-transparent dark:bg-transparent px-5 py-2.5 text-xs font-semibold text-[var(--aur-text)] transition-colors hover:bg-[var(--aur-hover)] dark:hover:bg-[var(--aur-hover)] hover:text-[var(--aur-text)] disabled:opacity-100"><X className="h-4 w-4" />Cancel</Button>
+          <Button type="submit" disabled={saving} className="h-auto border-0 gap-2 rounded-lg bg-[#1a365d] px-5 py-2.5 text-xs font-semibold text-white shadow-md transition-colors hover:bg-[#102a4c] focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 disabled:opacity-60">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}{saving ? "Saving…" : "Save Changes"}</Button>
         </div>}
       </div>
     </form>

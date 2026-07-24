@@ -30,6 +30,11 @@ import { API_BASE_URL } from "./lib/universities";
 import DiscoveryJoinModal from "./components/DiscoveryJoinModal";
 import ProfileSection from "./components/ProfileSection";
 
+// Views anonymous visitors can browse read-only; sticky features (saving,
+// comparisons, settings, profile) still require an account.
+const isPublicView = (v: string) =>
+  ["home", "login", "rankings", "countries", "universities", "university-profile", "analytics", "events", "faculty-awards"].includes(v);
+
 export default function AppContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -64,14 +69,22 @@ const [settingsAnalyticsTelemetry, setSettingsAnalyticsTelemetry] = useState(fal
 useEffect(() => {
   const token = sessionStorage.getItem("aur_access_token");
   if (!token) return;
-  fetch(`${API_BASE_URL}/users/preferences`, { headers: getAuthHeaders() })
-    .then((res) => res.json())
+  const controller = new AbortController();
+  fetch(`${API_BASE_URL}/users/preferences`, { headers: getAuthHeaders(), signal: controller.signal })
+    .then((res) => {
+      if (!res.ok) throw new Error(`Preferences request failed (${res.status})`);
+      return res.json();
+    })
     .then((prefs) => {
       if (typeof prefs.autoRecalc === "boolean") setSettingsAutoRecalc(prefs.autoRecalc);
       if (typeof prefs.realtimeSearch === "boolean") setSettingsRealtimeSearch(prefs.realtimeSearch);
       if (typeof prefs.analyticsTelemetry === "boolean") setSettingsAnalyticsTelemetry(prefs.analyticsTelemetry);
     })
-    .catch((err) => console.error("Failed to load preferences", err));
+    .catch((err) => {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      console.error("Failed to load preferences", err);
+    });
+  return () => controller.abort();
 }, []);
 
 const updatePreference = async (key: string, value: boolean) => {
@@ -99,21 +112,30 @@ function getAuthHeaders() {
 
 // Load university directory (slug name -> real UUID) once
 useEffect(() => {
-  fetch(`${API_BASE_URL}/api/universities/directory`)
+  const controller = new AbortController();
+  fetch(`${API_BASE_URL}/api/universities/directory`, { signal: controller.signal })
     .then((res) => {
       if (!res.ok) throw new Error("University directory unavailable");
       return res.json();
     })
     .then((data) => setUniDirectory(data))
-    .catch(() => setUniDirectory([]));
+    .catch((err) => {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      setUniDirectory([]);
+    });
+  return () => controller.abort();
 }, []);
 
 // Load real bookmarks on mount (only if logged in)
 useEffect(() => {
   const token = sessionStorage.getItem("aur_access_token");
   if (!token) return;
-  fetch(`${API_BASE_URL}/users/bookmarks`, { headers: getAuthHeaders() })
-    .then((res) => res.json())
+  const controller = new AbortController();
+  fetch(`${API_BASE_URL}/users/bookmarks`, { headers: getAuthHeaders(), signal: controller.signal })
+    .then((res) => {
+      if (!res.ok) throw new Error(`Bookmarks request failed (${res.status})`);
+      return res.json();
+    })
     .then((data) => {
   // data.bookmarks: [{ university_id: uuid, ... }]
   const uuidToSlug: Record<string, string> = {};
@@ -131,12 +153,14 @@ useEffect(() => {
       setSavedUniIds(slugIds);
       setBookmarkMap(uuidToSlug);
     })
-    .catch((err) => console.error("Failed to load bookmarks", err));
+    .catch((err) => {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      console.error("Failed to load bookmarks", err);
+    });
+  return () => controller.abort();
 }, [uniDirectory, universities]);
   // Derived state from URL (synced with context)
-  const view = !isAuthenticated && activeView !== "home" && activeView !== "login"
-    ? "login"
-    : activeView;
+  const view = isAuthenticated || isPublicView(activeView) ? activeView : "login";
   const id = selectedUniId;
 
   // A key to force AnimatePresence re-mount on view change
@@ -210,7 +234,7 @@ useEffect(() => {
   }, []);
 
   useEffect(() => {
-    if (authReady && !isAuthenticated && activeView !== "home" && activeView !== "login") {
+    if (authReady && !isAuthenticated && !isPublicView(activeView)) {
       router.replace("?view=login&mode=login");
     }
   }, [activeView, authReady, isAuthenticated, router]);
@@ -363,7 +387,6 @@ useEffect(() => {
       </div>
 
       {/* Mobile Responsive Navigation Drawer & Bottom Bar */}
-      {view !== "login" && <MobileMenu />}
       {view !== "login" && view !== "admin" && (
         <MobileMenu
           isAuthenticated={isAuthenticated}

@@ -4,6 +4,9 @@ import React, { useState, useRef, useEffect } from "react";
 import { X, Bot, Send, Sparkles, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
 import { useSidebar } from "./navigation/SidebarContext";
 import { API_BASE_URL } from "../lib/universities";
 
@@ -131,6 +134,8 @@ export default function FloatingChatAssistant() {
             key="chat-panel"
             drag
             dragMomentum={false}
+            role="dialog"
+            aria-label="AUR Helping Hand chat assistant"
             className={[
               "fixed bottom-20 md:bottom-24 right-3 sm:right-6 z-50",
               "max-w-[calc(100vw-1.5rem)] w-80 sm:w-[360px]",
@@ -175,17 +180,20 @@ export default function FloatingChatAssistant() {
               </div>
 
               {/* Close button — stops propagation so it doesn't initiate drag */}
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={handleClose}
                 className={[
                   "p-1.5 rounded-full transition-colors",
-                  "hover:bg-slate-200 text-slate-400 hover:text-slate-800",
+                  "hover:bg-slate-200 dark:hover:bg-slate-200 text-slate-400 hover:text-slate-800",
                 ].join(" ")}
                 title="Close"
               >
                 <X className="h-4 w-4" />
-              </button>
+              </Button>
             </div>
 
             {/* ── Messages ───────────────────────────────────── */}
@@ -254,27 +262,33 @@ export default function FloatingChatAssistant() {
                 "flex items-center gap-2",
               ].join(" ")}
             >
-              <input
+              <Input
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                aria-label="Ask the assistant about universities"
                 placeholder="Ask about universities…"
                 disabled={isThinking}
                 className={[
-                  "flex-1 rounded-lg px-3 py-2 text-xs border cursor-text",
+                  "h-auto flex-1 rounded-lg px-3 py-2 text-xs md:text-xs border cursor-text",
                   inputBg,
+                  "dark:bg-slate-50",
                   border,
-                  "text-slate-800 placeholder-slate-400 focus:border-amber-600",
+                  "text-slate-800 placeholder-slate-400 placeholder:text-slate-400",
+                  "focus:border-amber-600 focus-visible:border-amber-600 focus-visible:ring-0",
                   "focus:outline-none transition-colors disabled:opacity-50",
+                  "disabled:bg-slate-50 dark:disabled:bg-slate-50",
                 ].join(" ")}
               />
-              <button
+              <Button
                 type="submit"
+                size="icon"
                 disabled={!input.trim() || isThinking}
-                className="shrink-0 flex h-8 w-8 items-center justify-center rounded-lg bg-amber-600 dark:bg-cyber-yellow text-white dark:text-cyber-black hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                aria-label="Send message"
+                className="shrink-0 flex h-8 w-8 items-center justify-center rounded-lg bg-amber-600 dark:bg-cyber-yellow hover:bg-amber-600 dark:hover:bg-cyber-yellow text-white dark:text-cyber-black hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Send className="h-3.5 w-3.5" />
-              </button>
+              </Button>
             </form>
           </motion.div>
         )}
@@ -311,18 +325,21 @@ export default function FloatingChatAssistant() {
             )}
 
             {/* FAB — always visible on all pages */}
-            <button
+            <Button
               key="chat-trigger"
+              type="button"
+              size="icon"
               onClick={() => setIsChatOpen(true)}
-              className="shrink-0 h-14 w-14 rounded-full bg-cyber-black dark:bg-white text-white dark:text-cyber-black shadow-[0_0_20px_rgba(127, 86, 217, 0.6)] dark:shadow-[0_0_20px_rgba(255,255,255,0.7)] hover:shadow-[0_0_30px_rgba(127, 86, 217, 0.8)] dark:hover:shadow-[0_0_30px_rgba(255,255,255,0.9)] flex items-center justify-center relative hover:scale-105 transition-all"
+              aria-label="Open AUR Helping Hand chat assistant"
+              className="shrink-0 h-14 w-14 rounded-full bg-cyber-black dark:bg-white hover:bg-cyber-black dark:hover:bg-white text-white dark:text-cyber-black shadow-[0_0_20px_rgba(127,86,217,0.6)] dark:shadow-[0_0_20px_rgba(255,255,255,0.7)] hover:shadow-[0_0_30px_rgba(127,86,217,0.8)] dark:hover:shadow-[0_0_30px_rgba(255,255,255,0.9)] flex items-center justify-center relative hover:scale-105 transition-all"
               title="Open AUR Helping Hand"
             >
               <Bot className="h-6 w-6 pointer-events-none" />
               {/* Pulsing ring only on home */}
               {activeView === "home" && (
-                <span className="absolute inset-0 rounded-full animate-ping bg-cyber-black/20 dark:bg-white/20 pointer-events-none" />
+                <span className="absolute inset-0 rounded-full motion-safe:animate-ping bg-cyber-black/20 dark:bg-white/20 pointer-events-none" />
               )}
-            </button>
+            </Button>
           </motion.div>
         )}
       </>

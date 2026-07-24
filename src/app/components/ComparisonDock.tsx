@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { X, ArrowRight, BarChart3, Shuffle, Trash } from "lucide-react";
 import { useUniversityData } from "./data/UniversityDataProvider";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface ComparisonDockProps {
   selectedIds: string[];
@@ -67,9 +69,9 @@ export default function ComparisonDock({
 
             {/* Micro Badge & Selected Counter */}
             <div className="truncate">
-              <span className="inline-block text-[9px] uppercase font-bold tracking-widest text-amber-700 dark:text-cyber-yellow bg-amber-50 dark:bg-cyber-yellow/10 border border-amber-200 dark:border-cyber-yellow/20 px-1.5 py-0.5 rounded-xs">
+              <Badge className="h-auto gap-0 text-[9px] uppercase font-bold tracking-widest text-amber-700 dark:text-cyber-yellow bg-amber-50 dark:bg-cyber-yellow/10 border-amber-200 dark:border-cyber-yellow/20 px-1.5 py-0.5 rounded-xs">
                 Comparison Suite
-              </span>
+              </Badge>
               <div className="text-[10px] sm:text-xs font-bold text-slate-900 dark:text-slate-100 mt-0.5 truncate">
                 Comparing {selectedUnis.length} of 4 Universities
               </div>
@@ -78,9 +80,10 @@ export default function ComparisonDock({
             {/* University Name Badges */}
             <div className="hidden sm:flex items-center space-x-2 shrink-0">
               {selectedUnis.map((uni) => (
-                <span
+                <Badge
                   key={uni.id}
-                  className="inline-flex items-center text-[10px] font-bold border border-slate-200 dark:border-cyber-border bg-slate-50 dark:bg-cyber-gray text-slate-800 dark:text-slate-200 px-2 py-1"
+                  variant="outline"
+                  className="h-auto gap-0 rounded-none text-[10px] font-bold border-slate-200 dark:border-cyber-border bg-slate-50 dark:bg-cyber-gray text-slate-800 dark:text-slate-200 px-2 py-1"
                 >
                   <span className="truncate max-w-[80px]">{uni.name.split(" ")[0]}</span>
                   <button
@@ -91,7 +94,7 @@ export default function ComparisonDock({
                   >
                     <X className="h-3 w-3" />
                   </button>
-                </span>
+                </Badge>
               ))}
             </div>
           </div>
@@ -105,14 +108,14 @@ export default function ComparisonDock({
             >
               Clear
             </button>
-            <button
+            <Button
               type="button"
               onClick={() => setIsExpanded(true)}
-              className={`inline-flex items-center justify-center border border-slate-900 dark:border-cyber-yellow bg-slate-900 dark:bg-cyber-yellow px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-white dark:text-cyber-black hover:bg-slate-800 dark:hover:opacity-90 transition-colors ${focusRing}`}
+              className={`h-auto gap-0 rounded-none border-slate-900 dark:border-cyber-yellow bg-slate-900 dark:bg-cyber-yellow px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-white dark:text-cyber-black hover:bg-slate-800 dark:hover:opacity-90 transition-colors focus-visible:border-slate-900 dark:focus-visible:border-cyber-yellow ${focusRing}`}
             >
               Compare
-              <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-            </button>
+              <ArrowRight className="ml-1.5 size-3.5" />
+            </Button>
           </div>
         </div>
       </div>
@@ -139,14 +142,15 @@ export default function ComparisonDock({
                     Side-by-Side Matrix
                   </h3>
                 </div>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => setIsExpanded(false)}
                   aria-label="Close comparison"
-                  className={`p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-900 ${focusRing}`}
+                  className={`h-auto w-auto border-0 p-1 hover:bg-slate-100 dark:hover:bg-slate-100 rounded text-slate-500 hover:text-slate-900 dark:hover:text-slate-900 ${focusRing}`}
                 >
-                  <X className="h-6 w-6" />
-                </button>
+                  <X className="size-6" />
+                </Button>
               </div>
             </div>
 
@@ -245,16 +249,17 @@ export default function ComparisonDock({
                     </div>
 
                     <div className="mt-8">
-                      <button
+                      <Button
                         type="button"
+                        variant="outline"
                         onClick={() => {
                           onUniversitySelect(uni.id);
                           setIsExpanded(false);
                         }}
-                        className={`w-full text-center border border-[var(--aur-text)] py-2 text-[10px] font-bold uppercase tracking-widest text-[var(--aur-text)] hover:bg-[var(--aur-surface-hover)] transition-colors rounded-lg ${focusRing}`}
+                        className={`w-full h-auto border-[var(--aur-text)] dark:border-[var(--aur-text)] bg-transparent dark:bg-transparent py-2 text-[10px] font-bold uppercase tracking-widest text-[var(--aur-text)] hover:text-[var(--aur-text)] hover:bg-[var(--aur-surface-hover)] dark:hover:bg-[var(--aur-surface-hover)] transition-colors rounded-lg ${focusRing}`}
                       >
                         Deep-Dive Profile
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ))}

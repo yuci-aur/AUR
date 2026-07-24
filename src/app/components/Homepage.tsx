@@ -1,4 +1,3 @@
-/* eslint-disable jsx-a11y/role-has-required-aria-props */
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
@@ -10,65 +9,38 @@ import {
   BookOpen,
   GraduationCap,
   ChevronRight,
-  MapPin,
-  Globe2,
-  BarChart3,
-  Database,
-  Clock,
+  ChevronDown,
   TrendingUp,
   TrendingDown,
   ArrowRight,
-  Bell,
-  Building2,
-  LineChart,
-  Activity,
   Mail,
+  Scale,
+  BarChart3,
+  Bot,
+  Users,
+  Building2,
 } from "lucide-react";
+import Link from "next/link";
 import { FEATURED_ARTICLES, University, Article } from "../data";
 import { getPublishedStoredBlogs, storedBlogToArticle } from "../lib/blog-storage";
 import { useUniversityData } from "./data/UniversityDataProvider";
 import { useSidebar } from "./navigation/SidebarContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert } from "@/components/ui/alert";
 import "./home/ref-home.css";
 import { API_BASE_URL } from "../lib/universities";
 
-/* ── Reusable scroll-reveal wrapper ── */
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0 },
-};
-const staggerContainer = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.08 } },
-};
-const fadeUpItem = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] } },
-};
-
-function RevealSection({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  return (
-    <div
-      ref={ref}
-      className={className}
-    >
-      {children}
-    </div>
-  );
+function RevealSection({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <div className={className}>{children}</div>;
 }
 
 type SuggestionPick =
   | { kind: "uni"; uni: University }
   | { kind: "article"; article: Article }
   | { kind: "view-all" };
-
-const COUNTRY_FLAGS: Record<string, string> = {
-  China: "", Singapore: "", Japan: "", "South Korea": "", India: "",
-  Malaysia: "", Thailand: "", Vietnam: "", Indonesia: "", Uzbekistan: "",
-  Kazakhstan: "", Taiwan: "", "Hong Kong": "", Philippines: "", Pakistan: "",
-  Bangladesh: "", Nepal: "", Myanmar: "", Cambodia: "", Mongolia: "",
-};
 
 const socialLinks = [
   {
@@ -175,8 +147,7 @@ const COUNTRY_THEME: Record<
     monument: "Ha Long Bay",
     accent: "#059669",
     bg: "linear-gradient(135deg, #ecfdf5 0%, #ffffff 62%)",
-    image: "/university_images/Thailand/Mahidol University image.jpg",
-    imagePos: "center",
+    image: "",
   },
   Indonesia: {
     code: "ID",
@@ -199,66 +170,93 @@ const COUNTRY_THEME: Record<
     monument: "Bayterek Tower",
     accent: "#0891b2",
     bg: "linear-gradient(135deg, #ecfeff 0%, #ffffff 62%)",
-    image: "/university_images/South-Korea/Seoul National University image.jpg",
-    imagePos: "center",
+    image: "",
   },
   Philippines: {
     code: "PH",
     monument: "Mayon Volcano",
     accent: "#2563eb",
     bg: "linear-gradient(135deg, #eff6ff 0%, #ffffff 62%)",
-    image: "/university_images/Indonesia/Universitas Indonesia image.jpg",
-    imagePos: "center",
+    image: "",
   },
   Pakistan: {
     code: "PK",
     monument: "Faisal Mosque",
     accent: "#16a34a",
     bg: "linear-gradient(135deg, #f0fdf4 0%, #ffffff 62%)",
-    image: "/university_images/India/IIT Delhi image.jpg",
-    imagePos: "center",
+    image: "",
   },
   Bangladesh: {
     code: "BD",
     monument: "Sixty Dome Mosque",
     accent: "#15803d",
     bg: "linear-gradient(135deg, #f0fdf4 0%, #ffffff 62%)",
-    image: "/university_images/Thailand/Mahidol University image.jpg",
-    imagePos: "center",
+    image: "",
   },
   Nepal: {
     code: "NP",
     monument: "Boudhanath Stupa",
     accent: "#dc2626",
     bg: "linear-gradient(135deg, #fff7ed 0%, #ffffff 62%)",
-    image: "/university_images/Japan/Kyoto University image.jpg",
-    imagePos: "center",
+    image: "",
   },
   Myanmar: {
     code: "MM",
     monument: "Shwedagon Pagoda",
     accent: "#ca8a04",
     bg: "linear-gradient(135deg, #fefce8 0%, #ffffff 62%)",
-    image: "/university_images/Thailand/Mahidol University image.jpg",
-    imagePos: "center",
+    image: "",
   },
   Cambodia: {
     code: "KH",
     monument: "Angkor Wat",
     accent: "#b45309",
     bg: "linear-gradient(135deg, #fff7ed 0%, #ffffff 62%)",
-    image: "/university_images/Indonesia/Universitas Indonesia image.jpg",
-    imagePos: "center",
+    image: "",
   },
   Mongolia: {
     code: "MN",
     monument: "Genghis Khan Statue",
     accent: "#1d4ed8",
     bg: "linear-gradient(135deg, #eff6ff 0%, #ffffff 62%)",
-    image: "/university_images/China/Fudan University image.jpg",
-    imagePos: "center",
+    image: "",
   },
 };
+
+/* ── Landing-page content ── */
+
+// Mirrors backend/engine/weights.json (methodology version QS-Asia-2026).
+const METHODOLOGY_WEIGHTS = [
+  { label: "Academic Reputation", pct: 30 },
+  { label: "Employer Reputation", pct: 20 },
+  { label: "Faculty–Student Ratio", pct: 10 },
+  { label: "Citations per Paper", pct: 10 },
+  { label: "International Research Network", pct: 10 },
+  { label: "International mix (students, faculty, exchange, output)", pct: 20 },
+] as const;
+
+const FAQS = [
+  {
+    q: "How are the rankings calculated?",
+    a: "Each university's overall score is a weighted blend of eleven indicators: academic reputation (30%), employer reputation (20%), faculty–student ratio, citations per paper and international research network (10% each), with the remaining 20% covering research output and international students, faculty and exchange programs.",
+  },
+  {
+    q: "Is AUR affiliated with QS, Times Higher Education, or ARWU?",
+    a: "No. Asia University Rankings is an independent platform. Our dataset is compiled and maintained by our own editorial team; it is not endorsed by or affiliated with any other ranking organisation.",
+  },
+  {
+    q: "Do I need an account to browse the rankings?",
+    a: "No — rankings, university profiles, country pages and analytics are free to browse. A free account adds saved shortlists, side-by-side comparisons and personalised preferences.",
+  },
+  {
+    q: "How do universities get listed or update their profile?",
+    a: "Institutions can request access through our institutional registration. Verified representatives can submit corrections, upload media and take part in events and awards.",
+  },
+  {
+    q: "How often is the data updated?",
+    a: "Rankings follow an annual cycle, with corrections and profile updates published continuously as they are verified.",
+  },
+] as const;
 
 function getCountryTheme(country: string) {
   return (
@@ -267,34 +265,10 @@ function getCountryTheme(country: string) {
       monument: country,
       accent: "#f97316",
       bg: "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)",
-      image: "/university_images/China/Fudan University image.jpg",
-      imagePos: "center",
+      image: "",
     }
   );
 }
-
-const LIVE_UPDATES = [
-  { text: "New Rankings Published", time: "2 min ago", color: "#f59e0b" },
-  { text: "Tsinghua University climbs to #1", time: "15 min ago", color: "#2563eb" },
-  { text: "Singapore institutions gain +2.4 avg", time: "32 min ago", color: "#f59e0b" },
-];
-
-const METHODOLOGY = [
-  { label: "Research Impact", pct: 40, color: "#3b82f6" },
-  { label: "Teaching Excellence", pct: 25, color: "#10b981" },
-  { label: "Employability", pct: 15, color: "#f59e0b" },
-  { label: "International Outlook", pct: 15, color: "#8b5cf6" },
-  { label: "Industry Income", pct: 5, color: "#64748b" },
-];
-
-const PULSE_ITEMS = [
-  "Tsinghua leads research output index",
-  "NUS tops employability in ASEAN",
-  "Uzbekistan medical programs surge +18%",
-  "Japan universities rise in citations",
-  "Singapore avg score hits 94.2",
-  "New English-medium tracks in Central Asia",
-];
 
 function highlightMatch(text: string, query: string) {
   const q = query.trim();
@@ -308,110 +282,6 @@ function highlightMatch(text: string, query: string) {
       <mark className="bg-amber-100 text-amber-800 px-0.5">{text.slice(idx, idx + q.length)}</mark>
       {text.slice(idx + q.length)}
     </>
-  );
-}
-
-function Sparkline({ values, color = "#3b82f6" }: { values: number[]; color?: string }) {
-  const max = Math.max(...values);
-  const min = Math.min(...values);
-  const range = max - min || 1;
-  const pts = values
-    .map((v, i) => {
-      const x = (i / (values.length - 1)) * 48;
-      const y = 14 - ((v - min) / range) * 12;
-      return `${x},${y}`;
-    })
-    .join(" ");
-  return (
-    <svg width="52" height="16" className="inline-block" aria-hidden>
-      <polyline fill="none" stroke={color} strokeWidth="1.5" points={pts} />
-    </svg>
-  );
-}
-
-function MiniLineChart({ color, trend }: { color: string; trend?: "up" | "down" }) {
-  const pts = trend === "down" ? "0,12 12,8 24,10 36,6 48,8" : "0,10 12,8 24,6 36,4 48,2";
-  return (
-    <svg width="100%" height="48" viewBox="0 0 48 16" preserveAspectRatio="none" className="mt-2">
-      <polyline fill="none" stroke={color} strokeWidth="1.5" points={pts} opacity="0.9" />
-      <polyline fill={`${color}22`} stroke="none" points={`${pts} 48,16 0,16`} />
-    </svg>
-  );
-}
-
-function RadarChart({ universities }: { universities: University[] }) {
-  const axes = ["Innovation", "Research", "Teaching", "Employability", "Intl"];
-  const n = axes.length;
-  const cx = 120;
-  const cy = 120;
-  const r = 80;
-
-  const angle = (i: number) => (Math.PI * 2 * i) / n - Math.PI / 2;
-  const point = (i: number, val: number) => {
-    const rad = (val / 100) * r;
-    return { x: cx + Math.cos(angle(i)) * rad, y: cy + Math.sin(angle(i)) * rad };
-  };
-
-  const gridLevels = [0.25, 0.5, 0.75, 1];
-  const colors = ["#f97316", "#3b82f6", "#10b981", "#8b5cf6"];
-
-  const getVals = (u: University) => [
-    u.research * 0.95,
-    u.research,
-    u.teaching,
-    u.employability,
-    u.intlStudents,
-  ];
-
-  return (
-    <svg viewBox="0 0 240 240" className="w-full max-w-[280px] mx-auto">
-      {gridLevels.map((lvl) => {
-        const pts = axes
-          .map((_, i) => {
-            const p = point(i, lvl * 100);
-            return `${p.x},${p.y}`;
-          })
-          .join(" ");
-        return (
-          <polygon key={lvl} points={pts} fill="none" stroke="rgba(148,163,184,0.15)" strokeWidth="1" />
-        );
-      })}
-      {axes.map((label, i) => {
-        const outer = point(i, 100);
-        return (
-          <g key={label}>
-            <line x1={cx} y1={cy} x2={outer.x} y2={outer.y} stroke="rgba(148,163,184,0.12)" />
-            <text
-              x={outer.x + (outer.x - cx) * 0.12}
-              y={outer.y + (outer.y - cy) * 0.12}
-              textAnchor="middle"
-              fill="#94a3b8"
-              fontSize="8"
-            >
-              {label}
-            </text>
-          </g>
-        );
-      })}
-      {universities.map((uni, ui) => {
-        const vals = getVals(uni);
-        const pts = vals
-          .map((v, i) => {
-            const p = point(i, v);
-            return `${p.x},${p.y}`;
-          })
-          .join(" ");
-        return (
-          <polygon
-            key={uni.id}
-            points={pts}
-            fill={`${colors[ui]}22`}
-            stroke={colors[ui]}
-            strokeWidth="1.5"
-          />
-        );
-      })}
-    </svg>
   );
 }
 
@@ -435,16 +305,6 @@ function getCountryStats(universities: University[]) {
     .slice(0, 8);
 }
 
-function rankTrend(uni: University) {
-  const delta = (uni.history[1] ?? uni.history[0]) - uni.history[0];
-  return { delta, improved: delta > 0 };
-}
-
-function scoreHistory(uni: University, metric: "research" | "employability" | "overall") {
-  const base = metric === "research" ? uni.research : metric === "employability" ? uni.employability : uni.overall;
-  return uni.history.map((rank, i) => Math.min(100, base - i * 0.8 + (5 - rank) * 0.5));
-}
-
 interface HomepageProps {
   onSearchSubmit: (query: string) => void;
   onUniversitySelect: (id: string) => void;
@@ -460,9 +320,11 @@ export default function Homepage({
   onViewChange,
   isAuthenticated = false,
 }: HomepageProps) {
+  // Only account-bound views require sign-in; browsing stays open to visitors.
   const handleProtectedViewChange = useCallback(
     (targetView: string) => {
-      if (!isAuthenticated && targetView !== "home" && targetView !== "login") {
+      const gated = ["settings", "profile", "saved"];
+      if (!isAuthenticated && gated.includes(targetView)) {
         onViewChange("login");
       } else {
         onViewChange(targetView);
@@ -471,7 +333,7 @@ export default function Homepage({
     [isAuthenticated, onViewChange]
   );
 
-  const { universities } = useUniversityData();
+  const { universities, loading: dataLoading, error: dataError, refresh } = useUniversityData();
   const { searchQuery, setSearchQuery } = useSidebar();
   const [suggestions, setSuggestions] = useState<{ universities: University[]; articles: Article[] }>({
     universities: [],
@@ -501,6 +363,7 @@ export default function Homepage({
   const [currentHeroBg, setCurrentHeroBg] = useState(0);
 
   useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const interval = setInterval(() => {
       setCurrentHeroBg((prev) => (prev + 1) % heroImages.length);
     }, 5000);
@@ -508,7 +371,6 @@ export default function Homepage({
   }, [heroImages]);
 
   const suggestionRef = useRef<HTMLDivElement>(null);
-  const methodologyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const loadCreatedArticles = () => {
@@ -531,18 +393,22 @@ export default function Homepage({
       setSuggestions({ universities: [], articles: [] });
       return;
     }
-    const filteredUnis = universities.filter(
-      (uni) =>
-        uni.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        uni.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        uni.subjects.some((sub) => sub.toLowerCase().includes(searchQuery.toLowerCase()))
-    ).slice(0, 5);
-    const filteredArticles = articlesForSearch.filter(
-      (art) =>
-        art.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        art.subtitle.toLowerCase().includes(searchQuery.toLowerCase())
-    ).slice(0, 3);
-    setSuggestions({ universities: filteredUnis, articles: filteredArticles });
+    const timeout = setTimeout(() => {
+      const q = searchQuery.toLowerCase();
+      const filteredUnis = universities.filter(
+        (uni) =>
+          uni.name.toLowerCase().includes(q) ||
+          uni.location.toLowerCase().includes(q) ||
+          uni.subjects.some((sub) => sub.toLowerCase().includes(q))
+      ).slice(0, 5);
+      const filteredArticles = articlesForSearch.filter(
+        (art) =>
+          art.title.toLowerCase().includes(q) ||
+          art.subtitle.toLowerCase().includes(q)
+      ).slice(0, 3);
+      setSuggestions({ universities: filteredUnis, articles: filteredArticles });
+    }, 250);
+    return () => clearTimeout(timeout);
   }, [articlesForSearch, searchQuery, universities]);
 
   const flatSuggestions = useMemo((): SuggestionPick[] => {
@@ -615,13 +481,7 @@ export default function Homepage({
   );
 
   const countryStats = useMemo(() => getCountryStats(universities), [universities]);
-  const compareUnis = topTen.slice(0, 4);
-  const uniqueCountries = useMemo(() => new Set(universities.map((u) => u.location)).size, [universities]);
-  const mapUniversities = topTen.slice(0, 3);
-
-  const scrollToMethodology = () => {
-    // Navigated via onViewChange("methodology") — scroll ref no longer needed
-  };
+  const countryCount = useMemo(() => new Set(universities.map((u) => u.location)).size, [universities]);
 
   const handleSubscribe = async (
     event: React.FormEvent<HTMLFormElement>
@@ -673,64 +533,57 @@ export default function Homepage({
     <div className="ref-home flex-grow w-full relative">
 
 
-      {/* ── Hero Image Slider ── */}
-      <section className="relative w-full h-[45vh] lg:h-[55vh] overflow-hidden">
-        {heroImages.map((src, idx) => (
-          <div
-            key={src}
-            className={`absolute inset-0 z-0 transition-opacity duration-1000 ease-in-out ${idx === currentHeroBg ? 'opacity-100' : 'opacity-0'}`}
-          >
-            <Image
-              src={src}
-              alt="University"
-              fill
-              className="object-cover"
-              priority={idx === 0}
-            />
-          </div>
-        ))}
-        {/* Shorter, less intense gradient at the bottom for a subtle blend */}
-        <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[var(--background)] to-transparent z-10 opacity-75" />
-      </section>
+      {/* ── Hero: full-bleed imagery with the message on top ── */}
+      <section className="relative flex min-h-[560px] w-full items-center overflow-hidden lg:min-h-[640px]">
+        {/* Rotating campus imagery (decorative) */}
+        <div aria-hidden="true" className="absolute inset-0">
+          {heroImages.map((src, idx) => (
+            <div
+              key={src}
+              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${idx === currentHeroBg ? 'opacity-100' : 'opacity-0'}`}
+            >
+              <Image
+                src={src}
+                alt=""
+                fill
+                className="object-cover"
+                priority={idx === 0}
+              />
+            </div>
+          ))}
+          {/* Navy scrim so the message always reads over any photo */}
+          <div className="absolute inset-0 bg-gradient-to-b from-aur-primary/75 via-aur-primary/55 to-aur-primary/80" />
+        </div>
 
-      {/* ── Hero Content (Below Image) ── */}
-      <section className="relative z-20 w-full bg-[var(--background)] py-12 px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="max-w-5xl mx-auto text-center flex flex-col items-center"
+          className="relative z-20 mx-auto flex w-full max-w-5xl flex-col items-center px-4 py-16 text-center sm:px-6 lg:px-8"
         >
-          <span className="ref-label text-[10px] sm:text-xs">Asia University Rankings</span>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mt-4 mb-6 text-[var(--aur-text-secondary)]">
+          <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-amber-300">Asia University Rankings</span>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mt-4 mb-6 text-white">
             Asia&apos;s Most Trusted{" "}
-            <span className="text-[var(--aur-text)]">University Intelligence</span> Platform
+            <span className="text-amber-300">University Intelligence</span> Platform
           </h1>
-          <p className="text-[var(--aur-text-muted)] text-sm sm:text-base leading-relaxed max-w-3xl mx-auto mb-10">
+          <p className="text-slate-100/90 text-sm sm:text-base leading-relaxed max-w-3xl mx-auto mb-10">
             Filter institutional indicators, compare global rankings, and explore regional study models
             including medical careers in Central Asia — powered by live audited data.
           </p>
-
-          <div className="flex flex-wrap justify-center gap-4 mb-10">
-            <button type="button" className="bg-[#1A365D] hover:bg-slate-800 text-white font-bold rounded-lg px-8 py-3.5 text-sm transition-colors" onClick={() => onViewChange("rankings")}>
-              Explore Rankings
-              <ArrowRight className="h-4 w-4 ml-2 inline" />
-            </button>
-            {/* <button type="button" className="bg-transparent border-2 border-[#1A365D] text-[#1A365D] hover:bg-slate-50 font-bold rounded-lg px-8 py-3.5 text-sm transition-colors" onClick={() => onViewChange("methodology")}>
-              <BookOpen className="h-4 w-4 mr-2 inline" />
-              Our Methodology
-            </button> */}
-          </div>
 
           {/* Search */}
           <div className="relative w-full max-w-2xl mx-auto mb-4" ref={suggestionRef}>
             <form onSubmit={handleSearchSubmit} className="flex rounded-full overflow-hidden border border-slate-200 shadow-sm focus-within:ring-2 focus-within:ring-[#0514b5] focus-within:border-transparent transition-all">
               <div className="relative flex-grow">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--ref-muted)]" />
-                <input
+                <Input
                   type="search"
                   role="combobox"
                   aria-expanded={showSuggestions && searchQuery.trim().length > 0}
+                  aria-controls="home-search-listbox"
+                  aria-autocomplete="list"
+                  aria-activedescendant={activeSuggestionIndex >= 0 ? `home-suggestion-${activeSuggestionIndex}` : undefined}
+                  aria-label="Search universities, locations, subjects"
                   placeholder="Search universities, locations, subjects..."
                   value={searchQuery}
                   onChange={(e) => {
@@ -739,16 +592,16 @@ export default function Homepage({
                   }}
                   onFocus={() => setShowSuggestions(true)}
                   onKeyDown={handleSearchKeyDown}
-                  className="w-full bg-white text-sm text-slate-900 pl-11 pr-4 py-3.5 focus:outline-none"
+                  className="h-auto w-full rounded-none border-0 bg-white text-sm text-slate-900 pl-11 pr-4 py-3.5 focus-visible:ring-0"
                 />
               </div>
-              <button type="submit" className="bg-[#1A365D] hover:bg-slate-800 text-white font-semibold px-8 py-3.5 text-sm transition-colors whitespace-nowrap">
+              <Button type="submit" className="h-auto rounded-none border-0 bg-aur-primary hover:bg-slate-800 text-white font-semibold px-8 py-3.5 text-sm transition-colors whitespace-nowrap active:translate-y-0!">
                 Search
-              </button>
+              </Button>
             </form>
 
             {showSuggestions && searchQuery.trim().length > 0 && (
-              <div className="absolute left-0 right-0 z-30 mt-1 ref-card max-h-80 overflow-y-auto">
+              <div id="home-search-listbox" role="listbox" aria-label="Search suggestions" className="absolute left-0 right-0 z-30 mt-1 ref-card max-h-80 overflow-y-auto">
                 {(() => {
                   let rowIndex = -1;
                   return (
@@ -766,6 +619,9 @@ export default function Homepage({
                                 <li key={uni.id}>
                                   <button
                                     type="button"
+                                    role="option"
+                                    id={`home-suggestion-${rowIndex}`}
+                                    aria-selected={active}
                                     onClick={() => activateSuggestion({ kind: "uni", uni })}
                                     className={`w-full text-left flex justify-between p-2 text-xs rounded-none ${active ? "bg-amber-50" : "hover:bg-slate-50"}`}
                                   >
@@ -786,12 +642,16 @@ export default function Homepage({
                         </div>
                         {suggestions.articles.map((art) => {
                           rowIndex += 1;
+                          const active = activeSuggestionIndex === rowIndex;
                           return (
                             <button
                               key={art.id}
                               type="button"
+                              role="option"
+                              id={`home-suggestion-${rowIndex}`}
+                              aria-selected={active}
                               onClick={() => activateSuggestion({ kind: "article", article: art })}
-                              className="w-full text-left p-2 text-xs hover:bg-slate-50 rounded-none block"
+                              className={`w-full text-left p-2 text-xs rounded-none block ${active ? "bg-amber-50" : "hover:bg-slate-50"}`}
                             >
                               {highlightMatch(art.title, searchQuery)}
                             </button>
@@ -801,8 +661,11 @@ export default function Homepage({
                       <div className="p-2 text-center">
                         <button
                           type="button"
+                          role="option"
+                          id={`home-suggestion-${rowIndex + 1}`}
+                          aria-selected={activeSuggestionIndex === rowIndex + 1}
                           onClick={() => activateSuggestion({ kind: "view-all" })}
-                          className="text-[11px] text-blue-600 font-semibold uppercase tracking-wider"
+                          className={`text-[11px] text-blue-600 font-semibold uppercase tracking-wider ${activeSuggestionIndex === rowIndex + 1 ? "bg-amber-50" : ""}`}
                         >
                           View all matching &quot;{searchQuery}&quot;
                           <ChevronRight className="inline h-3 w-3" />
@@ -815,21 +678,35 @@ export default function Homepage({
             )}
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2 items-center justify-center mb-10">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--ref-muted)]">Trending:</span>
+          <div className="mt-4 flex flex-wrap gap-2 items-center justify-center">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-200">Trending:</span>
             {["Uzbekistan", "Medicine", "National Univ Singapore", "English medium"].map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => {
-                  setSearchQuery(tag);
-                  onSearchSubmit(tag);
-                  handleProtectedViewChange("rankings");
-                }}
-                className="text-[10px] px-2.5 py-1 rounded-full border border-blue-200 bg-white text-slate-600 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-900 transition-colors"
-              >
-                {tag}
-              </button>
+              <Badge key={tag} asChild variant="outline" className="h-auto gap-0 font-normal text-[10px] px-2.5 py-1 rounded-full border-white/40 bg-white/95 text-slate-600 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-900 transition-colors">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery(tag);
+                    onSearchSubmit(tag);
+                    handleProtectedViewChange("rankings");
+                  }}
+                >
+                  {tag}
+                </button>
+              </Badge>
+            ))}
+          </div>
+
+          {/* Dataset facts — the trust strip */}
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-x-10 gap-y-3 border-t border-white/20 pt-6">
+            {[
+              [dataLoading ? "—" : universities.length.toLocaleString(), "Universities ranked"],
+              [dataLoading ? "—" : String(countryCount), "Countries & territories"],
+              ["11", "Weighted indicators"],
+            ].map(([value, label]) => (
+              <div key={label} className="text-center">
+                <div className="text-xl font-bold text-white">{value}</div>
+                <div className="text-[10px] uppercase tracking-wider text-slate-200/80 mt-0.5">{label}</div>
+              </div>
             ))}
           </div>
 
@@ -843,214 +720,467 @@ export default function Homepage({
             <span className="ref-label">Rankings Engine</span>
             <h2 className="text-2xl font-bold mt-1">Live Top 10 Universities</h2>
           </div>
-          <button type="button" className="ref-btn-primary text-[11px]" onClick={() => handleProtectedViewChange("rankings")}>
+          <Button type="button" className="ref-btn-primary h-auto text-[11px] active:translate-y-0!" onClick={() => handleProtectedViewChange("rankings")}>
             Analyze All Universities
             <ChevronRight className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
 
-        <div className="relative z-0">
-          {/* Ambient Liquid Glass Orb */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] max-w-4xl h-full max-h-96 bg-gradient-to-r from-blue-500/5 via-blue-400/5 to-transparent rounded-full blur-[100px] pointer-events-none -z-10" />
-          
-          <div className="flex flex-col gap-3">
-            {/* Header Row */}
-            <div className="grid grid-cols-[3rem_minmax(120px,1fr)_120px_60px_60px] md:grid-cols-[3rem_minmax(140px,1.5fr)_120px_70px_80px_1fr_1fr] lg:grid-cols-[3rem_minmax(140px,2fr)_120px_70px_80px_1fr_1fr_1fr] gap-4 px-6 pb-2 text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase">
-              <div className="text-center">Rank</div>
-              <div>University</div>
-              <div>Country</div>
-              <div>Score</div>
-              <div>Trend</div>
-              <div className="hidden md:block">Research</div>
-              <div className="hidden md:block">Employability</div>
-              <div className="hidden lg:block">International</div>
+        {dataError && (
+          <Alert role="status" className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+            <span>{dataError}</span>
+            <Button
+              type="button"
+              variant="link"
+              onClick={refresh}
+              className="h-auto p-0 gap-0 text-xs text-amber-800 font-bold underline underline-offset-2 hover:text-amber-950 hover:underline active:translate-y-0!"
+            >
+              Retry
+            </Button>
+          </Alert>
+        )}
+
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          {dataLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2">
+              {Array.from({ length: 10 }).map((_, idx) => (
+                <div key={idx} className="px-5 py-3 border-b border-slate-100 md:odd:border-r">
+                  <Skeleton className="h-10 rounded-lg bg-slate-100" aria-hidden />
+                </div>
+              ))}
             </div>
-
-            {/* List Items */}
-            {topTen.map((uni, idx) => {
-              const trend = rankTrend(uni);
-              return (
-                <motion.div
-                  key={uni.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-50px" }}
-                  transition={{ duration: 0.6, delay: idx * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
-                  className="group relative overflow-hidden bg-white/40 backdrop-blur-xl border border-white/60 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-500 cursor-pointer"
-                  onClick={() => onUniversitySelect(uni.id)}
-                >
-                  {/* Hover Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-[#1A365D]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-
-                  {/* Content Grid */}
-                  <div className="relative z-10 grid grid-cols-[3rem_minmax(120px,1fr)_120px_60px_60px] md:grid-cols-[3rem_minmax(140px,1.5fr)_120px_70px_80px_1fr_1fr] lg:grid-cols-[3rem_minmax(140px,2fr)_120px_70px_80px_1fr_1fr_1fr] gap-4 items-center px-6 py-4 md:py-5">
-                    
-                    {/* Rank */}
-                    <div className="flex justify-center">
-                      <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold transition-all duration-300 shadow-sm ${idx < 3 ? "bg-orange-50 text-orange-600 group-hover:bg-orange-100 group-hover:scale-110 group-hover:shadow-[0_0_15px_rgba(255,165,0,0.3)]" : "bg-slate-50/80 text-slate-500 group-hover:bg-slate-100 group-hover:scale-110"}`}>
-                        {idx + 1}
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 md:[&>*:nth-child(odd)]:border-r md:[&>*:nth-child(odd)]:border-slate-100">
+              {topTen.map((uni, idx) => {
+                const change = uni.rankChange ?? null;
+                return (
+                  <button
+                    key={uni.id}
+                    type="button"
+                    onClick={() => onUniversitySelect(uni.id)}
+                    className="group flex w-full items-center gap-4 border-b border-slate-100 px-5 py-3.5 text-left transition-colors hover:bg-slate-50 md:[&:nth-last-child(-n+2)]:border-b-0"
+                  >
+                    <span
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                        idx < 3 ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {idx + 1}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-slate-800 transition-colors group-hover:text-aur-primary">
+                        {uni.name}
                       </span>
-                    </div>
-
-                    {/* Name */}
-                    <div className="font-semibold text-slate-800 truncate transition-colors duration-300 group-hover:text-[#1A365D]">
-                      {uni.name}
-                    </div>
-
-                    {/* Country */}
-                    <div className="text-slate-600 text-sm flex items-center">
-                      <span className="mr-2 text-base opacity-90 drop-shadow-sm">{COUNTRY_FLAGS[uni.location] ?? ""}</span>
-                      <span className="truncate">{uni.location}</span>
-                    </div>
-
-                    {/* Score */}
-                    <div className="font-mono font-bold text-slate-700 text-sm">
-                      {uni.overall.toFixed(1)}
-                    </div>
-
-                    {/* Trend */}
-                    <div className="flex items-center">
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold bg-white/50 backdrop-blur-sm shadow-sm transition-transform duration-300 group-hover:scale-105 ${trend.improved ? "text-emerald-600" : "text-rose-500"}`}>
-                        {trend.improved ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                        {Math.abs(trend.delta).toFixed(1)}
+                      <span className="block text-xs text-slate-500">{uni.location}</span>
+                    </span>
+                    <span className="w-16 shrink-0 text-right">
+                      <span className="block font-mono text-sm font-bold text-slate-700">{uni.overall.toFixed(1)}</span>
+                      <span className="mt-1 block h-1 w-full overflow-hidden rounded-full bg-slate-100">
+                        <span
+                          className="block h-full rounded-full bg-aur-primary/70"
+                          style={{ width: `${Math.min(100, Math.max(0, uni.overall))}%` }}
+                          aria-hidden
+                        />
                       </span>
-                    </div>
-
-                    {/* Sparklines */}
-                    <div className="hidden md:block opacity-50 group-hover:opacity-100 transition-opacity duration-500">
-                      <Sparkline values={scoreHistory(uni, "research")} color="#3b82f6" />
-                    </div>
-                    <div className="hidden md:block opacity-50 group-hover:opacity-100 transition-opacity duration-500">
-                      <Sparkline values={scoreHistory(uni, "employability")} color="#10b981" />
-                    </div>
-                    <div className="hidden lg:block opacity-50 group-hover:opacity-100 transition-opacity duration-500">
-                      <Sparkline values={[uni.intlStudents - 8, uni.intlStudents - 4, uni.intlStudents - 2, uni.intlStudents - 1, uni.intlStudents]} color="#8b5cf6" />
-                    </div>
-
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
+                    </span>
+                    <span className="w-9 shrink-0 text-right">
+                      {change === null ? (
+                        <span className="text-xs font-semibold text-slate-300" title="No prior-year rank available">
+                          <span aria-hidden>—</span>
+                          <span className="sr-only">No prior-year rank available</span>
+                        </span>
+                      ) : (
+                        <span className={`inline-flex items-center gap-0.5 text-xs font-bold ${change > 0 ? "text-emerald-600" : change < 0 ? "text-rose-500" : "text-slate-500"}`}>
+                          {change > 0 && <TrendingUp className="h-3 w-3" aria-hidden />}
+                          {change < 0 && <TrendingDown className="h-3 w-3" aria-hidden />}
+                          <span aria-hidden>{change === 0 ? "0" : Math.abs(change)}</span>
+                          <span className="sr-only">
+                            {change === 0 ? "No change since last year" : change > 0 ? `Up ${change} places since last year` : `Down ${Math.abs(change)} places since last year`}
+                          </span>
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
         <p className="text-[10px] text-[var(--ref-muted)] mt-3">* Filterable by location, program &amp; tuition in Rankings Engine.</p>
+      </RevealSection>
+
+      {/* ── Feature showcase: flagship + supporting tools ── */}
+      <RevealSection className="ref-section pt-0">
+        <span className="ref-label">Platform</span>
+        <h2 className="text-2xl font-bold mt-1 mb-6">What you can do here</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:items-stretch">
+
+          {/* Flagship: Rankings Engine with a live top-3 preview */}
+          <div className="lg:col-span-2 relative overflow-hidden rounded-2xl bg-aur-primary p-7 md:p-9 text-white flex flex-col">
+            <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-blue-400/20 blur-3xl pointer-events-none" aria-hidden />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">
+              Open to everyone — no account needed
+            </span>
+            <h3 className="text-xl md:text-2xl font-bold mt-2">Rankings Engine</h3>
+            <p className="text-sm text-slate-300 max-w-md mt-1.5 mb-6">
+              Browse and filter {dataLoading ? "every" : `all ${universities.length.toLocaleString()}`} ranked
+              universities by country, program, tuition and score.
+            </p>
+
+            <div className="space-y-2 mb-7" aria-label="Current top three universities">
+              {dataLoading
+                ? Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-11 rounded-lg bg-white/10" aria-hidden />
+                  ))
+                : topTen.slice(0, 3).map((uni, i) => (
+                    <div
+                      key={uni.id}
+                      className="flex items-center gap-3 rounded-lg bg-white/10 px-4 py-2.5 text-sm backdrop-blur-sm"
+                    >
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-400/90 font-mono text-[11px] font-bold text-aur-primary">
+                        {i + 1}
+                      </span>
+                      <span className="truncate font-semibold">{uni.name}</span>
+                      <span className="ml-auto shrink-0 font-mono text-xs text-slate-300">{uni.overall.toFixed(1)}</span>
+                    </div>
+                  ))}
+            </div>
+
+            <Button
+              type="button"
+              onClick={() => onViewChange("rankings")}
+              className="mt-auto self-start h-auto border-0 bg-white hover:bg-slate-100 text-aur-primary font-bold rounded-lg px-6 py-3 text-sm active:translate-y-0!"
+            >
+              Explore the full rankings
+              <ArrowRight className="size-4" aria-hidden />
+            </Button>
+          </div>
+
+          {/* Supporting tools */}
+          <div className="flex flex-col gap-4">
+            {[
+              {
+                icon: Scale,
+                title: "Compare Institutions",
+                description: "Up to four universities side by side, across every indicator.",
+                view: "saved",
+              },
+              {
+                icon: BarChart3,
+                title: "Regional Analytics",
+                description: "Country dashboards, score distributions and movement.",
+                view: "analytics",
+              },
+              {
+                icon: Bot,
+                title: "AI Assistant",
+                description: "Ask about programs, tuition or admissions in plain language.",
+                view: "home",
+              },
+            ].map((tool) => (
+              <button
+                key={tool.title}
+                type="button"
+                onClick={() => handleProtectedViewChange(tool.view)}
+                className="group flex flex-1 items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 text-left transition-all hover:border-amber-400/70 hover:shadow-md"
+              >
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-aur-primary/10 text-aur-primary transition-colors group-hover:bg-aur-primary group-hover:text-white">
+                  <tool.icon className="size-5" aria-hidden />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-bold text-slate-800">{tool.title}</span>
+                  <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">{tool.description}</span>
+                </span>
+                <ChevronRight
+                  className="size-4 shrink-0 text-slate-300 transition-all group-hover:translate-x-0.5 group-hover:text-aur-primary"
+                  aria-hidden
+                />
+              </button>
+            ))}
+          </div>
+        </div>
       </RevealSection>
 
       {/* ── Explore by Country (light cards, per-country theme) ── */}
       <RevealSection className="ref-section pt-0 ref-country-section">
         <span className="ref-label">Regional Intelligence</span>
         <h2 className="text-2xl font-bold mt-1 mb-6">Explore by Country</h2>
-        <div className="ref-country-grid"    >
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {countryStats.map((c) => {
             const theme = getCountryTheme(c.country);
+            const hasPhoto = Boolean(theme.image);
             return (
               <button
                 key={c.country}
                 type="button"
-                className="ref-country-card ref-country-card--light text-left"
-                style={
-                  {
-                    "--country-accent": theme.accent,
-                    "--country-bg": theme.bg,
-                    "--country-image": `url("${theme.image}")`,
-                    "--country-image-pos": theme.imagePos ?? "center",
-                  } as React.CSSProperties
-                }
                 onClick={() => {
                   onSearchSubmit(c.country);
                   onViewChange("rankings");
                 }}
+                className="group relative h-44 overflow-hidden rounded-xl border border-slate-200 text-left transition-shadow hover:shadow-md"
               >
-                <div className="ref-country-monument" aria-hidden="true" />
-                <div className="ref-country-body">
-                  <span className="ref-country-code">{theme.code}</span>
-                  <span className="ref-country-monument-label">{theme.monument}</span>
-                  <div className="ref-country-name">{c.country}</div>
-                  <div className="ref-country-meta">{c.count} universities</div>
-                  <div className="ref-country-avg">Avg {c.avgScore.toFixed(1)}</div>
-                  <div className="ref-country-top truncate">Top: {c.topUni.name}</div>
-                </div>
+                {hasPhoto ? (
+                  <>
+                    <Image
+                      src={theme.image}
+                      alt=""
+                      fill
+                      sizes="(max-width: 768px) 50vw, 25vw"
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      style={{ objectPosition: theme.imagePos ?? "center" }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-aur-primary/90 via-aur-primary/35 to-transparent" aria-hidden />
+                  </>
+                ) : (
+                  <div className="absolute inset-0" style={{ background: theme.bg }} aria-hidden />
+                )}
+                <span
+                  className={`absolute top-3 right-3 rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wider ${
+                    hasPhoto ? "bg-white/25 text-white" : "bg-white/80 text-slate-500"
+                  }`}
+                >
+                  {theme.code}
+                </span>
+                <span className={`absolute inset-x-0 bottom-0 p-4 ${hasPhoto ? "text-white" : "text-aur-primary"}`}>
+                  <span className="block text-base font-bold leading-tight">{c.country}</span>
+                  <span className={`mt-0.5 block text-xs ${hasPhoto ? "text-slate-200" : "text-slate-500"}`}>
+                    {c.count} universities · Avg {c.avgScore.toFixed(1)}
+                  </span>
+                  <span className={`mt-0.5 block truncate text-[11px] ${hasPhoto ? "text-slate-300" : "text-slate-400"}`}>
+                    Top: {c.topUni.name}
+                  </span>
+                </span>
               </button>
             );
           })}
         </div>
       </RevealSection>
 
-      {/* ── News Flash ── */}
+      {/* ── How we rank (trust block) ── */}
       <RevealSection className="ref-section pt-0">
-        <NewsFlashWidget />
+        <div className="rounded-2xl border border-slate-200 bg-white p-8 md:p-10 shadow-sm">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+          <div>
+            <span className="ref-label">Methodology</span>
+            <h2 className="text-2xl font-bold mt-1 mb-4">How we rank</h2>
+            <p className="text-sm text-slate-600 leading-relaxed mb-6 max-w-lg">
+              Every score is a weighted blend of eleven indicators, from academic and employer
+              reputation surveys to research impact and international outlook. The same
+              methodology is applied to every institution in the dataset — no paid placement,
+              no editorial overrides.
+            </p>
+            <div className="flex flex-wrap gap-6 text-sm">
+              <div>
+                <div className="text-2xl font-bold text-aur-primary">{dataLoading ? "—" : universities.length.toLocaleString()}</div>
+                <div className="text-xs uppercase tracking-wider text-slate-500 mt-0.5">Universities ranked</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-aur-primary">{dataLoading ? "—" : countryCount}</div>
+                <div className="text-xs uppercase tracking-wider text-slate-500 mt-0.5">Countries &amp; territories</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-aur-primary">11</div>
+                <div className="text-xs uppercase tracking-wider text-slate-500 mt-0.5">Weighted indicators</div>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {METHODOLOGY_WEIGHTS.map((w) => (
+              <div key={w.label}>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="font-semibold text-slate-700">{w.label}</span>
+                  <span className="font-mono text-slate-500">{w.pct}%</span>
+                </div>
+                <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-aur-primary/80"
+                    style={{ width: `${w.pct}%` }}
+                    aria-hidden
+                  />
+                </div>
+              </div>
+            ))}
+            <p className="text-[10px] text-slate-400 pt-1">Methodology version QS-Asia-2026 · full breakdown applied uniformly across all institutions.</p>
+          </div>
+        </div>
+        </div>
       </RevealSection>
 
-
-      {/* ── Pulse Ticker ── */}
-      <div className="ref-pulse-ticker">
-        <div className="ref-pulse-track">
-          {[...PULSE_ITEMS, ...PULSE_ITEMS].map((item, i) => (
-            <span key={`${item}-${i}`} className="text-xs text-[var(--ref-muted)] inline-flex items-center gap-2">
-              <Activity className="h-3 w-3 text-amber-500" />
-              {item}
-            </span>
-          ))}
+      {/* ── Audience split ── */}
+      <RevealSection className="ref-section pt-0">
+        <div className="grid grid-cols-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:grid-cols-2 md:divide-x divide-y md:divide-y-0 divide-slate-200">
+          <div className="flex flex-col p-7 md:p-8">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-aur-primary/10">
+                <Users className="h-5 w-5 text-aur-primary" aria-hidden />
+              </span>
+              <h3 className="text-lg font-bold text-slate-800">I&apos;m choosing a university</h3>
+            </div>
+            <p className="mb-5 flex-1 text-sm leading-relaxed text-slate-500">
+              Filter by country, program and tuition, read full institution profiles, and
+              shortlist the ones that fit — comparisons and saved lists come free with an account.
+            </p>
+            <Button
+              type="button"
+              onClick={() => onViewChange("rankings")}
+              className="h-auto self-start border-0 bg-aur-primary hover:bg-aur-primary/90 text-white font-bold rounded-lg px-6 py-3 text-sm active:translate-y-0!"
+            >
+              Browse the rankings
+              <ArrowRight className="size-4" aria-hidden />
+            </Button>
+          </div>
+          <div className="flex flex-col p-7 md:p-8">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100">
+                <Building2 className="h-5 w-5 text-amber-700" aria-hidden />
+              </span>
+              <h3 className="text-lg font-bold text-slate-800">I represent an institution</h3>
+            </div>
+            <p className="mb-5 flex-1 text-sm leading-relaxed text-slate-500">
+              Claim and verify your university&apos;s profile, submit data corrections, and take
+              part in AUR events and awards through an institutional account.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onViewChange("login")}
+              className="h-auto self-start border-slate-300 text-aur-primary font-bold rounded-lg px-6 py-3 text-sm hover:bg-slate-50 active:translate-y-0!"
+            >
+              Register your institution
+              <ArrowRight className="size-4" aria-hidden />
+            </Button>
+          </div>
         </div>
-      </div>
+      </RevealSection>
 
-      {/* ── Trusted By ── */}
-      <section className="ref-section py-8">
-        <p className="text-center text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ref-muted)] mb-6">
-          Trusted by Leading Institutions
-        </p>
-        <div className="flex flex-wrap justify-center gap-8 items-center opacity-60">
-          {topTen.slice(0, 6).map((u) => (
-            <span key={u.id} className="text-sm font-bold tracking-wide text-slate-500">
-              {u.name.split(" ")[0].toUpperCase()}
-            </span>
-          ))}
+      {/* ── News Flash + newsletter capture ── */}
+      <RevealSection className="ref-section pt-0">
+        <NewsFlashWidget />
+
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-6 py-5">
+          <div>
+            <p className="text-sm font-bold text-aur-primary">Get the rankings update</p>
+            <p className="text-xs text-slate-500 mt-0.5">Ranking movements and admissions insights, straight to your inbox. No spam.</p>
+          </div>
+          <form onSubmit={handleSubscribe} className="flex w-full sm:w-auto items-center gap-2">
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              aria-label="Email address for newsletter"
+              required
+              className="h-auto w-full sm:w-64 rounded-full border-slate-300 bg-slate-50 px-4 py-2.5 text-sm"
+            />
+            <Button
+              type="submit"
+              disabled={loading}
+              className="h-auto border-0 bg-aur-primary hover:bg-aur-primary/90 text-white font-bold text-xs px-6 py-2.5 rounded-full transition-colors disabled:opacity-50 whitespace-nowrap active:translate-y-0!"
+            >
+              {loading ? "..." : "Subscribe"}
+            </Button>
+          </form>
         </div>
-      </section>
+      </RevealSection>
+
+      {/* ── FAQ ── */}
+      <RevealSection className="ref-section pt-0">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_2fr] lg:gap-14">
+          <div>
+            <span className="ref-label">FAQ</span>
+            <h2 className="text-2xl font-bold mt-1 mb-3">Common questions</h2>
+            <p className="text-sm leading-relaxed text-slate-500 max-w-sm">
+              Everything about how the rankings work and what an account adds. Still curious?
+              The assistant in the corner answers in plain language.
+            </p>
+          </div>
+          <div className="divide-y divide-slate-200 border-y border-slate-200">
+            {FAQS.map((faq) => (
+              <details key={faq.q} className="group py-4">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-slate-800 [&::-webkit-details-marker]:hidden">
+                  {faq.q}
+                  <ChevronDown className="size-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" aria-hidden />
+                </summary>
+                <p className="mt-3 text-sm leading-relaxed text-slate-600">{faq.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+        {/* FAQ structured data for search engines */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              mainEntity: FAQS.map((faq) => ({
+                "@type": "Question",
+                name: faq.q,
+                acceptedAnswer: { "@type": "Answer", text: faq.a },
+              })),
+            }),
+          }}
+        />
+      </RevealSection>
 
       {/* ── CTA Banner ── */}
       <RevealSection className="ref-section pt-0 pb-8">
         <div className="ref-cta-banner p-8 md:p-12">
           <div className="relative z-10 max-w-xl">
-            <h2 className="text-2xl md:text-3xl font-bold mb-3 text-white">
-              Discover the Future of Higher Education Intelligence
-            </h2>
-            <p className="text-sm text-slate-300 mb-6">
-              Access live rankings, institutional analytics, and regional insights trusted across Asia.
-            </p>
-            <div className="flex flex-wrap gap-3 justify-center">
-              <button type="button" className="bg-white hover:bg-slate-100 text-[#1A365D] font-bold rounded-lg px-8 py-3.5 text-sm transition-colors" onClick={() => handleProtectedViewChange("rankings")}>
-                Explore Rankings
-              </button>
-              <button type="button" className="bg-transparent border-2 border-white text-white hover:bg-white/10 font-bold rounded-lg px-8 py-3.5 text-sm transition-colors" onClick={() => handleProtectedViewChange("settings")}>
-                Request Institutional Access
-              </button>
-            </div>
+            {isAuthenticated ? (
+              <>
+                <h2 className="text-2xl md:text-3xl font-bold mb-3 text-white">
+                  Discover the Future of Higher Education Intelligence
+                </h2>
+                <p className="text-sm text-slate-300 mb-6">
+                  Access live rankings, institutional analytics, and regional insights trusted across Asia.
+                </p>
+                <div className="flex flex-wrap gap-3 justify-center">
+                  <Button type="button" className="h-auto border-0 bg-white hover:bg-slate-100 text-aur-primary font-bold rounded-lg px-8 py-3.5 text-sm transition-colors active:translate-y-0!" onClick={() => handleProtectedViewChange("rankings")}>
+                    Explore Rankings
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="text-2xl md:text-3xl font-bold mb-3 text-white">
+                  Create your free AUR account
+                </h2>
+                <p className="text-sm text-slate-300 mb-6">
+                  Save universities to a shortlist, compare up to four side by side, and pick up
+                  your research exactly where you left off — free, in under a minute.
+                </p>
+                <div className="flex flex-wrap gap-3 justify-center">
+                  <Button type="button" className="h-auto border-0 bg-white hover:bg-slate-100 text-aur-primary font-bold rounded-lg px-8 py-3.5 text-sm transition-colors active:translate-y-0!" onClick={() => onViewChange("login")}>
+                    Sign up free
+                  </Button>
+                  <Button type="button" className="h-auto bg-transparent hover:bg-white/10 border-2 border-white text-white font-bold rounded-lg px-8 py-3.5 text-sm transition-colors active:translate-y-0!" onClick={() => onViewChange("rankings")}>
+                    Keep exploring rankings
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </RevealSection>
 
       {/* ── Footer block ── */}
-      <footer className="w-full bg-white text-[#1A365D] pt-8 pb-8 px-6 lg:px-12 border-t border-slate-200">
+      <footer className="w-full bg-white text-aur-primary pt-12 pb-8 px-6 lg:px-12 border-t border-slate-200">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 mb-12">
-            <div className="md:col-span-4 flex flex-col">
-              <div className="flex items-center">
-                <Image
-                  src="/logo.png"
-                  alt="Asia University Rankings Logo"
-                  width={180}
-                  height={79}
-                  style={{ objectFit: "contain" }}
-                  priority
-                />
-              </div>
-              <p className="text-sm text-[#1A365D]/70 leading-relaxed mb-4">
-                The definitive intelligence platform for higher education across Asia and Central Asia. Empowering students, educators, and institutions globally.
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-12 md:gap-8 mb-10">
+            {/* Brand */}
+            <div className="md:col-span-4">
+              <Image
+                src="/logo.png"
+                alt="Asia University Rankings Logo"
+                width={140}
+                height={62}
+                style={{ objectFit: "contain", height: "auto" }}
+              />
+              <p className="mt-4 max-w-xs text-sm text-aur-primary/70 leading-relaxed">
+                The independent intelligence platform for higher education across Asia and Central Asia.
               </p>
-
-              {/* Social Media */}
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="mt-4 flex items-center gap-3">
                 {socialLinks.filter(s => s.label !== "Twitter" && s.label !== "YouTube").map((social) => (
                   <a
                     key={social.label}
@@ -1058,148 +1188,95 @@ export default function Homepage({
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={social.label}
-                    className="group"
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 transition-colors duration-200"
                   >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 transition-colors duration-200">
-                      <Image
-                        src={social.imgSrc}
-                        alt={social.label}
-                        width={18}
-                        height={18}
-                        className="object-contain"
-                      />
-                    </div>
+                    <Image src={social.imgSrc} alt="" width={16} height={16} className="object-contain" />
                   </a>
                 ))}
               </div>
             </div>
 
-            {[
-              { title: "Platform", links: [["Rankings Engine", "rankings"], ["Discovery Hub", "home"], ["Analytics", "analytics"], ["Compare Institutions", "home"]] },
-              { title: "Resources", links: [["Reports", "home"], ["Insights", "home"], ["News & Updates", "home"]] },
-              { title: "Company", links: [["About Us", "home"], ["Careers", "home"], ["Contact", "settings"], ["Privacy Policy", "settings"]] },
-            ].map((col) => (
-              <div key={col.title}>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-white mb-6">{col.title}</h4>
-                <ul className="space-y-3">
-                  {col.links.map(([label, view]) => (
-                    <li key={label}>
-                      <button
-                        type="button"
-                        onClick={() => handleProtectedViewChange(view)}
-                        className="text-sm text-left justify-start text-blue-100/70 hover:text-white hover:translate-x-1 transition-all flex items-center gap-2 w-full"
-                      >
-                        {label}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-            <div className="md:col-span-2 md:col-start-5">
-              <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#152a5e] mb-5">Platform</h4>
-              <ul className="space-y-3">
+            {/* Platform */}
+            <div className="md:col-span-2 md:col-start-6">
+              <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#152a5e] mb-4">Platform</h4>
+              <ul className="space-y-2.5">
                 {[
                   ["Rankings Engine", "rankings"],
                   ["Discovery Hub", "home"],
                   ["Analytics", "analytics"],
-                  ["Compare Institutions", "home"],
+                  ["Compare Institutions", "saved"],
                 ].map(([label, view]) => (
                   <li key={label}>
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       onClick={() => handleProtectedViewChange(view)}
-                      className="text-sm text-left justify-start text-[#1A365D]/70 hover:text-[#1A365D] hover:translate-x-1 transition-all flex items-center gap-2 w-full"
+                      className="h-auto p-0 gap-2 w-full rounded-none border-0 font-normal whitespace-normal text-sm text-left justify-start text-aur-primary/70 hover:text-aur-primary hover:bg-transparent hover:translate-x-1 transition-all active:translate-y-0!"
                     >
                       {label}
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>
             </div>
 
+            {/* Resources */}
             <div className="md:col-span-2">
-              <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#152a5e] mb-5">Resources</h4>
-              <ul className="space-y-3">
+              <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#152a5e] mb-4">Resources</h4>
+              <ul className="space-y-2.5">
                 {[
-                  ["Insights", "home"],
-                  ["News & Updates", "home"],
-                ].map(([label, view]) => (
+                  ["Insights", "/insights"],
+                  ["News & Updates", "/news"],
+                ].map(([label, href]) => (
                   <li key={label}>
-                    <button
-                      type="button"
-                      onClick={() => handleProtectedViewChange(view)}
-                      className="text-sm text-left justify-start text-[#1A365D]/70 hover:text-[#1A365D] hover:translate-x-1 transition-all flex items-center gap-2 w-full"
+                    <Link
+                      href={href}
+                      className="text-sm text-left justify-start text-aur-primary/70 hover:text-aur-primary hover:translate-x-1 transition-all flex items-center gap-2 w-full"
                     >
                       {label}
-                    </button>
+                    </Link>
                   </li>
                 ))}
               </ul>
             </div>
 
-            <div className="md:col-span-2">
-              <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#152a5e] mb-5">Company</h4>
-              <ul className="space-y-3">
-                {[
-                  ["Contact", "settings"],
-                  ["Privacy Policy", "settings"],
-                ].map(([label, view]) => (
-                  <li key={label}>
-                    <button
-                      type="button"
-                      onClick={() => handleProtectedViewChange(view)}
-                      className="text-sm text-left justify-start text-[#1A365D]/70 hover:text-[#1A365D] hover:translate-x-1 transition-all flex items-center gap-2 w-full"
-                    >
-                      {label}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          {/* Bottom section */}
-          <div className="pt-8 border-t border-slate-200 flex flex-col lg:flex-row justify-between items-center gap-6">
-            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
-              <span className="text-xs text-[#1A365D]/60">© 2026 Asia University Rankings. All rights reserved.</span>
-              <div className="flex gap-4 text-xs text-[#1A365D]/60">
-                <button type="button" className="hover:text-[#1A365D] transition-colors">Cookie Policy</button>
-              </div>
-            </div>
-
-            <div className="w-full lg:w-auto">
-              <form
-                onSubmit={handleSubscribe}
-                className="flex w-full lg:w-auto items-center gap-2 bg-slate-100 p-1.5 rounded-full border border-slate-300 focus-within:border-[#1A365D]/40 focus-within:bg-slate-200 transition-all"
-              >
-                <div className="pl-4 hidden sm:block">
-                  <Mail className="h-4 w-4 text-[#1A365D]/60" />
+            {/* Newsletter */}
+            <div className="md:col-span-3">
+              <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#152a5e] mb-4">Newsletter</h4>
+              <p className="text-sm text-aur-primary/70 mb-3">Ranking movements and admissions insights, monthly.</p>
+              <form onSubmit={handleSubscribe} className="flex flex-col gap-2">
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-aur-primary/50" aria-hidden />
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    aria-label="Email address for newsletter"
+                    required
+                    className="h-auto w-full rounded-lg border-slate-300 bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-aur-primary placeholder:text-aur-primary/40"
+                  />
                 </div>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Subscribe to our newsletter..."
-                  required
-                  className="bg-transparent border-none px-3 py-1.5 text-sm text-[#1A365D] placeholder:text-[#1A365D]/40 w-full sm:w-64 focus:outline-none focus:ring-0"
-                />
-                <button
+                <Button
                   type="submit"
                   disabled={loading}
-                  className="bg-[#1A365D] hover:bg-[#1A365D]/90 text-white font-bold text-xs px-6 py-2.5 rounded-full transition-colors disabled:opacity-50 whitespace-nowrap"
+                  className="h-auto self-start border-0 bg-aur-primary hover:bg-aur-primary/90 text-white font-bold text-xs px-5 py-2.5 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap active:translate-y-0!"
                 >
-                  {loading ? "..." : "Subscribe"}
-                </button>
+                  {loading ? "Subscribing..." : "Subscribe"}
+                </Button>
               </form>
               {status && (
-                <div className="text-right mt-2 text-xs pr-4">
+                <div className="mt-2 text-xs" role="status" aria-live="polite">
                   <span className={status.includes("Thank") ? "text-emerald-600" : "text-amber-600"}>
                     {status}
                   </span>
                 </div>
               )}
             </div>
+          </div>
+
+          <div className="border-t border-slate-200 pt-6">
+            <span className="text-xs text-aur-primary/60">© 2026 Asia University Rankings. All rights reserved.</span>
           </div>
         </div>
       </footer>

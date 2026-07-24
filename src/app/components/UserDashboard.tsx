@@ -16,6 +16,10 @@ import {
   GraduationCap
 } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+
 // Assuming standard university type based on the project context
 interface University {
   id: string;
@@ -103,7 +107,7 @@ export default function UserDashboard({
               );
             })}
             
-            <div className="hidden lg:block h-px w-full bg-[var(--aur-border)] my-4" />
+            <Separator className="hidden lg:block bg-[var(--aur-border)] my-4" />
             
             <button 
               onClick={onSignOut}
@@ -171,12 +175,12 @@ export default function UserDashboard({
                       <p className="text-xs text-[var(--aur-text-muted)] max-w-xs mb-6">
                         You have not pinned any institutions to your personal database yet.
                       </p>
-                      <button
+                      <Button
                         onClick={onNavigateToRankings}
-                        className="inline-flex items-center gap-2 border border-[var(--aur-text)] bg-[var(--aur-text)] px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest text-[var(--background)] hover:opacity-80 transition-opacity rounded-lg"
+                        className="h-auto gap-2 border-[var(--aur-text)] bg-[var(--aur-text)] hover:bg-[var(--aur-text)] px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest text-[var(--background)] hover:opacity-80 transition-opacity rounded-lg"
                       >
-                        Explore Rankings <ChevronRight className="h-3.5 w-3.5" />
-                      </button>
+                        Explore Rankings <ChevronRight className="size-3.5" />
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -244,12 +248,13 @@ export default function UserDashboard({
                       <ShieldAlert className="h-4.5 w-4.5" />
                       <span className="font-bold text-[10px] uppercase tracking-widest">Danger Zone</span>
                     </div>
-                    <button
+                    <Button
+                      variant="outline"
                       onClick={onResetCache}
-                      className="bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 dark:bg-red-950/20 dark:hover:bg-red-950/40 dark:border-red-900/50 dark:text-red-400 text-[10px] font-bold uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors"
+                      className="h-auto bg-red-50 hover:bg-red-100 border-red-200 text-red-600 hover:text-red-600 dark:bg-red-950/20 dark:hover:bg-red-950/40 dark:border-red-900/50 dark:text-red-400 dark:hover:text-red-400 text-[10px] font-bold uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors"
                     >
                       Reset Local Storage Cache
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -291,15 +296,15 @@ export default function UserDashboard({
 
                   <div className="p-6 border border-[var(--aur-text)] bg-[var(--aur-surface-2)] rounded-xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--aur-text)] opacity-[0.03] rounded-bl-full pointer-events-none" />
-                    <div className="inline-block px-2 py-1 bg-[var(--aur-text)] text-[var(--background)] text-[9px] font-bold uppercase tracking-widest rounded mb-4">
+                    <Badge className="h-auto border-0 px-2 py-1 bg-[var(--aur-text)] text-[var(--background)] text-[9px] font-bold uppercase tracking-widest rounded mb-4">
                       Pro Tier
-                    </div>
+                    </Badge>
                     <h3 className="text-2xl font-bold text-[var(--aur-text)] font-serif mb-1">Institutional Access</h3>
                     <p className="text-sm text-[var(--aur-text-muted)] mb-6">Provides unlimited queries to the rankings engine and real-time analytics.</p>
                     
-                    <button className="bg-[var(--aur-text)] text-[var(--background)] px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest rounded-lg">
+                    <Button className="h-auto border-0 bg-[var(--aur-text)] hover:bg-[var(--aur-text)] text-[var(--background)] px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest rounded-lg">
                       Manage Subscription
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}

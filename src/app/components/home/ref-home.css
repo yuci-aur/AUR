@@ -210,20 +210,6 @@
   transition: opacity 0.5s ease;
 }
 
-@keyframes ref-map-pulse {
-  0%,
-  100% {
-    opacity: 0.55;
-    r: 14;
-  }
-  50% {
-    opacity: 0.95;
-  }
-}
-.ref-map-pulse {
-  animation: ref-map-pulse 2.4s ease-in-out infinite;
-}
-
 /* Map university cards */
 .ref-map-uni-card {
   position: absolute;
@@ -675,27 +661,14 @@
   box-shadow: var(--aur-shadow);
 }
 
-/* â”€â”€ Pulse Ticker â”€â”€ */
-.ref-pulse-ticker {
-  overflow: hidden;
-  white-space: nowrap;
-  background: var(--aur-surface);
-  border-top: 1px solid var(--aur-border);
-  border-bottom: 1px solid var(--aur-border);
-  padding: 0.875rem 0;
-}
-
-.ref-pulse-track {
-  display: inline-flex;
-  gap: 3rem;
-  animation: ref-scroll 40s linear infinite;
-}
-@keyframes ref-scroll {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
+/* Reduced motion: stop decorative animation/transition for users who ask */
+@media (prefers-reduced-motion: reduce) {
+  .ref-home *,
+  .ref-home *::before,
+  .ref-home *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

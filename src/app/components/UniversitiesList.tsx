@@ -22,6 +22,9 @@ import {
 import type { University } from "../data";
 import { useUniversityData } from "./data/UniversityDataProvider";
 import { useSidebar } from "./navigation/SidebarContext";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface UniversitiesListProps {
   onUniversitySelect: (id: string) => void;
@@ -209,12 +212,12 @@ export default function UniversitiesList({
       <div className="flex flex-col sm:flex-row gap-3 mb-6 p-3 rounded-xl border border-[var(--aur-border)] bg-[var(--aur-surface-2)]">
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--aur-text-muted)]" />
-          <input
+          <Input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by name, country, or subject..."
-            className="w-full h-[42px] border border-[var(--aur-border)] rounded-lg px-4 pl-10 text-xs focus:outline-none focus:border-[var(--aur-border-strong)] bg-[var(--aur-surface)] text-[var(--aur-text)] placeholder-[var(--aur-text-muted)] transition-colors"
+            className="h-[42px] border-[var(--aur-border)] rounded-lg px-4 pl-10 text-xs md:text-xs focus-visible:ring-0 focus-visible:border-[var(--aur-border-strong)] bg-[var(--aur-surface)] dark:bg-[var(--aur-surface)] text-[var(--aur-text)] placeholder:text-[var(--aur-text-muted)] transition-colors"
           />
         </div>
         <div className="relative">
@@ -229,31 +232,33 @@ export default function UniversitiesList({
           </select>
           <Filter className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-[var(--aur-text-muted)] pointer-events-none" />
         </div>
-        <button
+        <Button
+          variant="ghost"
           onClick={() => setShowMedicine(!showMedicine)}
           className={`flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider px-5 h-[42px] rounded-lg border transition-all ${
             showMedicine
-              ? "bg-[var(--aur-text)] border-[var(--aur-text)] text-[var(--background)]"
-              : "bg-[var(--aur-surface)] border-[var(--aur-border)] text-[var(--aur-text-secondary)] hover:bg-[var(--aur-surface-hover)] hover:text-[var(--aur-text)]"
+              ? "bg-[var(--aur-text)] border-[var(--aur-text)] text-[var(--background)] hover:bg-[var(--aur-text)] hover:text-[var(--background)] dark:hover:bg-[var(--aur-text)]"
+              : "bg-[var(--aur-surface)] border-[var(--aur-border)] text-[var(--aur-text-secondary)] hover:bg-[var(--aur-surface-hover)] hover:text-[var(--aur-text)] dark:hover:bg-[var(--aur-surface-hover)]"
           }`}
         >
-          <Award className="h-3.5 w-3.5" />
+          <Award className="size-3.5" />
           Med Only
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
           onClick={() => {
             setShowEligibility(!showEligibility);
             setEligibilityResult(null);
           }}
           className={`flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider px-5 h-[42px] rounded-lg border transition-all ${
             showEligibility
-              ? "bg-[var(--aur-text)] border-[var(--aur-text)] text-[var(--background)] shadow-sm"
-              : "bg-[var(--aur-surface)] border-[var(--aur-border)] text-[var(--aur-text-secondary)] hover:bg-[var(--aur-surface-hover)] hover:text-[var(--aur-text)]"
+              ? "bg-[var(--aur-text)] border-[var(--aur-text)] text-[var(--background)] shadow-sm hover:bg-[var(--aur-text)] hover:text-[var(--background)] dark:hover:bg-[var(--aur-text)]"
+              : "bg-[var(--aur-surface)] border-[var(--aur-border)] text-[var(--aur-text-secondary)] hover:bg-[var(--aur-surface-hover)] hover:text-[var(--aur-text)] dark:hover:bg-[var(--aur-surface-hover)]"
           }`}
         >
-          <GraduationCap className="h-4 w-4" />
+          <GraduationCap className="size-4" />
           Eligibility Check
-        </button>
+        </Button>
       </div>
 
       {/* ── ELIGIBILITY CHECK SECTION ── */}
@@ -263,12 +268,14 @@ export default function UniversitiesList({
             {/* Decorative background blur */}
             <div className="absolute -top-24 -right-24 w-48 h-48 bg-[#ff4433]/5 rounded-full blur-3xl pointer-events-none"></div>
             
-            <button 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setShowEligibility(false)}
-              className="absolute top-4 right-4 text-[var(--aur-text-muted)] hover:text-[var(--aur-text)] bg-[var(--aur-surface-2)] hover:bg-[var(--aur-surface-hover)] rounded-full p-1.5 transition-colors z-10"
+              className="absolute top-4 right-4 size-7 rounded-full border-0 text-[var(--aur-text-muted)] hover:text-[var(--aur-text)] bg-[var(--aur-surface-2)] hover:bg-[var(--aur-surface-hover)] dark:hover:bg-[var(--aur-surface-hover)] transition-colors z-10"
             >
-              <X className="w-4 h-4" />
-            </button>
+              <X className="size-4" />
+            </Button>
             <div className="flex items-center gap-3 mb-6 relative z-10">
               <div className="bg-[#ff4433]/10 p-2.5 rounded-lg text-[#ff4433]">
                 <GraduationCap className="w-5 h-5" />
@@ -287,12 +294,13 @@ export default function UniversitiesList({
                 <div>
                   <h3 className="font-bold text-[var(--aur-text)] text-sm mb-1">{eligibilityResult.status}</h3>
                   <p className="text-[var(--aur-text-secondary)] text-[13px] leading-relaxed mb-3">{eligibilityResult.message}</p>
-                  <button 
+                  <Button
+                    variant="ghost"
                     onClick={() => setEligibilityResult(null)}
-                    className="text-[11px] font-bold uppercase tracking-wider text-[#10b981] hover:text-white bg-[#10b981]/10 hover:bg-[#10b981] px-4 py-2 rounded-md transition-all border border-[#10b981]/20"
+                    className="h-auto text-[11px] font-bold uppercase tracking-wider text-[#10b981] hover:text-white bg-[#10b981]/10 hover:bg-[#10b981] dark:hover:bg-[#10b981] px-4 py-2 rounded-md transition-all border border-[#10b981]/20"
                   >
                     Check another profile
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : (
@@ -307,7 +315,7 @@ export default function UniversitiesList({
                 </div>
                 <div>
                   <label className="block text-[10px] uppercase font-bold tracking-wider text-[var(--aur-text-muted)] mb-2 ml-1">GPA / Score</label>
-                  <input type="text" placeholder="e.g. 85% or 3.5" className="w-full bg-[var(--aur-surface-2)] border border-[var(--aur-border)] rounded-lg px-4 py-3 text-xs text-[var(--aur-text)] placeholder-[var(--aur-text-muted)] focus:outline-none focus:border-[#ff4433] transition-colors" />
+                  <Input type="text" placeholder="e.g. 85% or 3.5" className="h-auto bg-[var(--aur-surface-2)] dark:bg-[var(--aur-surface-2)] border-[var(--aur-border)] rounded-lg px-4 py-3 text-xs md:text-xs text-[var(--aur-text)] placeholder:text-[var(--aur-text-muted)] focus-visible:ring-0 focus-visible:border-[#ff4433] transition-colors" />
                 </div>
                 <div>
                   <label className="block text-[10px] uppercase font-bold tracking-wider text-[var(--aur-text-muted)] mb-2 ml-1">English Proficiency</label>
@@ -318,15 +326,15 @@ export default function UniversitiesList({
                   </select>
                 </div>
                 <div className="flex items-end">
-                  <button 
+                  <Button
                     onClick={() => setEligibilityResult({
                       status: "Highly Eligible!",
                       message: "Based on your profile, you meet the initial criteria for over 60% of our top-tier institutions, including several prestigious medical programs. We recommend filtering by 'Medicine Only' to explore specific options."
                     })}
-                    className="w-full bg-[var(--aur-text)] text-[var(--background)] hover:opacity-80 font-bold text-[11px] uppercase tracking-wider py-3.5 px-4 rounded-lg transition-all flex items-center justify-center gap-2 shadow-sm group"
+                    className="w-full h-auto border-0 bg-[var(--aur-text)] text-[var(--background)] hover:bg-[var(--aur-text)] hover:opacity-80 font-bold text-[11px] uppercase tracking-wider py-3.5 px-4 rounded-lg transition-all flex items-center justify-center gap-2 shadow-sm group"
                   >
-                    Assess Now <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </button>
+                    Assess Now <ChevronRight className="size-4 group-hover:translate-x-1 transition-transform" />
+                  </Button>
                 </div>
               </div>
             )}
@@ -347,28 +355,31 @@ export default function UniversitiesList({
               Active filters:
             </span>
             {selectedRegion && (
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setSelectedRegion("")}
-                className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-[var(--aur-border)] text-[var(--aur-text)] bg-[var(--aur-surface)] hover:bg-[var(--aur-surface-hover)] transition"
+                className="h-auto flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-[var(--aur-border)] text-[var(--aur-text)] bg-[var(--aur-surface)] hover:bg-[var(--aur-surface-hover)] hover:text-[var(--aur-text)] dark:hover:bg-[var(--aur-surface-hover)] transition"
               >
-                {selectedRegion} <X className="h-2.5 w-2.5" />
-              </button>
+                {selectedRegion} <X className="size-2.5" />
+              </Button>
             )}
             {showMedicine && (
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setShowMedicine(false)}
-                className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-[var(--aur-border)] text-[var(--aur-text)] bg-[var(--aur-surface)] hover:bg-[var(--aur-surface-hover)] transition"
+                className="h-auto flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-[var(--aur-border)] text-[var(--aur-text)] bg-[var(--aur-surface)] hover:bg-[var(--aur-surface-hover)] hover:text-[var(--aur-text)] dark:hover:bg-[var(--aur-surface-hover)] transition"
               >
-                Medicine Only <X className="h-2.5 w-2.5" />
-              </button>
+                Medicine Only <X className="size-2.5" />
+              </Button>
             )}
             {searchQuery && (
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setSearchQuery("")}
-                className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-[var(--aur-border)] text-[var(--aur-text)] bg-[var(--aur-surface)] hover:bg-[var(--aur-surface-hover)] transition"
+                className="h-auto flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-[var(--aur-border)] text-[var(--aur-text)] bg-[var(--aur-surface)] hover:bg-[var(--aur-surface-hover)] hover:text-[var(--aur-text)] dark:hover:bg-[var(--aur-surface-hover)] transition"
               >
-                &quot;{searchQuery}&quot; <X className="h-2.5 w-2.5" />
-              </button>
+                &quot;{searchQuery}&quot; <X className="size-2.5" />
+              </Button>
             )}
           </div>
         )}
@@ -384,9 +395,12 @@ export default function UniversitiesList({
           of {universities.length} institutions
         </p>
         {compared.length > 0 && (
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--aur-text)] bg-[var(--aur-surface-hover)] border border-[var(--aur-border)] px-3 py-1 rounded-full">
+          <Badge
+            variant="outline"
+            className="h-auto gap-0 text-[10px] font-bold uppercase tracking-wider text-[var(--aur-text)] bg-[var(--aur-surface-hover)] border-[var(--aur-border)] px-3 py-1 rounded-full"
+          >
             {compared.length} Selected for Compare
-          </span>
+          </Badge>
         )}
       </div>
 
@@ -451,30 +465,32 @@ export default function UniversitiesList({
 
                 {/* ── Action Row ── */}
                 <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--aur-border)] bg-[var(--aur-surface)]">
-                  <button
+                  <Button
+                    variant="ghost"
                     onClick={(e) => toggleShortlist(uni.id, e)}
-                    className={`flex flex-1 justify-center items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-md border transition-all ${
+                    className={`flex flex-1 h-auto justify-center items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-md border transition-all ${
                       isShortlisted
-                        ? "bg-red-50 text-red-600 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900"
-                        : "bg-[var(--aur-surface)] text-[var(--aur-text-secondary)] border-[var(--aur-border)] hover:bg-[var(--aur-surface-hover)]"
+                        ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-600 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900 dark:hover:bg-red-950/20 dark:hover:text-red-400"
+                        : "bg-[var(--aur-surface)] text-[var(--aur-text-secondary)] border-[var(--aur-border)] hover:bg-[var(--aur-surface-hover)] hover:text-[var(--aur-text-secondary)] dark:hover:bg-[var(--aur-surface-hover)]"
                     }`}
                   >
                     <Heart
-                      className={`h-3 w-3 ${isShortlisted ? "fill-current" : ""}`}
+                      className={`size-3 ${isShortlisted ? "fill-current" : ""}`}
                     />
                     {isShortlisted ? "Saved" : "Save"}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
                     onClick={(e) => toggleCompare(uni.id, e)}
-                    className={`flex flex-1 justify-center items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-md border transition-all ${
+                    className={`flex flex-1 h-auto justify-center items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-md border transition-all ${
                       isCompared
-                        ? "bg-[var(--aur-text)] text-[var(--background)] border-[var(--aur-text)]"
-                        : "bg-[var(--aur-surface)] text-[var(--aur-text-secondary)] border-[var(--aur-border)] hover:bg-[var(--aur-surface-hover)]"
+                        ? "bg-[var(--aur-text)] text-[var(--background)] border-[var(--aur-text)] hover:bg-[var(--aur-text)] hover:text-[var(--background)] dark:hover:bg-[var(--aur-text)]"
+                        : "bg-[var(--aur-surface)] text-[var(--aur-text-secondary)] border-[var(--aur-border)] hover:bg-[var(--aur-surface-hover)] hover:text-[var(--aur-text-secondary)] dark:hover:bg-[var(--aur-surface-hover)]"
                     }`}
                   >
-                    <BarChart2 className="h-3 w-3" />
+                    <BarChart2 className="size-3" />
                     {isCompared ? "Added" : "Compare"}
-                  </button>
+                  </Button>
                 </div>
 
                 {/* ── Meta Info ── */}
@@ -523,31 +539,33 @@ export default function UniversitiesList({
                   {/* Subject tags */}
                   <div className="flex flex-wrap gap-1.5 mb-4 mt-auto pt-2">
                     {uni.subjects.slice(0, 3).map((sub) => (
-                      <span
+                      <Badge
                         key={sub}
-                        className="text-[10px] font-bold px-2 py-0.5 rounded border border-[var(--aur-border)] bg-[var(--aur-surface-hover)] text-[var(--aur-text-secondary)]"
+                        variant="outline"
+                        className="h-auto gap-0 whitespace-normal rounded border-[var(--aur-border)] bg-[var(--aur-surface-hover)] px-2 py-0.5 text-[10px] font-bold text-[var(--aur-text-secondary)]"
                       >
                         {sub}
-                      </span>
+                      </Badge>
                     ))}
                     {uni.subjects.length > 3 && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-[var(--aur-border)] bg-[var(--aur-surface-2)] text-[var(--aur-text-muted)]">
+                      <Badge
+                        variant="outline"
+                        className="h-auto gap-0 rounded border-[var(--aur-border)] bg-[var(--aur-surface-2)] px-2 py-0.5 text-[10px] font-bold text-[var(--aur-text-muted)]"
+                      >
                         +{uni.subjects.length - 3}
-                      </span>
+                      </Badge>
                     )}
                   </div>
 
                   {/* View University CTA */}
                   <div className="mt-2 flex gap-2 border-t border-[var(--aur-border)] pt-4">
-                    <button
-                      
-                      
+                    <Button
                       onClick={() => onUniversitySelect(uni.id)}
-                      className="flex-1 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider py-2.5 rounded-lg bg-[var(--aur-text)] text-[var(--background)] hover:opacity-90 transition-opacity"
+                      className="flex-1 h-auto border-0 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider py-2.5 rounded-lg bg-[var(--aur-text)] text-[var(--background)] hover:bg-[var(--aur-text)] hover:opacity-90 transition-opacity"
                     >
                       View Profile
-                      <ChevronRight className="h-3.5 w-3.5" />
-                    </button>
+                      <ChevronRight className="size-3.5" />
+                    </Button>
                     <a
                       href={uni.website}
                       target="_blank"
@@ -577,17 +595,17 @@ export default function UniversitiesList({
           <p className="text-sm text-[var(--aur-text-secondary)] mb-6 max-w-md mx-auto">
             Try adjusting your search or filters.
           </p>
-          <button
+          <Button
             onClick={() => {
               setSearchQuery("");
               setSelectedRegion("");
               setShowMedicine(false);
             }}
-            className="inline-flex items-center justify-center gap-2 border border-[var(--aur-text)] bg-[var(--aur-text)] px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-[var(--background)] hover:opacity-80 transition-opacity rounded-xl"
+            className="h-auto inline-flex items-center justify-center gap-2 border border-[var(--aur-text)] bg-[var(--aur-text)] px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-[var(--background)] hover:bg-[var(--aur-text)] hover:opacity-80 transition-opacity rounded-xl"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="size-3.5" />
             Clear All Filters
-          </button>
+          </Button>
         </div>
       )}
 
@@ -601,13 +619,13 @@ export default function UniversitiesList({
           <p className="text-xs mb-6 text-[var(--aur-text-secondary)] max-w-xl mx-auto leading-relaxed">
             Switch to the Rankings Engine to dynamically adjust scoring weights and compare institutions side-by-side.
           </p>
-          <button
+          <Button
             onClick={() => onViewChange("rankings")}
-            className="inline-flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider px-8 py-3 rounded-xl bg-[var(--aur-text)] text-[var(--background)] hover:opacity-90 transition-opacity"
+            className="h-auto border-0 inline-flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider px-8 py-3 rounded-xl bg-[var(--aur-text)] text-[var(--background)] hover:bg-[var(--aur-text)] hover:opacity-90 transition-opacity"
           >
             Launch Rankings Engine
-            <ChevronRight className="h-4 w-4" />
-          </button>
+            <ChevronRight className="size-4" />
+          </Button>
         </div>
       </div>
     </div>

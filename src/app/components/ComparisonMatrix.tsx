@@ -4,6 +4,9 @@ import React, { useState, useMemo } from "react";
 import { X, LayoutGrid, Search } from "lucide-react";
 import { University } from "../data";
 import { useUniversityData } from "./data/UniversityDataProvider";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const ProfessionalInput = ({
   label, value, onChange, placeholder, prefix, suffix
@@ -11,17 +14,17 @@ const ProfessionalInput = ({
   label: string; value: string; onChange: (v: string) => void; placeholder: string; prefix?: string; suffix?: string;
 }) => (
   <div className="flex flex-col gap-1.5">
-    <label className="text-xs font-semibold text-slate-700">
+    <Label className="text-xs font-semibold text-slate-700">
       {label}
-    </label>
+    </Label>
     <div className="relative flex items-center">
       {prefix && <span className="absolute left-3 text-slate-400 text-sm font-medium">{prefix}</span>}
-      <input
+      <Input
         type="text"
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className={`w-full bg-white border border-slate-300 rounded-md shadow-sm py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-colors ${prefix ? 'pl-8' : 'pl-3'} ${suffix ? 'pr-8' : 'pr-3'}`}
+        className={`h-auto w-full bg-white dark:bg-white border-slate-300 dark:border-slate-300 rounded-md shadow-sm py-2 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:border-slate-900 transition-colors ${prefix ? 'pl-8' : 'pl-3'} ${suffix ? 'pr-8' : 'pr-3'}`}
       />
       {suffix && <span className="absolute right-3 text-slate-400 text-sm font-medium">{suffix}</span>}
     </div>
@@ -120,13 +123,13 @@ export default function ComparisonMatrix() {
             </div>
 
             <div className="mt-8 flex items-center justify-end border-t border-slate-100 pt-6">
-              <button
+              <Button
                 onClick={applyFilters}
-                className="inline-flex items-center justify-center px-5 py-2 bg-slate-900 hover:bg-cyber-black text-white text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 transition-colors"
+                className="h-auto gap-2 border-0 px-5 py-2 bg-slate-900 hover:bg-cyber-black text-white text-sm font-medium rounded-md shadow-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-900 transition-colors"
               >
-                <Search className="w-4 h-4 mr-2" />
+                <Search className="w-4 h-4" />
                 Apply Filters
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -157,16 +160,17 @@ export default function ComparisonMatrix() {
                               Score: {res.overall.toFixed(1)}
                             </td>
                             <td className="px-6 py-4 text-right w-40">
-                              <button
+                              <Button
+                                variant="outline"
                                 onClick={() => toggleSelect(res)}
-                                className={`inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-md border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                className={`h-auto px-3 py-1.5 text-xs font-medium rounded-md transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 ${
                                   isSelected
-                                    ? "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
-                                    : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                                    ? "border-red-200 bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-700 dark:border-red-200 dark:bg-red-50 dark:hover:bg-red-100"
+                                    : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-700 dark:border-slate-300 dark:bg-white dark:hover:bg-slate-50"
                                 }`}
                               >
                                 {isSelected ? "Remove" : "Add to Matrix"}
-                              </button>
+                              </Button>
                             </td>
                           </tr>
                         );
@@ -246,12 +250,13 @@ export default function ComparisonMatrix() {
                       ) : "N/A"}
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <button
+                      <Button
+                        variant="outline"
                         onClick={() => toggleSelect(u)}
-                        className="text-slate-400 hover:text-red-500 transition-colors p-1 bg-white rounded-md border border-slate-200 shadow-sm hover:border-red-200 hover:bg-red-50"
+                        className="h-auto w-auto text-slate-400 hover:text-red-500 transition-colors p-1 bg-white rounded-md border-slate-200 shadow-sm hover:border-red-200 hover:bg-red-50 dark:border-slate-200 dark:bg-white dark:hover:bg-red-50"
                       >
                         <X className="w-4 h-4" />
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}

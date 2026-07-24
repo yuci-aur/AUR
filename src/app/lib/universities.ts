@@ -1,7 +1,12 @@
 import type { University } from "../data";
 
+// Set NEXT_PUBLIC_AUR_API_BASE_URL explicitly per environment. The dev
+// fallback points at a local backend; production keeps the deployed API.
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_AUR_API_BASE_URL ?? "https://aur-38ce.onrender.com";
+  process.env.NEXT_PUBLIC_AUR_API_BASE_URL ??
+  (process.env.NODE_ENV === "development"
+    ? "http://localhost:8000"
+    : "https://aur-38ce.onrender.com");
 
 const FALLBACK_CAMPUS_PHOTOS = [
   "https://images.unsplash.com/photo-1562774053-f5a02f6da861?auto=format&fit=crop&w=800&q=80",
@@ -96,14 +101,20 @@ function inferLanguages(uni: BackendUniversity): string[] {
 
 function buildHistory(uni: BackendUniversity, fallbackRank: number): number[] {
   const rank2026 = toRank(uni.rank, fallbackRank);
-  const rank2025 = toRank(uni.rank_2025, rank2026);
-  return [
-    rank2026,
-    rank2025,
-    rank2025 + 1,
-    rank2025 + 2,
-    rank2025 + 3,
-  ];
+  const rank2025 = toNumber(uni.rank_2025, NaN);
+  return Number.isFinite(rank2025) && rank2025 > 0
+    ? [rank2026, Math.round(rank2025)]
+    : [rank2026];
+}
+
+function realRankChange(uni: BackendUniversity): number | null {
+  const rank2026 = toNumber(uni.rank, NaN);
+  const rank2025 = toNumber(uni.rank_2025, NaN);
+  if (!Number.isFinite(rank2026) || !Number.isFinite(rank2025) || rank2025 <= 0) {
+    return null;
+  }
+  // Positive = moved up the table year-over-year (e.g. 12 -> 9 is +3)
+  return Math.round(rank2025) - Math.round(rank2026);
 }
 
 export function mapBackendUniversity(uni: BackendUniversity, index: number): University {
@@ -139,6 +150,7 @@ export function mapBackendUniversity(uni: BackendUniversity, index: number): Uni
       uni.description ??
       `${name} is listed in the Asia University Rankings dataset for ${location}. Profile details are populated from the live AUR backend where available.`,
     history: buildHistory(uni, fallbackRank),
+    rankChange: realRankChange(uni),
     programs: Array.isArray(uni.programs) && uni.programs.length > 0
       ? uni.programs
       : subjects.map((subject) => `${subject} programs`),

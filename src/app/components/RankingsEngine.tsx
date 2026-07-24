@@ -34,6 +34,13 @@ import { University } from "../data";
 import { useUniversityData } from "./data/UniversityDataProvider";
 import { useSidebar } from "./navigation/SidebarContext";
 import MultiSelectDropdown from "./ui/MultiSelectDropdown";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+
+// Shared classes for the removable filter tag pills (visual parity with the previous hand-rolled spans)
+const FILTER_TAG_CLASS =
+  "h-auto max-w-full gap-0 overflow-visible whitespace-normal rounded-full border-[var(--aur-border)] bg-[var(--aur-surface-2)] px-2 py-0.5 font-mono text-[10px] font-normal text-[var(--aur-text)] cursor-pointer transition-colors hover:border-red-500 hover:text-red-500 [&>svg]:size-2.5!";
 
 interface RankingsEngineProps {
   searchQuery: string;
@@ -408,9 +415,12 @@ export default function RankingsEngine({
         header: "Tuition / Yr",
         accessorKey: "tuition",
         cell: ({ row }) => (
-          <span className="inline-flex min-w-[5.5rem] justify-end font-mono text-xs text-[var(--aur-text-muted)] bg-[var(--aur-surface-2)] border border-[var(--aur-border)] px-1.5 py-0.5">
+          <Badge
+            variant="outline"
+            className="h-auto min-w-[5.5rem] justify-end gap-0 rounded-none border-[var(--aur-border)] bg-[var(--aur-surface-2)] px-1.5 py-0.5 font-mono text-xs font-normal text-[var(--aur-text-muted)]"
+          >
             {row.original.tuition}
-          </span>
+          </Badge>
         ),
       },
       {
@@ -533,12 +543,12 @@ export default function RankingsEngine({
           </label>
           <div className="relative">
 <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"/>
-            <input
+            <Input
               type="text"
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-full h-11 rounded-xl bg-white/60 border border-white/80 px-4 text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1A365D]/20 transition-all placeholder:text-slate-400"
+              className="h-11 rounded-xl bg-white/60 dark:bg-white/60 border-white/80 px-4 text-sm text-slate-800 shadow-sm focus-visible:border-white/80 focus-visible:ring-2 focus-visible:ring-[#1A365D]/20 transition-all placeholder:text-slate-400"
               style={{ paddingLeft: "2.75rem" }}
             />
           </div>
@@ -564,13 +574,14 @@ export default function RankingsEngine({
           {locations.length > 0 && (
             <div className="min-h-6 flex flex-wrap gap-1 mt-1.5">
               {locations.map((loc) => (
-                <span
+                <Badge
                   key={loc}
+                  variant="outline"
                   onClick={() => handleLocationToggle(loc)}
-                  className="inline-flex max-w-full items-center rounded-full text-[10px] font-mono border border-[var(--aur-border)] bg-[var(--aur-surface-2)] text-[var(--aur-text)] px-2 py-0.5 cursor-pointer hover:border-red-500 hover:text-red-500 transition-colors"
+                  className={FILTER_TAG_CLASS}
                 >
                   {loc} <X className="h-2.5 w-2.5 ml-1" />
-                </span>
+                </Badge>
               ))}
             </div>
           )}
@@ -596,13 +607,14 @@ export default function RankingsEngine({
           {selectedSubjects.length > 0 && (
             <div className="min-h-6 flex flex-wrap gap-1 mt-1.5">
               {selectedSubjects.map((sub) => (
-                <span
+                <Badge
                   key={sub}
+                  variant="outline"
                   onClick={() => handleSubjectToggle(sub)}
-                  className="inline-flex max-w-full items-center rounded-full text-[10px] font-mono border border-[var(--aur-border)] bg-[var(--aur-surface-2)] text-[var(--aur-text)] px-2 py-0.5 cursor-pointer hover:border-red-500 hover:text-red-500 transition-colors"
+                  className={FILTER_TAG_CLASS}
                 >
                   {sub} <X className="h-2.5 w-2.5 ml-1" />
-                </span>
+                </Badge>
               ))}
             </div>
           )}
@@ -628,13 +640,14 @@ export default function RankingsEngine({
           {selectedLanguages.length > 0 && (
             <div className="min-h-6 flex flex-wrap gap-1 mt-1.5">
               {selectedLanguages.map((lang) => (
-                <span
+                <Badge
                   key={lang}
+                  variant="outline"
                   onClick={() => handleLanguageToggle(lang)}
-                  className="inline-flex max-w-full items-center rounded-full text-[10px] font-mono border border-[var(--aur-border)] bg-[var(--aur-surface-2)] text-[var(--aur-text)] px-2 py-0.5 cursor-pointer hover:border-red-500 hover:text-red-500 transition-colors"
+                  className={FILTER_TAG_CLASS}
                 >
                   {lang} <X className="h-2.5 w-2.5 ml-1" />
-                </span>
+                </Badge>
               ))}
             </div>
           )}
@@ -732,13 +745,13 @@ export default function RankingsEngine({
               <p className="text-xs text-slate-500 leading-relaxed mb-6 max-w-sm">
                 Try widening location, subject, or rank ranges—or reset all filters to browse the full index.
               </p>
-              <button
+              <Button
                 type="button"
                 onClick={handleResetFilters}
-                className="bg-[#1A365D] text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-900 transition-colors shadow-md"
+                className="h-auto border-0 bg-[#1A365D] text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-900 transition-colors shadow-md"
               >
                 Reset all filters
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -808,12 +821,14 @@ export default function RankingsEngine({
                       Recalculate Rank Weights
                     </h3>
                   </div>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => setIsWeightsDrawerOpen(false)}
-                    className="p-1 hover:bg-[var(--aur-hover)] rounded-lg text-[var(--aur-text-muted)] hover:text-[var(--aur-text)]"
+                    className="size-7 rounded-lg border-0 text-[var(--aur-text-muted)] hover:bg-[var(--aur-hover)] hover:text-[var(--aur-text)] dark:hover:bg-[var(--aur-hover)]"
                   >
-                    <X className="h-5 w-5" />
-                  </button>
+                    <X className="size-5" />
+                  </Button>
                 </div>
                 <p className="text-[var(--aur-text-secondary)] text-xs mt-3 leading-relaxed">
                   Modify the relative priority weights below. The system automatically recalculates total scores using instant frontend arithmetic.

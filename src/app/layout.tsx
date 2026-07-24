@@ -2,11 +2,12 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+import { cn } from "@/lib/utils";
 
 const inter = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
-  display: "swap",   // prevents invisible text during font load
+  display: "swap",
   preload: true,
 });
 
@@ -17,10 +18,63 @@ const playfair = Playfair_Display({
   preload: true,
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const SITE_TITLE = "Asia University Rankings | Premium Institutional Portal";
+const SITE_DESCRIPTION =
+  "Comprehensive editorial rankings and comparisons of top universities across Asia, built for international scholars and medical students.";
+
 export const metadata: Metadata = {
-  title: "Asia University Rankings | Premium Institutional Portal",
-  description:
-    "Comprehensive editorial rankings and comparisons of top universities across Asia, built for international scholars and medical students.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_TITLE,
+    template: "%s | Asia University Rankings",
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: "Asia University Rankings",
+  keywords: [
+    "Asia university rankings",
+    "university comparison",
+    "study in Asia",
+    "higher education",
+    "medical universities Central Asia",
+  ],
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    url: "/",
+    siteName: "Asia University Rankings",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [
+      {
+        url: "/og-card.png",
+        width: 1200,
+        height: 630,
+        alt: "Asia University Rankings — Asia's most trusted university intelligence platform",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: ["/og-card.png"],
+  },
+};
+
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "Asia University Rankings",
+  url: SITE_URL,
+  logo: `${SITE_URL}/logo.png`,
+  description: SITE_DESCRIPTION,
+  sameAs: [
+    "https://www.linkedin.com/company/asia-university-rankings/",
+    "https://www.instagram.com/asiauniversityrankings/",
+  ],
 };
 
 export const viewport: Viewport = {
@@ -65,7 +119,7 @@ export default function RootLayout({
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${inter.variable} ${playfair.variable} h-full antialiased`}
+      className={cn("h-full", "antialiased", playfair.variable, "font-sans", inter.variable)}
       style={{ overscrollBehaviorY: "none" }}
     >
       <head>
@@ -79,6 +133,10 @@ export default function RootLayout({
             dangerouslySetInnerHTML={{ __html: stripExtensionHydrationAttrs }}
           />
         )}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
         {children}
       </body>
     </html>

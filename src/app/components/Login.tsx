@@ -20,6 +20,11 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert } from "@/components/ui/alert";
 import { useSidebar } from "./navigation/SidebarContext";
 import { CanvasRevealEffect } from "./ui/canvas-reveal-effect";
 import LoginGlobe from "./LoginGlobe";
@@ -237,8 +242,8 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
       {/* ── Left Showcase ── */}
       <div className="lp-left relative z-10"   >
         {/* Logo */}
-        <div className="lp-logo pt-8 pl-8 transform scale-125 origin-left">
-          <BrandLogo theme="dark" />
+        <div className="lp-logo pt-8 pl-8">
+          <BrandLogo variant="dark-bg" width={280} displayHeight={60} />
         </div>
 
         {/* Intelligence Graphic */}
@@ -306,10 +311,10 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
                 {/* Name field (signup only) */}
                 {!isLogin && (
                   <div className="lp-field">
-                    <label htmlFor="lp-name" className="lp-label">Full Name</label>
+                    <Label htmlFor="lp-name" className="lp-label leading-normal select-auto">Full Name</Label>
                     <div className="lp-input-wrap">
                       <User size={16} className="lp-input-icon"/>
-                      <input
+                      <Input
                         id="lp-name"
                         type="text"
                         value={name}
@@ -317,7 +322,7 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
                         placeholder="Dr. Jane Smith"
                         required={!isLogin}
                         autoComplete="name"
-                        className="lp-input"
+                        className="lp-input h-auto"
                       />
                     </div>
                   </div>
@@ -325,12 +330,12 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
 
                 {/* Email */}
                 <div className="lp-field">
-                  <label htmlFor="lp-email" className="lp-label">
+                  <Label htmlFor="lp-email" className="lp-label leading-normal select-auto">
                     {isLogin ? "Institutional Email or Username" : "Institutional Email"}
-                  </label>
+                  </Label>
                   <div className="lp-input-wrap">
                     <Mail size={16} className="lp-input-icon"/>
-                    <input
+                    <Input
                       id="lp-email"
                       type="text"
                       value={email}
@@ -338,17 +343,17 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
                       placeholder={isLogin ? "email or username" : "you@institution.edu"}
                       required
                       autoComplete="email"
-                      className="lp-input"
+                      className="lp-input h-auto"
                     />
                   </div>
                 </div>
 
                 {/* Password */}
                 <div className="lp-field">
-                  <label htmlFor="lp-password" className="lp-label">Password</label>
+                  <Label htmlFor="lp-password" className="lp-label leading-normal select-auto">Password</Label>
                   <div className="lp-input-wrap">
                     <Lock size={16} className="lp-input-icon"/>
-                    <input
+                    <Input
                       id="lp-password"
                       type={showPw ? "text" : "password"}
                       value={password}
@@ -356,7 +361,7 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
                       placeholder="••••••••"
                       required
                       autoComplete={isLogin ? "current-password" : "new-password"}
-                      className="lp-input"
+                      className="lp-input h-auto"
                     />
                     <button type="button" className="lp-eye-btn" onClick={() => setShowPw(v => !v)}
                       aria-label={showPw ? "Hide password" : "Show password"}>
@@ -383,10 +388,10 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
                 {/* Confirm password (signup only) */}
                 {!isLogin && (
                   <div className="lp-field">
-                    <label htmlFor="lp-confirm" className="lp-label">Confirm Password</label>
+                    <Label htmlFor="lp-confirm" className="lp-label leading-normal select-auto">Confirm Password</Label>
                     <div className="lp-input-wrap">
                       <Lock size={16} className="lp-input-icon"/>
-                      <input
+                      <Input
                         id="lp-confirm"
                         type={showConfirm ? "text" : "password"}
                         value={confirmPw}
@@ -394,7 +399,7 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
                         placeholder="••••••••"
                         required={!isLogin}
                         autoComplete="new-password"
-                        className="lp-input"
+                        className="lp-input h-auto"
                         style={!pwsMatch ? { borderColor: "#fca5a5", backgroundColor: "#fef2f2" } : undefined}
                       />
                       <button type="button" className="lp-eye-btn" onClick={() => setShowConfirm(v => !v)}>
@@ -412,27 +417,32 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
                 {/* Remember / Forgot (login only) */}
                 {isLogin && (
                   <div className="lp-remember-row">
-                    <label className="lp-checkbox-label">
-                      <input type="checkbox" checked={keepIn} onChange={e => setKeepIn(e.target.checked)} className="lp-checkbox"/>
+                    <Label className="lp-checkbox-label leading-normal select-auto" htmlFor="lp-keepin">
+                      <Checkbox
+                        id="lp-keepin"
+                        checked={keepIn}
+                        onCheckedChange={checked => setKeepIn(checked === true)}
+                        className="lp-checkbox shrink-0 data-checked:bg-[#E8A020] data-checked:text-white dark:bg-transparent"
+                      />
                       Keep me signed in
-                    </label>
+                    </Label>
                     <button type="button" className="lp-forgot">Forgot password?</button>
                   </div>
                 )}
 
                 {/* Error */}
                 {error && (
-                  <div className="lp-error-banner" role="alert">
+                  <Alert variant="destructive" className="lp-error-banner *:[svg]:translate-y-0">
                     <AlertCircle size={16} style={{ flexShrink: 0 }}/>
                     {error}
-                  </div>
+                  </Alert>
                 )}
 
                 {/* Submit */}
-                <button
+                <Button
                   type="submit"
                   disabled={loading || (!isLogin && !pwsMatch && confirmPw !== "")}
-                  className="lp-submit"
+                  className="lp-submit h-auto active:not-aria-[haspopup]:translate-y-0 disabled:pointer-events-auto"
                 >
                   <span className="lp-submit-inner">
                     {loading ? (
@@ -441,7 +451,7 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
                       <>{isLogin ? "Sign In" : "Create Account"} <ArrowRight size={16}/></>
                     )}
                   </span>
-                </button>
+                </Button>
 
                 {/* Divider */}
                 <div className="lp-divider">
@@ -452,13 +462,14 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
 
                 {/* Social buttons */}
                 <div className="lp-social-row">
-                  <button
+                  <Button
                     type="button"
-                    className="lp-social-btn"
+                    variant="outline"
+                    className="lp-social-btn h-auto active:not-aria-[haspopup]:translate-y-0"
                     onClick={() => { window.location.href = `${API_BASE_URL}/auth/google/login`; }}
                   >
                     <GoogleIcon/> Google
-                  </button>
+                  </Button>
                 </div>
 
               </form>

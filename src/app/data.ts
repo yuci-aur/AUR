@@ -15,7 +15,8 @@ export interface University {
   languages: string[];
   tuition: string; // e.g. "$3,500/year"
   description: string;
-  history: number[]; // 5-year rank history (from current year back to 5 years ago, e.g., 2026, 2025, 2024, 2023, 2022)
+  history: number[]; // rank history, newest first (only years the backend actually reports)
+  rankChange?: number | null; // real year-over-year rank movement (positive = climbed); null/undefined when unknown
   programs: string[];
   campusPhoto: string; // local path to campus photo
   logo?: string; // local path to university logo

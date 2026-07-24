@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useSidebar } from "../navigation/SidebarContext";
 import { SIDEBAR_ITEMS, NavItem } from "../navigation/config";
 import FilterPanel from "../filters/FilterPanel";
+import { Button } from "@/components/ui/button";
 
 import { X, SlidersHorizontal, Home, Trophy, Settings, LogIn, UserPlus } from "lucide-react";
 
@@ -40,22 +41,22 @@ export default function MobileMenu({
       <>
         {isMobileOpen && (
           <div className="fixed inset-0 z-50 md:hidden flex font-sans">
-            
+
             {/* Backdrop Blur Overlay */}
             <div
-              
-              
-              
+
+
+
               onClick={() => setIsMobileOpen(false)}
               className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
             />
 
             {/* Slide-in Drawer Content */}
             <div
-              
-              
-              
-              
+
+
+
+
               className="relative w-80 max-w-[85vw] h-full flex flex-col shadow-2xl z-10 bg-[var(--aur-surface)] text-[var(--aur-text)] border-r border-[var(--aur-border)]"
             >
               {/* Drawer Header */}
@@ -68,68 +69,72 @@ export default function MobileMenu({
                     Mobile Academic Lab
                   </p>
                 </div>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => setIsMobileOpen(false)}
                   aria-label="Close menu"
-                  className={`p-1 rounded-md text-slate-400 hover:text-slate-900 dark:hover:text-cyber-yellow transition-colors hover:bg-slate-100 dark:hover:bg-cyber-gray ${focusRing}`}
+                  className={`h-auto w-auto rounded-md border-0 p-1 text-slate-400 hover:text-slate-900 dark:hover:text-cyber-yellow transition-colors hover:bg-slate-100 dark:hover:bg-cyber-gray ${focusRing}`}
                 >
-                  <X className="h-5 w-5" />
-                </button>
+                  <X className="size-5" />
+                </Button>
               </div>
 
               {/* Mobile Tab Headers (Menu vs Filters) */}
               <div className="flex border-b border-slate-200 dark:border-cyber-border/30">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => setActiveTab("menu")}
-                  className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest border-b-2 text-center transition-colors ${
+                  className={`flex-1 h-auto rounded-none border-0 border-b-2 px-0 py-3 text-[10px] font-bold uppercase tracking-widest text-center hover:bg-transparent transition-colors ${
                     activeTab === "menu"
-                      ? "border-amber-700 text-slate-900 dark:border-cyber-yellow dark:text-cyber-yellow"
+                      ? "border-amber-700 text-slate-900 hover:text-slate-900 dark:border-cyber-yellow dark:text-cyber-yellow dark:hover:text-cyber-yellow"
                       : "border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-white"
                   }`}
                 >
                   Menu
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => setActiveTab("filters")}
-                  className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest border-b-2 text-center transition-colors ${
+                  className={`flex-1 h-auto rounded-none border-0 border-b-2 px-0 py-3 text-[10px] font-bold uppercase tracking-widest text-center hover:bg-transparent transition-colors ${
                     activeTab === "filters"
-                      ? "border-amber-700 text-slate-900 dark:border-cyber-yellow dark:text-cyber-yellow"
+                      ? "border-amber-700 text-slate-900 hover:text-slate-900 dark:border-cyber-yellow dark:text-cyber-yellow dark:hover:text-cyber-yellow"
                       : "border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-white"
                   }`}
                 >
                   Filters
-                </button>
+                </Button>
               </div>
 
               {/* Drawer Scrollable Body */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {activeTab === "menu" ? (
                   <nav className="space-y-1">
-                    {SIDEBAR_ITEMS.filter((item) => isAuthenticated || item.view === "home").map((item) => {
+                    {SIDEBAR_ITEMS.filter((item) => isAuthenticated || !["saved", "settings", "methodology"].includes(item.view)).map((item) => {
                       const Icon = item.icon;
                       const isActive = activeView === item.view;
                       return (
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
                           key={item.id}
                           onClick={() => handleLinkClick(item)}
-                          className={`w-full flex items-center p-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${
+                          className={`w-full h-auto justify-start gap-0 flex items-center p-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${
                             isActive
-                              ? "bg-slate-150 border border-slate-200 text-slate-900 dark:bg-cyber-yellow dark:text-cyber-black dark:border-transparent dark:shadow-[0_0_10px_rgba(234,179,8,0.15)]"
-                              : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-cyber-gray/30"
+                              ? "bg-slate-150 hover:bg-slate-150 border border-slate-200 text-slate-900 hover:text-slate-900 dark:bg-cyber-yellow dark:hover:bg-cyber-yellow dark:text-cyber-black dark:hover:text-cyber-black dark:border-transparent dark:shadow-[0_0_10px_rgba(234,179,8,0.15)]"
+                              : "border-0 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-cyber-gray/30"
                           } ${focusRing}`}
                         >
-                          <Icon className="h-4.5 w-4.5 mr-3.5 shrink-0" />
+                          <Icon className="size-4.5 mr-3.5 shrink-0" />
                           <span>{item.label}</span>
                           {item.badge && (
                             <span className="ml-auto text-[8px] font-mono px-1.5 py-0.5 rounded font-bold uppercase bg-amber-100 text-amber-900 dark:bg-cyber-black dark:text-cyber-yellow border dark:border-cyber-yellow/20">
                               {item.badge}
                             </span>
                           )}
-                        </button>
+                        </Button>
                       );
                     })}
                   </nav>
@@ -155,70 +160,84 @@ export default function MobileMenu({
       >
         <div className={`h-full grid ${isAuthenticated ? "grid-cols-4" : "grid-cols-3"} items-center max-w-lg mx-auto`}>
           {/* Item 1: Home */}
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => handleViewChange("home")}
-            className={`flex flex-col items-center justify-center h-full transition-colors ${
+            className={`flex h-full w-full flex-col gap-0 rounded-none border-0 items-center justify-center hover:bg-transparent transition-colors ${
               activeView === "home"
-                ? "text-amber-700 dark:text-cyber-yellow"
-                : "hover:text-slate-800 dark:hover:text-white"
+                ? "text-amber-700 hover:text-amber-700 dark:text-cyber-yellow dark:hover:text-cyber-yellow"
+                : "text-[var(--aur-text-muted)] hover:text-slate-800 dark:hover:text-white"
             } ${focusRing}`}
           >
-            <Home className="h-4.5 w-4.5 mb-1" />
+            <Home className="size-4.5 mb-1" />
             <span className="text-[8px] font-bold uppercase tracking-wider">Home</span>
-          </button>
+          </Button>
 
           {isAuthenticated ? <>
           {/* Item 2: Prestige Rankings */}
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => handleViewChange("rankings")}
-            className={`flex flex-col items-center justify-center h-full transition-colors ${
+            className={`flex h-full w-full flex-col gap-0 rounded-none border-0 items-center justify-center hover:bg-transparent transition-colors ${
               activeView === "rankings"
-                ? "text-amber-700 dark:text-cyber-yellow"
-                : "hover:text-slate-800 dark:hover:text-white"
+                ? "text-amber-700 hover:text-amber-700 dark:text-cyber-yellow dark:hover:text-cyber-yellow"
+                : "text-[var(--aur-text-muted)] hover:text-slate-800 dark:hover:text-white"
             } ${focusRing}`}
           >
-            <Trophy className="h-4.5 w-4.5 mb-1" />
+            <Trophy className="size-4.5 mb-1" />
             <span className="text-[8px] font-bold uppercase tracking-wider">Rankings</span>
-          </button>
+          </Button>
 
           {/* Item 3: Toggle Drawer Filters */}
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => {
               setActiveTab("filters");
               setIsMobileOpen(true);
             }}
-            className={`flex flex-col items-center justify-center h-full hover:text-slate-800 dark:hover:text-white ${focusRing}`}
+            className={`flex h-full w-full flex-col gap-0 rounded-none border-0 items-center justify-center hover:bg-transparent text-[var(--aur-text-muted)] hover:text-slate-800 dark:hover:text-white ${focusRing}`}
           >
-            <SlidersHorizontal className="h-4.5 w-4.5 mb-1" />
+            <SlidersHorizontal className="size-4.5 mb-1" />
             <span className="text-[8px] font-bold uppercase tracking-wider">Filters</span>
-          </button>
+          </Button>
 
           {/* Item 4: Settings */}
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => handleViewChange("settings")}
-            className={`flex flex-col items-center justify-center h-full transition-colors ${
+            className={`flex h-full w-full flex-col gap-0 rounded-none border-0 items-center justify-center hover:bg-transparent transition-colors ${
               activeView === "settings"
-                ? "text-amber-700 dark:text-cyber-yellow"
-                : "hover:text-slate-800 dark:hover:text-white"
+                ? "text-amber-700 hover:text-amber-700 dark:text-cyber-yellow dark:hover:text-cyber-yellow"
+                : "text-[var(--aur-text-muted)] hover:text-slate-800 dark:hover:text-white"
             } ${focusRing}`}
           >
-            <Settings className="h-4.5 w-4.5 mb-1" />
+            <Settings className="size-4.5 mb-1" />
             <span className="text-[8px] font-bold uppercase tracking-wider">Settings</span>
-          </button>
+          </Button>
 
           </> : <>
-            <button type="button" onClick={onLogIn} className={`flex h-full flex-col items-center justify-center ${focusRing}`}>
-              <LogIn className="mb-1 h-4.5 w-4.5" />
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onLogIn}
+              className={`flex h-full w-full flex-col gap-0 rounded-none border-0 items-center justify-center hover:bg-transparent text-[var(--aur-text-muted)] hover:text-slate-800 dark:hover:text-white ${focusRing}`}
+            >
+              <LogIn className="mb-1 size-4.5" />
               <span className="text-[8px] font-bold uppercase tracking-wider">Log In</span>
-            </button>
-            <button type="button" onClick={onSignUp} className={`flex h-full flex-col items-center justify-center ${focusRing}`}>
-              <UserPlus className="mb-1 h-4.5 w-4.5" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onSignUp}
+              className={`flex h-full w-full flex-col gap-0 rounded-none border-0 items-center justify-center hover:bg-transparent text-[var(--aur-text-muted)] hover:text-slate-800 dark:hover:text-white ${focusRing}`}
+            >
+              <UserPlus className="mb-1 size-4.5" />
               <span className="text-[8px] font-bold uppercase tracking-wider">Sign Up</span>
-            </button>
+            </Button>
           </>}
 
         </div>

@@ -104,7 +104,7 @@ export default function BlogForm() {
       }
 
       if (status === "Published") {
-        router.push("/?view=insights");
+        router.push("/?view=blog");
         return;
       }
 
@@ -122,11 +122,11 @@ export default function BlogForm() {
     <div className="max-w-5xl mx-auto w-full py-6 animate-fadeIn">
       <div className="mb-6">
         <button
-          onClick={() => handleViewChange("home")}
+          onClick={() => handleViewChange("blog")}
           className="inline-flex items-center text-xs font-bold uppercase tracking-wider text-[var(--aur-text-muted)] hover:text-[var(--aur-text)] transition-colors group"
         >
           <ArrowLeft className="h-3.5 w-3.5 mr-1.5 group-hover:-translate-x-0.5 transition-transform" />
-          Back to Insights
+          Back to Blog
         </button>
       </div>
 

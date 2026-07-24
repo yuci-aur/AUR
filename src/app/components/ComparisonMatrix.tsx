@@ -45,13 +45,17 @@ export default function ComparisonMatrix() {
     if (!hasSearched) return [];
     return universities.filter((u) => {
       const matchesCountry =
-        !country || u.location.toLowerCase() === country.toLowerCase();
+        !country ||
+        u.location.toLowerCase().includes(country.trim().toLowerCase());
 
       let matchesTuition = true;
-      if (maxTuition) {
+      const max = parseInt(maxTuition, 10);
+      if (maxTuition && !isNaN(max)) {
         const numeric = parseInt(u.tuition.replace(/[^0-9]/g, ""), 10);
-        const max = parseInt(maxTuition, 10);
-        matchesTuition = !isNaN(numeric) && !isNaN(max) && numeric <= max;
+        // Only exclude institutions with a known tuition above the cap.
+        // Unknown/unpublished tuition (e.g. "Contact university") is kept so
+        // the filter doesn't silently drop every row when data is missing.
+        matchesTuition = isNaN(numeric) || numeric <= max;
       }
 
       return matchesCountry && matchesTuition;

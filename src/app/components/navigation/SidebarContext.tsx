@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 import { useToast } from "../feedback/ToastContext";
 
@@ -55,10 +55,16 @@ const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const { showToast } = useToast();
 
-  // Active view sync from URL
-  const activeView = searchParams.get("view") || "home";
+  // Active view sync from URL. On the root page the view lives in `?view=`; on
+  // real sub-routes (e.g. /blogs, /blogs/[id]) there is no view param, so we
+  // derive the active tab from the pathname instead of defaulting to "home"
+  // (which would wrongly highlight HOME while reading a blog).
+  const activeView =
+    searchParams.get("view") ||
+    (pathname?.startsWith("/blogs") ? "blog" : "home");
   const selectedUniId = searchParams.get("id");
 
   // State initialization
@@ -151,18 +157,28 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // View changing routing helper
   const handleViewChange = (view: string) => {
+    // The in-app "views" (home, rankings, blog, …) are only rendered by the
+    // root page ("/"). When a navbar tab is clicked from a real sub-route like
+    // /blogs/[id], a relative `?view=` push would just stick the param on that
+    // sub-route (which ignores it), so the tabs would appear dead. Always route
+    // through "/" so the target view actually renders.
     const current = new URLSearchParams(Array.from(searchParams.entries()));
     current.set("view", view);
     if (view !== "university-profile") {
       current.delete("id");
     }
-    
+
     // Auto-expand sidebar when navigating to rankings engine
     if (view === "rankings") {
       setIsCollapsed(false);
     }
 
-    router.push(`?${current.toString()}`);
+    const query = current.toString();
+    if (pathname === "/") {
+      router.push(`?${query}`);
+    } else {
+      router.push(`/?${query}`);
+    }
     setIsMobileOpen(false); // Close mobile drawer when navigating
   };
 

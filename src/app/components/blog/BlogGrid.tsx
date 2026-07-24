@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { Article } from "../../data";
 import { API_BASE_URL } from "../../lib/universities";
-import InsightCard from "./InsightCard";
+import BlogCard from "./BlogCard";
 
 /** Blog row as returned by the backend /blogs/ endpoint (snake_case). */
 interface BackendBlog {
@@ -30,7 +30,7 @@ function formatDate(value: string | null): string {
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
-/** Map a backend blog to the Article shape the insight cards render. */
+/** Map a backend blog to the Article shape the blog cards render. */
 function blogToArticle(blog: BackendBlog): Article {
   return {
     id: blog.id,
@@ -47,7 +47,7 @@ function blogToArticle(blog: BackendBlog): Article {
   };
 }
 
-export default function InsightsGrid() {
+export default function BlogGrid() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -100,7 +100,7 @@ export default function InsightsGrid() {
   if (error) {
     return (
       <div className="rounded-2xl border border-dashed border-[var(--aur-border)] py-16 text-center text-sm text-[var(--aur-text-muted)]">
-        Insights couldn&apos;t be loaded right now. Please try again later.
+        Blog couldn&apos;t be loaded right now. Please try again later.
       </div>
     );
   }
@@ -108,7 +108,7 @@ export default function InsightsGrid() {
   if (articles.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-[var(--aur-border)] py-16 text-center text-sm text-[var(--aur-text-muted)]">
-        No insights have been published yet. Check back soon.
+        No blog posts have been published yet. Check back soon.
       </div>
     );
   }
@@ -116,7 +116,7 @@ export default function InsightsGrid() {
   return (
     <div className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {articles.map((article) => (
-        <InsightCard key={article.id} article={article} />
+        <BlogCard key={article.id} article={article} />
       ))}
     </div>
   );

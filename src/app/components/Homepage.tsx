@@ -977,7 +977,7 @@ export default function Homepage({
               <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#152a5e] mb-5">Resources</h4>
               <ul className="space-y-3">
                 {([
-                  { label: "Insights", kind: "view", target: "insights" },
+                  { label: "Blog", kind: "view", target: "blog" },
                   { label: "News & Updates", kind: "view", target: "news" },
                 ] as const).map((item) => (
                   <li key={item.label}>

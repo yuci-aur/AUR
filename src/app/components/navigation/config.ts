@@ -108,6 +108,6 @@ export const TOP_NAV_LINKS = [
   // { label: "Methodology", view: "methodology" },
   { label: "Comparison Matrix", view: "saved" },
   { label: "Events & Awards", view: "events" },
-  { label: "Insights", view: "insights" },
+  { label: "Blog", view: "blog" },
   { label: "News", view: "news" },
 ];

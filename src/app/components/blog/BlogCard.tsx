@@ -5,15 +5,16 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 import type { Article } from "../../data";
-import { INSIGHT_FALLBACK_IMAGE } from "../../data/insights";
 import "../home/ref-home.css";
 
-interface InsightCardProps {
+interface BlogCardProps {
   article: Article;
 }
 
-export default function InsightCard({ article }: InsightCardProps) {
-  const [imageSource, setImageSource] = useState(article.image || INSIGHT_FALLBACK_IMAGE);
+export default function BlogCard({ article }: BlogCardProps) {
+  // Show the cover only when there is a real image; if it 404s we hide it
+  // rather than swapping in a placeholder.
+  const [showImage, setShowImage] = useState(Boolean(article.image));
   const summary = article.subtitle || article.contentSummary;
 
   return (
@@ -24,14 +25,16 @@ export default function InsightCard({ article }: InsightCardProps) {
         className="flex h-full flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
       >
         <div className="relative h-48 w-full shrink-0 overflow-hidden bg-slate-100 sm:h-52">
-          <Image
-            src={imageSource}
-            alt={article.title}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
-            onError={() => setImageSource(INSIGHT_FALLBACK_IMAGE)}
-          />
+          {showImage && (
+            <Image
+              src={article.image}
+              alt={article.title}
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              onError={() => setShowImage(false)}
+            />
+          )}
         </div>
         <div className="flex flex-1 flex-col p-4">
           {article.category && <span className="ref-label text-[9px]">{article.category}</span>}

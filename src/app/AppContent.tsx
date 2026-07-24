@@ -22,7 +22,7 @@ import Methodology from "./components/Methodology";
 import EventsAndAwards from "./components/EventsAndAwards";
 import FacultyStudentAwards from "./components/FacultyStudentAwards";
 import NewsFeed from "./components/NewsFeed";
-import InsightsFeed from "./components/InsightsFeed";
+import BlogFeed from "./components/BlogFeed";
 import BlogForm from "./components/blog/BlogForm";
 import { useSidebar } from "./components/navigation/SidebarContext";
 import { useUniversityData } from "./components/data/UniversityDataProvider";
@@ -329,8 +329,8 @@ useEffect(() => {
           {/* News (in-app feed) */}
           {view === "news" && <NewsFeed />}
 
-          {/* Insights (in-app feed) */}
-          {view === "insights" && <InsightsFeed />}
+          {/* Blog (in-app feed) */}
+          {view === "blog" && <BlogFeed />}
 
           {/* Methodology */}
           {/* {view === "methodology" && <Methodology />} */}

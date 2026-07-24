@@ -27,7 +27,7 @@ const mockData = {
     totalEvents: 0,
     totalAwards: 0
   },
-  recentActivity: [],
+  recentActivity: [] as { id: number; type: string; title: string; time: string; icon: string }[],
   courses: [
     { id: 1, name: "B.Tech Computer Science", college: "School of Engineering", fee: "$65,000/yr" },
     { id: 2, name: "MBA Finance", college: "Graduate School of Business", fee: "$75,000/yr" },

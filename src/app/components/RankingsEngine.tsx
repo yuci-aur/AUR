@@ -318,7 +318,7 @@ export default function RankingsEngine({
         header: "University Name",
         accessorKey: "name",
         cell: ({ row }) => (
-          <div className="text-left font-sans font-bold text-[var(--aur-text)] hover:underline transition-all active:scale-95 cursor-pointer inline-block w-full truncate" onClick={() => onUniversitySelect(row.original.id)}>
+          <div className="text-left font-sans font-bold text-[var(--aur-text)] transition-all active:scale-95 cursor-pointer inline-block w-full truncate" onClick={() => onUniversitySelect(row.original.id)}>
             <div className="truncate w-full">{row.original.name}</div>
             <div className="flex items-center text-[10px] text-[var(--aur-text-muted)] font-mono font-medium uppercase mt-0.5">
               <Globe className="h-3 w-3 mr-1" />

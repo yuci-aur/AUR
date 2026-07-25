@@ -245,9 +245,16 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
 
       {/* ── Left Showcase ── */}
       <div className="lp-left relative z-10"   >
-        {/* Logo */}
+        {/* Logo — click returns to the home page */}
         <div className="lp-logo pt-8 pl-8">
-          <BrandLogo variant="dark-bg" width={280} displayHeight={60} />
+          <button
+            type="button"
+            onClick={() => handleViewChange("home")}
+            aria-label="Go to home page"
+            className="cursor-pointer bg-transparent border-0 p-0"
+          >
+            <BrandLogo variant="dark-bg" width={280} displayHeight={60} />
+          </button>
         </div>
 
         {/* Intelligence Graphic */}
@@ -283,10 +290,17 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
       {/* ── Right Form ── */}
       <div className="lp-right relative z-10"   >
         <div className="lp-glass-card">
-          {/* Mobile brand */}
+          {/* Mobile brand — click returns to the home page */}
           <div className="lp-mobile-brand">
             <div className="lp-logo mb-6 transform scale-[0.8] origin-left">
-              <BrandLogo theme="dark" />
+              <button
+                type="button"
+                onClick={() => handleViewChange("home")}
+                aria-label="Go to home page"
+                className="cursor-pointer bg-transparent border-0 p-0"
+              >
+                <BrandLogo theme="dark" />
+              </button>
             </div>
           </div>
 

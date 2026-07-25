@@ -10,6 +10,7 @@ import { ToastProvider } from "../../components/feedback/ToastContext";
 import { UniversityDataProvider } from "../../components/data/UniversityDataProvider";
 import { Article } from "../../data";
 import { API_BASE_URL } from "../../lib/universities";
+import { DUMMY_ARTICLES } from "../../components/blog/BlogGrid";
 
 function formatBlogDate(value: string | null): string {
   if (!value) return "";
@@ -64,7 +65,15 @@ function BlogDetailsContent() {
       try {
         const res = await fetch(`${API_BASE_URL}/blogs/${id}`);
         if (!res.ok) {
-          setError(res.status === 404 ? "Blog not found" : "Failed to load blog");
+          // Fallback to mock data if API fails
+          const mockArticle = DUMMY_ARTICLES.find((a) => a.id === id);
+          if (mockArticle) {
+            setBlog(mockArticle);
+            setShowImage(Boolean(mockArticle.image));
+            setError(null);
+          } else {
+            setError(res.status === 404 ? "Blog not found" : "Failed to load blog");
+          }
           return;
         }
         const data = await res.json();
@@ -168,7 +177,7 @@ function BlogDetailsContent() {
           text-decoration: underline;
         }
       `}</style>
-      <div className="max-w-3xl mx-auto py-6 animate-fadeIn">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 animate-fadeIn">
         {/* Back link */}
         <div className="mb-6">
           <Link

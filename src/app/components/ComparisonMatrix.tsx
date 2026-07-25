@@ -87,19 +87,19 @@ export default function ComparisonMatrix() {
   };
 
   return (
-    <div className="w-full bg-slate-50 min-h-screen py-10 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <header className="mb-10 text-center">
-          <div className="inline-flex items-center justify-center p-3 bg-white rounded-full shadow-sm mb-4">
-            <LayoutGrid className="w-6 h-6 text-slate-900" />
+    <div className="aur-rankings-shell mx-auto w-full max-w-[1600px] px-3 sm:px-5 lg:px-8 py-6 sm:py-8 font-sans flex-grow">
+      <div className="w-full">
+        <div className="aur-rankings-hero mb-6 sm:mb-8 aur-hero-accent flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-6">
+          <div className="min-w-0">
+            <span className="aur-caption">Deep Analytics</span>
+            <h1 className="aur-section-title text-3xl md:text-4xl leading-tight mt-2">
+              Comparison Matrix
+            </h1>
+            <p className="text-[11px] text-[var(--aur-text-muted)] font-mono mt-3 tracking-wide">
+              Select up to {MAX_COMPARE} institutions to evaluate side-by-side against real ranking metrics, tuition, and admission data.
+            </p>
           </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight sm:text-4xl">
-            Comparison Matrix
-          </h1>
-          <p className="mt-3 max-w-2xl mx-auto text-sm sm:text-base text-slate-500">
-            Select up to {MAX_COMPARE} institutions to evaluate side-by-side against real ranking metrics, tuition, and admission data.
-          </p>
-        </header>
+        </div>
 
         {/* Configuration Panel */}
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm mb-10 overflow-hidden">

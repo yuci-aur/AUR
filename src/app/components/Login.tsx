@@ -235,10 +235,57 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
       <div className="lp-bg-grid relative z-10"/>
 
       {/* ── Left Showcase ── */}
-      <div className="lp-left relative z-10"   >
-        {/* Logo */}
-        <div className="lp-logo pt-8 pl-8 transform scale-125 origin-left">
-          <BrandLogo theme="dark" />
+      <div className="lp-left relative z-20">
+        {/* Futuristic Data Transmission Bridge - Advanced Circuit Edition */}
+        <div className="absolute top-0 -right-[250px] w-[250px] h-full pointer-events-none hidden md:block overflow-hidden z-0 mask-image-fade">
+          <svg className="w-full h-full" viewBox="0 0 250 1000" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="circuitGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#1C2531" />
+                <stop offset="100%" stopColor="#e2e8f0" stopOpacity="0" />
+              </linearGradient>
+              <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="4" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            {/* Base circuit tracks */}
+            <g stroke="url(#circuitGrad)" strokeWidth="1" fill="none" opacity="0.4">
+              <path d="M 0 200 L 50 200 L 80 170 L 150 170 L 200 220 L 250 220" />
+              <path d="M 0 400 L 60 400 L 100 440 L 200 440 L 220 420 L 250 420" />
+              <path d="M 0 600 L 40 600 L 70 570 L 150 570 L 180 600 L 250 600" />
+              <path d="M 0 800 L 80 800 L 120 760 L 180 760 L 220 800 L 250 800" />
+              <path d="M 0 300 L 90 300 L 120 330 L 250 330" />
+              <path d="M 0 700 L 50 700 L 100 650 L 250 650" />
+            </g>
+
+            {/* Glowing animated data packets */}
+            <g strokeWidth="2" fill="none" filter="url(#glow)">
+              <path d="M 0 200 L 50 200 L 80 170 L 150 170 L 200 220 L 250 220" stroke="#3b82f6" className="animate-circuit-1" strokeLinecap="round" />
+              <path d="M 0 400 L 60 400 L 100 440 L 200 440 L 220 420 L 250 420" stroke="#06b6d4" className="animate-circuit-2" strokeLinecap="round" />
+              <path d="M 0 600 L 40 600 L 70 570 L 150 570 L 180 600 L 250 600" stroke="#6366f1" className="animate-circuit-3" strokeLinecap="round" />
+              <path d="M 0 800 L 80 800 L 120 760 L 180 760 L 220 800 L 250 800" stroke="#3b82f6" className="animate-circuit-4" strokeLinecap="round" />
+              <path d="M 0 300 L 90 300 L 120 330 L 250 330" stroke="#22d3ee" className="animate-circuit-5" strokeLinecap="round" />
+              <path d="M 0 700 L 50 700 L 100 650 L 250 650" stroke="#818cf8" className="animate-circuit-1" strokeLinecap="round" style={{ animationDelay: '1.5s' }} />
+            </g>
+
+            {/* Intersection Nodes */}
+            <g fill="#1C2531" stroke="#94a3b8" strokeWidth="1" opacity="0.6">
+              <circle cx="50" cy="200" r="2" />
+              <circle cx="80" cy="170" r="2" />
+              <circle cx="60" cy="400" r="2" />
+              <circle cx="100" cy="440" r="2" />
+              <circle cx="70" cy="570" r="2" />
+              <circle cx="120" cy="760" r="2" />
+            </g>
+          </svg>
+        </div>
+        <div className="lp-logo origin-left">
+          <BrandLogo theme="dark" width={240} height={120} />
         </div>
 
         {/* Intelligence Graphic */}
@@ -276,8 +323,8 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
         <div className="lp-glass-card">
           {/* Mobile brand */}
           <div className="lp-mobile-brand">
-            <div className="lp-logo mb-6 transform scale-[0.8] origin-left">
-              <BrandLogo theme="dark" />
+            <div className="lp-logo mb-6 origin-left">
+              <BrandLogo theme="dark" width={240} height={120} />
             </div>
           </div>
 

@@ -14,15 +14,15 @@ export default function BlogPage() {
         <SidebarProvider>
           <UniversityDataProvider>
             <AppLayout>
-            <section className="mx-auto w-full max-w-6xl py-4 sm:py-8">
-              <Link href="/" className="group mb-6 inline-flex items-center text-xs font-bold uppercase tracking-wider text-slate-600 transition-colors hover:text-[#1A365D]">
-                <ArrowLeft className="mr-1.5 h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" aria-hidden="true" />
+            <section className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+              <Link href="/" className="group mb-8 inline-flex items-center text-xs font-bold uppercase tracking-wider text-[var(--aur-text-muted)] transition-colors hover:text-[var(--aur-text)]">
+                <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" aria-hidden="true" />
                 Back to Home
               </Link>
-              <div className="mb-8 border-b border-[var(--aur-border)] pb-5">
-                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-700">Blog</span>
-                <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Blog</h1>
-                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-500">Research, rankings, and practical perspectives on the forces shaping Asian higher education.</p>
+              <div className="mb-12 border-b border-[var(--aur-border)] pb-8">
+                <span className="aur-chip bg-[var(--aur-surface-2)] text-[var(--aur-text)] mb-4 inline-flex">Latest Insights</span>
+                <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-[var(--aur-text)] mb-6">The Editorial Blog</h1>
+                <p className="max-w-3xl text-lg leading-relaxed text-[var(--aur-text-secondary)]">Research, rankings, and practical perspectives on the forces shaping Asian higher education. Explore our curated insights and deep dives into the future of academia.</p>
               </div>
               <BlogGrid />
             </section>

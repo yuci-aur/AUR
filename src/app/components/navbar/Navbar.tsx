@@ -186,22 +186,24 @@ export default function Navbar({
       style={{ willChange: "transform", transform: "translateZ(0)" }}
     >
       <div className="mx-auto max-w-full px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center gap-4">
+        <div className="flex h-16 items-center justify-between">
 
           {/* ── Logo — crystal clear, merged flush into bar ── */}
-          <div
-            onClick={() => handleViewChange("home")}
-            className="flex items-center cursor-pointer shrink-0 select-none h-16"
-            title="Asia University Rankings"
-          >
-            <BrandLogo theme="dark" />
+          <div className="flex items-center">
+            <div
+              onClick={() => handleViewChange("home")}
+              className="flex items-center cursor-pointer shrink-0 select-none h-16"
+              title="Asia University Rankings"
+            >
+              <BrandLogo theme="dark" />
+            </div>
+
+            {/* ── Vertical divider ── */}
+            <div className="hidden md:block h-6 w-px bg-slate-200 shrink-0 ml-4 mr-2" />
           </div>
 
-          {/* ── Vertical divider ── */}
-          <div className="hidden md:block h-6 w-px bg-slate-200 shrink-0 mx-2" />
-
-          {/* ── Navigation Links - Desktop ── */}
-          <nav className="hidden lg:flex space-x-1 items-center">
+          {/* ── Navigation Links - Desktop (Centered) ── */}
+          <nav className="hidden lg:flex flex-1 justify-center space-x-1 items-center">
             {TOP_NAV_LINKS.map((link) => {
               const isActive = activeView === link.view;
 
@@ -221,14 +223,8 @@ export default function Navbar({
             })}
           </nav>
 
-          {/* ── Spacer ── */}
-          <div className="flex-1 hidden lg:block" />
-
-          {/* ── Push icons to far right ── */}
-          <div className="flex-1" />
-
-          {/* ── Action icons ── */}
-          <div className="flex items-center gap-1">
+          {/* ── Action icons / Auth (Right aligned) ── */}
+          <div className="flex items-center justify-end gap-1">
 
             {!isAuthenticated && (
               <div className="hidden items-center gap-1 sm:flex">

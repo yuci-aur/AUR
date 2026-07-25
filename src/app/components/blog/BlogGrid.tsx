@@ -47,6 +47,87 @@ function blogToArticle(blog: BackendBlog): Article {
   };
 }
 
+export const DUMMY_ARTICLES: Article[] = [
+  {
+    id: "blog_1",
+    title: "The Rise of Transnational Campuses in Southeast Asia",
+    subtitle: "How global universities are setting up specialized hubs to attract top regional talent and drive localized innovation.",
+    source: "AUR Editorial",
+    date: "August 12, 2026",
+    contentSummary: "Southeast Asia is seeing a massive influx of international university branches. We explore how these transnational campuses are reshaping local education ecosystems.",
+    image: "/blog_images/generated/blog_1_campus.jpg",
+    content: "Full content...",
+    category: "Trends",
+    readTime: "5 min read",
+    tags: ["Asia", "Global Education"],
+  },
+  {
+    id: "blog_2",
+    title: "AI in University Admissions: Efficiency vs Bias",
+    subtitle: "Are we losing the human touch in student selection as neural networks take the wheel?",
+    source: "Dr. Chen Wei",
+    date: "July 28, 2026",
+    contentSummary: "As top-tier institutions adopt AI to pre-screen tens of thousands of applicants, concerns about algorithmic bias grow. We analyze data from five leading universities.",
+    image: "/blog_images/generated/blog_2_ai.jpg",
+    content: "Full content...",
+    category: "Technology",
+    readTime: "8 min read",
+    tags: ["AI", "Admissions"],
+  },
+  {
+    id: "blog_3",
+    title: "Redefining Medical Education in 2030",
+    subtitle: "Moving from textbook theory to early clinical immersion using VR and augmented reality.",
+    source: "AUR Medical Board",
+    date: "July 10, 2026",
+    contentSummary: "Medical schools are entirely overhauling their curricula. The traditional two years of classroom lectures are being replaced by immediate clinical exposure.",
+    image: "/blog_images/generated/blog_3_medical.jpg",
+    content: "Full content...",
+    category: "Medicine",
+    readTime: "6 min read",
+    tags: ["Medical", "Curriculum"],
+  },
+  {
+    id: "blog_4",
+    title: "Sustainable Architecture on Campus",
+    subtitle: "How zero-carbon buildings are becoming the standard for modern university expansion.",
+    source: "Elena Rostova",
+    date: "June 22, 2026",
+    contentSummary: "From solar-powered dormitories to naturally ventilated lecture halls, universities are leading the charge in sustainable urban development.",
+    image: "/blog_images/generated/blog_4_architecture.jpg",
+    content: "Full content...",
+    category: "Campus Life",
+    readTime: "4 min read",
+    tags: ["Sustainability", "Architecture"],
+  },
+  {
+    id: "blog_5",
+    title: "The Mental Health Crisis in Graduate Schools",
+    subtitle: "Why PhD students are facing unprecedented burnout and what institutions must do.",
+    source: "AUR Student Welfare",
+    date: "June 05, 2026",
+    contentSummary: "The pressure to publish and secure funding is pushing young researchers to the brink. We investigate new support structures being implemented across Asia.",
+    image: "/blog_images/generated/blog_5_mentalhealth.jpg",
+    content: "Full content...",
+    category: "Wellbeing",
+    readTime: "10 min read",
+    tags: ["Mental Health", "PhD"],
+  },
+  {
+    id: "blog_6",
+    title: "Next-Gen Robotics in Engineering Curricula",
+    subtitle: "Hands-on robotics is replacing traditional mechanics classes in top engineering schools.",
+    source: "Tech Insights Team",
+    date: "May 18, 2026",
+    contentSummary: "By integrating open-source robotics and advanced simulation software into freshman year, engineering departments are producing industry-ready graduates.",
+    image: "/blog_images/generated/blog_6_robotics.jpg",
+    content: "Full content...",
+    category: "Engineering",
+    readTime: "7 min read",
+    tags: ["Robotics", "Curriculum"],
+  }
+];
+
 export default function BlogGrid() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,18 +178,12 @@ export default function BlogGrid() {
     );
   }
 
-  if (error) {
+  if (error || articles.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-[var(--aur-border)] py-16 text-center text-sm text-[var(--aur-text-muted)]">
-        Blog couldn&apos;t be loaded right now. Please try again later.
-      </div>
-    );
-  }
-
-  if (articles.length === 0) {
-    return (
-      <div className="rounded-2xl border border-dashed border-[var(--aur-border)] py-16 text-center text-sm text-[var(--aur-text-muted)]">
-        No blog posts have been published yet. Check back soon.
+      <div className="grid grid-cols-1 items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {DUMMY_ARTICLES.map((article) => (
+          <BlogCard key={article.id} article={article} />
+        ))}
       </div>
     );
   }

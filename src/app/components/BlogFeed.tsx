@@ -9,15 +9,17 @@ import BlogGrid from "./blog/BlogGrid";
  */
 export default function BlogFeed() {
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-8 font-sans">
-      <div className="mb-8 border-b border-[var(--aur-border)] pb-5">
-        <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-700">Blog</span>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-[var(--aur-text)] sm:text-4xl">
-          Blog
-        </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[var(--aur-text-secondary)]">
-          Research, rankings, and practical perspectives on the forces shaping Asian higher education.
-        </p>
+    <div className="mx-auto w-full max-w-[1600px] px-3 sm:px-5 lg:px-8 py-6 sm:py-8 font-sans flex-grow">
+      <div className="aur-rankings-hero mb-6 sm:mb-8 aur-hero-accent flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-6">
+        <div className="min-w-0">
+          <span className="aur-caption">Editorial & Perspectives</span>
+          <h2 className="aur-section-title text-3xl md:text-4xl leading-tight mt-2">
+            Blog
+          </h2>
+          <p className="text-[11px] text-[var(--aur-text-muted)] font-mono mt-3 tracking-wide">
+            Research, rankings, and practical perspectives on the forces shaping Asian higher education.
+          </p>
+        </div>
       </div>
       <BlogGrid />
     </div>

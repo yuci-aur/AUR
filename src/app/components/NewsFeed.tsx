@@ -37,23 +37,23 @@ export default function NewsFeed() {
   const { externalNews, loading, error } = useExternalNewsData();
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8 font-sans">
+    <div className="mx-auto w-full max-w-[1600px] px-3 sm:px-5 lg:px-8 py-6 sm:py-8 font-sans flex-grow">
       {/* Page heading */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="mb-12 border-b border-[var(--aur-border)] pb-8"
+        className="aur-rankings-hero mb-6 sm:mb-8 aur-hero-accent flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-6"
       >
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-[var(--aur-surface-2)] text-[var(--aur-text-secondary)] rounded-full text-[11px] font-bold uppercase tracking-widest mb-6">
-          <Zap className="h-3 w-3" /> Latest Updates
+        <div className="min-w-0">
+          <span className="aur-caption">Latest Updates</span>
+          <h2 className="aur-section-title text-3xl md:text-4xl leading-tight mt-2">
+            Higher Education News
+          </h2>
+          <p className="text-[11px] text-[var(--aur-text-muted)] font-mono mt-3 tracking-wide">
+            Real-time coverage of Asian universities, rankings, scholarships, and policy — pulled live from across the web.
+          </p>
         </div>
-        <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-4 leading-[1.1] text-[var(--aur-text)]">
-          Asia Higher Education News
-        </h1>
-        <p className="text-[var(--aur-text-secondary)] text-base md:text-lg max-w-2xl leading-relaxed">
-          Real-time coverage of Asian universities, rankings, scholarships, and policy — pulled live from across the web.
-        </p>
       </motion.div>
 
       {loading ? (

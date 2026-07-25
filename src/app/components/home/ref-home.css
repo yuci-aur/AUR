@@ -119,7 +119,10 @@
   border-radius: 0;
 }
 .rh-hero-search__input::placeholder { color: #94A3B8; }
-.rh-hero-search__btn {
+/* Scoped under .rh-hero-search__form to out-specify the global
+   `button:not([class*="rounded"])` rule in globals.css, which would
+   otherwise round all four corners and detach the button. */
+.rh-hero-search__form .rh-hero-search__btn {
   background: #1A365D;
   color: white;
   border: none;
@@ -132,14 +135,19 @@
   transition: background 0.15s;
   border-radius: 0 4px 4px 0;
   margin: 0;
+  flex-shrink: 0;
 }
-.rh-hero-search__btn:hover { background: #0F2342; }
+.rh-hero-search__form .rh-hero-search__btn:hover { background: #0F2342; }
 
 .rh-hero__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
   align-items: center;
+}
+@media (max-width: 640px) {
+  /* Full-width, evenly split CTAs on mobile instead of an awkward wrap. */
+  .rh-hero__actions > * { flex: 1 1 auto; justify-content: center; }
 }
 
 /* Photo nav */
@@ -153,7 +161,11 @@
   align-items: flex-end;
   gap: 0.75rem;
 }
-@media (max-width: 640px) { .rh-hero__nav { bottom: 2rem; right: 1.25rem; } }
+@media (max-width: 640px) {
+  /* Move the slide dots to the top-right so they never overlap the
+     bottom-anchored hero content / CTA buttons on small screens. */
+  .rh-hero__nav { top: 1.25rem; bottom: auto; right: 1.25rem; }
+}
 .rh-hero__caption {
   font-size: 0.6875rem;
   font-weight: 500;
@@ -346,7 +358,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.rh-tbl__row:hover .rh-name { color: #1A365D; text-decoration: underline; text-underline-offset: 3px; }
+.rh-tbl__row:hover .rh-name { color: #1A365D; }
 
 .rh-score-num {
   font-family: 'JetBrains Mono', monospace;

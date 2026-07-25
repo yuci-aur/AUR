@@ -6,7 +6,7 @@ import NewsFlashWidget from "./NewsFlashWidget";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  Search, BookOpen, GraduationCap, ChevronRight, ArrowRight, Mail, MapPin,
+  Search, BookOpen, GraduationCap, ChevronRight, ArrowRight, Mail,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FEATURED_ARTICLES, University, Article } from "../data";
@@ -41,12 +41,14 @@ const socialLinks = [
   { label: "Instagram", imgSrc: "/instagram-logo.png", href: "https://www.instagram.com/asiauniversityrankings/" },
 ];
 
+// Generic hero backdrops — no university is named or promoted.
 const HERO_SLIDES = [
-  { src: "/university_images/generated/tokyo.jpg",     name: "Tokyo University (Japan)" },
-  { src: "/university_images/generated/seoul.jpg",     name: "Seoul National University (South Korea)" },
-  { src: "/university_images/generated/singapore.jpg", name: "National University of Singapore" },
-  { src: "/university_images/generated/beijing.jpg",   name: "Peking University (China)" },
+  "/hero/hero_new_1.png",
+  "/hero/hero_new_2.jpg",
+  "/hero/hero_new_3.png",
+  "/hero/hero_new_4.png",
 ];
+
 
 const PILLARS = [
   { pct: "40%", name: "Research Impact",      desc: "Citations, academic reputation, research output" },
@@ -196,16 +198,14 @@ export default function Homepage({
     finally { setLoading(false); }
   };
 
-  const cur = HERO_SLIDES[slide];
-
   return (
     <div className="ref-home flex-grow w-full relative">
 
       {/* ═══ HERO ═══ */}
       <section className="rh-hero">
-        {HERO_SLIDES.map((s, i) => (
-          <div key={s.src} className="rh-hero__slide" style={{ opacity: i === slide ? 1 : 0 }}>
-            <Image src={s.src} alt={s.name} fill className="object-cover" priority={i === 0} quality={90} />
+        {HERO_SLIDES.map((src, i) => (
+          <div key={src} className="rh-hero__slide" style={{ opacity: i === slide ? 1 : 0 }}>
+            <Image src={src} alt="" fill sizes="100vw" quality={90} className="object-cover" priority={i === 0} />
           </div>
         ))}
         <div className="rh-hero__gradient" />
@@ -312,10 +312,9 @@ export default function Homepage({
         </div>
 
         <div className="rh-hero__nav">
-          <div className="rh-hero__caption"><MapPin size={12} /> {cur.name}</div>
           <div className="rh-hero__dots">
-            {HERO_SLIDES.map((s, i) => (
-              <button key={s.src} className={`rh-dot${i === slide ? " rh-dot--on" : ""}`} onClick={() => setSlide(i)} aria-label={`Show ${s.name}`} />
+            {HERO_SLIDES.map((src, i) => (
+              <button key={src} type="button" className={`rh-dot${i === slide ? " rh-dot--on" : ""}`} onClick={() => setSlide(i)} aria-label={`Show slide ${i + 1}`} />
             ))}
           </div>
         </div>

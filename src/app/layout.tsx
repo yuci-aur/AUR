@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter, Outfit, Space_Grotesk } from "next/font/google";
 import Script from "next/script";
+import SmoothScrolling from "./components/SmoothScrolling";
 import "./globals.css";
 
 const inter = Inter({
@@ -10,11 +11,16 @@ const inter = Inter({
   preload: true,
 });
 
-const playfair = Playfair_Display({
-  variable: "--font-serif",
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
   display: "swap",
-  preload: true,
+});
+
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space",
+  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -64,14 +70,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      data-scroll-behavior="smooth"
-      className={`${inter.variable} ${playfair.variable} h-full antialiased`}
+      className={`${inter.variable} ${outfit.variable} ${spaceGrotesk.variable} antialiased`}
       style={{ overscrollBehaviorY: "none" }}
     >
       <head>
         <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesque@800,500,700,400,300,900&display=swap" rel="stylesheet" />
       </head>
-      <body className="min-h-full flex flex-col font-sans bg-[var(--background)] text-[var(--foreground)]" style={{ overscrollBehavior: "none" }}>
+      <body className="flex flex-col font-sans bg-[var(--background)] text-[var(--foreground)] w-full max-w-[100vw] overflow-x-hidden" style={{ overscrollBehavior: "none" }}>
         {process.env.NODE_ENV === "development" && (
           <Script
             id="strip-extension-hydration-attrs"
@@ -79,7 +84,9 @@ export default function RootLayout({
             dangerouslySetInnerHTML={{ __html: stripExtensionHydrationAttrs }}
           />
         )}
-        {children}
+        <SmoothScrolling>
+          {children}
+        </SmoothScrolling>
       </body>
     </html>
   );

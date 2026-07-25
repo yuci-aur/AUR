@@ -131,7 +131,6 @@ button {
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
     border-color 0.2s ease;
-  contain: layout style;
 }
 
 .aur-card:hover {
@@ -630,9 +629,8 @@ button {
   opacity: 1;
 }
 
-/* Smooth, hardware-accelerated page-level scrolling */
+/* Smooth, hardware-accelerated page-level scrolling (handled by JS now) */
 html {
-  scroll-behavior: smooth;
   -webkit-tap-highlight-color: transparent;
   /* remove blue flash on mobile tap */
 }

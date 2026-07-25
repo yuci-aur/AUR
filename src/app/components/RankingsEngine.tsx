@@ -428,31 +428,34 @@ export default function RankingsEngine({
       {/* Ambient Liquid Glass Orb */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-5xl h-full max-h-[600px] bg-gradient-to-b from-blue-400/10 via-cyan-300/5 to-transparent rounded-[100%] blur-[120px] pointer-events-none -z-10" />
 
-      {/* Combined navy header + filter card */}
-      <div className="aur-rankings-panel relative z-20 mb-6 sm:mb-8 rounded-3xl bg-[#1A365D] p-6 sm:p-8 shadow-(--aur-shadow-lg)">
+      {/* Combined header + filter card */}
+      <div className="aur-rankings-panel relative z-20 mb-6 sm:mb-8 rounded-3xl bg-white border border-slate-200 p-6 sm:p-8 shadow-sm">
         {/* Editorial Title */}
         <div className="mb-6 sm:mb-8">
-          <span className="text-[10px] uppercase font-bold tracking-widest text-white/50">Engine & Analytics Database</span>
-          <h2 className="text-3xl md:text-4xl font-bold leading-tight mt-2 text-white">
+          <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500">Engine & Analytics Database</span>
+          <h2 
+            className="text-3xl md:text-4xl font-bold leading-tight mt-2 text-slate-900"
+            style={{ fontFamily: "var(--font-outfit), 'Inter', sans-serif", letterSpacing: "-0.03em" }}
+          >
             Asia Institutional Ranking Table
           </h2>
-          <p className="text-[11px] text-white/50 font-mono mt-3 tracking-wide">
+          <p className="text-[11px] text-slate-500 font-mono mt-3 tracking-wide">
             {dataError ? "Sample data" : "Live index"} &middot; Top {filteredData.length} of {universities.length} universities
           </p>
         </div>
 
         {/* Divider between header and filters */}
-        <div className="mb-6 h-px w-full bg-white/10" />
+        <div className="mb-6 h-px w-full bg-slate-100" />
 
         {/* 9. Elite Filtering Bar Layout */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5 items-start">
-          <p className="sm:col-span-2 xl:col-span-4 text-[10px] uppercase font-bold tracking-widest text-white/50 -mb-2">
+          <p className="sm:col-span-2 xl:col-span-4 text-[10px] uppercase font-bold tracking-widest text-slate-400 -mb-2">
             Refine index
           </p>
 
           {/* Search Field */}
           <div className="relative flex min-h-[5.75rem] flex-col">
-            <label className="text-[10px] uppercase font-bold tracking-widest text-white/60 mb-2">
+            <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-2">
               Search
             </label>
             <div className="relative">
@@ -462,7 +465,7 @@ export default function RankingsEngine({
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className="w-full h-11 rounded-xl bg-white border border-white/20 px-4 text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-white/40 transition-all placeholder:text-slate-400"
+                className="w-full h-11 rounded-xl bg-white border border-slate-200 px-4 text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-200 transition-all placeholder:text-slate-400 hover:border-slate-300"
                 style={{ paddingLeft: "2.75rem" }}
               />
             </div>
@@ -470,7 +473,7 @@ export default function RankingsEngine({
 
           {/* Location Dropdown */}
           <div className="flex min-h-[5.75rem] flex-col">
-            <label className="text-[10px] uppercase font-bold tracking-widest text-white/60 mb-2">
+            <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-2">
               Location
             </label>
           <div className="relative z-30">
@@ -491,7 +494,7 @@ export default function RankingsEngine({
                 <span
                   key={loc}
                   onClick={() => handleLocationToggle(loc)}
-                  className="inline-flex max-w-full items-center rounded-full text-[10px] font-mono border border-white/20 bg-white/10 text-white/90 px-2 py-0.5 cursor-pointer hover:border-red-400 hover:text-red-300 transition-colors"
+                  className="inline-flex max-w-full items-center rounded-full text-[10px] font-mono border border-slate-200 bg-slate-50 text-slate-700 px-2 py-0.5 cursor-pointer hover:border-red-200 hover:text-red-600 transition-colors"
                 >
                   {loc} <X className="h-2.5 w-2.5 ml-1" />
                 </span>
@@ -502,9 +505,9 @@ export default function RankingsEngine({
 
         {/* Program / Subject Dropdown */}
         <div className="flex min-h-[5.75rem] flex-col">
-          <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-2">
-            Subject Focus
-          </label>
+            <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-2">
+              Subject Focus
+            </label>
           <div className="relative z-20">
             <MultiSelectDropdown
               options={uniqueSubjects}
@@ -523,7 +526,7 @@ export default function RankingsEngine({
                 <span
                   key={sub}
                   onClick={() => handleSubjectToggle(sub)}
-                  className="inline-flex max-w-full items-center rounded-full text-[10px] font-mono border border-white/20 bg-white/10 text-white/90 px-2 py-0.5 cursor-pointer hover:border-red-400 hover:text-red-300 transition-colors"
+                  className="inline-flex max-w-full items-center rounded-full text-[10px] font-mono border border-slate-200 bg-slate-50 text-slate-700 px-2 py-0.5 cursor-pointer hover:border-red-200 hover:text-red-600 transition-colors"
                 >
                   {sub} <X className="h-2.5 w-2.5 ml-1" />
                 </span>
@@ -534,9 +537,9 @@ export default function RankingsEngine({
 
         {/* Medium of Instruction */}
         <div className="flex min-h-[5.75rem] flex-col">
-          <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-2">
-            Language
-          </label>
+            <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-2">
+              Language
+            </label>
           <div className="relative z-10">
             <MultiSelectDropdown
               options={uniqueLanguages}
@@ -555,7 +558,7 @@ export default function RankingsEngine({
                 <span
                   key={lang}
                   onClick={() => handleLanguageToggle(lang)}
-                  className="inline-flex max-w-full items-center rounded-full text-[10px] font-mono border border-white/20 bg-white/10 text-white/90 px-2 py-0.5 cursor-pointer hover:border-red-400 hover:text-red-300 transition-colors"
+                  className="inline-flex max-w-full items-center rounded-full text-[10px] font-mono border border-slate-200 bg-slate-50 text-slate-700 px-2 py-0.5 cursor-pointer hover:border-red-200 hover:text-red-600 transition-colors"
                 >
                   {lang} <X className="h-2.5 w-2.5 ml-1" />
                 </span>

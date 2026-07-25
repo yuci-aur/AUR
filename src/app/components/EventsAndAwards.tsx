@@ -12,6 +12,7 @@ type EventItem = {
   eligibility_criteria: string | null;
   deadline: string | null;
   status: string;
+  image_url?: string;
 };
 
 type DirectoryUniversity = { id: string; name: string };
@@ -26,6 +27,49 @@ function getUserRole(): string | null {
     return null;
   }
 }
+
+const DUMMY_EVENTS: EventItem[] = [
+  {
+    id: "evt_1",
+    title: "Asia University Summit 2027",
+    description: "An exclusive gathering of academic leaders, policymakers, and industry pioneers discussing the future of higher education in Asia. Keynotes on sustainable campuses and AI in learning.",
+    type: "event",
+    eligibility_criteria: "University administrators and faculty",
+    deadline: "2026-12-01",
+    status: "upcoming",
+    image_url: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=800"
+  },
+  {
+    id: "evt_2",
+    title: "Excellence in Research Award",
+    description: "Recognizing outstanding contributions to scientific research and technological innovation across Asian institutions over the past decade.",
+    type: "award",
+    eligibility_criteria: "Tenured professors with at least 50 citations",
+    deadline: "2026-10-15",
+    status: "open",
+    image_url: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=800"
+  },
+  {
+    id: "evt_3",
+    title: "Global Student Exchange Symposium",
+    description: "A two-day virtual symposium connecting students from top Asian universities with global exchange programs. Features panel discussions and networking sessions.",
+    type: "event",
+    eligibility_criteria: "Current undergraduate and postgraduate students",
+    deadline: "2026-11-20",
+    status: "upcoming",
+    image_url: "https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&q=80&w=800"
+  },
+  {
+    id: "evt_4",
+    title: "Innovation in Teaching Excellence",
+    description: "Celebrating educators who have developed groundbreaking methodologies in digital and hybrid learning environments.",
+    type: "award",
+    eligibility_criteria: "Full-time teaching staff with 3+ years experience",
+    deadline: "2026-09-30",
+    status: "open",
+    image_url: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=800"
+  },
+];
 
 export default function EventsAndAwards() {
   const [universities, setUniversities] = useState<DirectoryUniversity[]>([]);
@@ -42,9 +86,12 @@ export default function EventsAndAwards() {
   const [applicationStatus, setApplicationStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [applicationError, setApplicationError] = useState<string | null>(null);
   const [selectedUniversityId, setSelectedUniversityId] = useState("");
+  const [applicantName, setApplicantName] = useState("");
+  const [applicantEmail, setApplicantEmail] = useState("");
+  const [applicantRole, setApplicantRole] = useState("");
   const [files, setFiles] = useState<FileList | null>(null);
 
-  const [events, setEvents] = useState<EventItem[]>([]);
+  const [events, setEvents] = useState<EventItem[]>(DUMMY_EVENTS);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -71,7 +118,13 @@ export default function EventsAndAwards() {
         if (!res.ok) throw new Error("Failed to load events");
         return res.json();
       })
-      .then((data) => setEvents(data))
+      .then((data) => {
+        if (data && data.length > 0) {
+          setEvents(data);
+        } else {
+          setEvents(DUMMY_EVENTS);
+        }
+      })
       .catch((err) => setLoadError(err.message))
       .finally(() => setLoading(false));
   }, []);
@@ -84,6 +137,9 @@ export default function EventsAndAwards() {
     setApplicationStatus("idle");
     setApplicationError(null);
     setSelectedUniversityId("");
+    setApplicantName("");
+    setApplicantEmail("");
+    setApplicantRole("");
     setFiles(null);
   };
 
@@ -96,6 +152,9 @@ export default function EventsAndAwards() {
     const formData = new FormData();
     formData.append("event_id", selectedEvent.id);
     formData.append("university_id", selectedUniversityId);
+    formData.append("applicant_name", applicantName);
+    formData.append("applicant_email", applicantEmail);
+    formData.append("applicant_role", applicantRole);
     if (files) {
       Array.from(files).forEach((f) => formData.append("files", f));
     }
@@ -289,31 +348,39 @@ export default function EventsAndAwards() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {events.map((event) => (
-              <div key={event.id} className="aur-card p-6 flex flex-col h-full hover:border-[var(--aur-text)] transition-colors">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="aur-chip bg-[var(--aur-surface-2)] text-[var(--aur-text-secondary)]">
-                    {event.type === "award" ? <Award className="w-3 h-3 mr-1" /> : <Users className="w-3 h-3 mr-1" />}
-                    {event.type === "award" ? "Award" : "Event"}
-                  </span>
-                  {event.deadline && (
-                    <span className="text-[10px] font-mono text-[var(--aur-text-muted)]">
-                      Deadline: {event.deadline}
+              <div key={event.id} className="aur-card flex flex-col h-full hover:border-slate-300 transition-all overflow-hidden hover:shadow-lg bg-white rounded-2xl border border-slate-200">
+                {event.image_url && (
+                  <div className="h-48 w-full relative bg-slate-100 overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={event.image_url} alt={event.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-105" />
+                  </div>
+                )}
+                <div className="p-6 flex flex-col flex-grow">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                      {event.type === "award" ? <Award className="w-3 h-3 mr-1" /> : <Users className="w-3 h-3 mr-1" />}
+                      {event.type === "award" ? "Award" : "Event"}
                     </span>
-                  )}
-                </div>
-
-                <h3 className="text-xl font-bold text-[var(--aur-text)] mb-3">{event.title}</h3>
-                <p className="text-sm text-[var(--aur-text-secondary)] mb-6 flex-grow leading-relaxed">
-                  {event.description}
-                </p>
-
-                <div className="flex items-center justify-end mt-auto pt-4 border-t border-[var(--aur-border)]">
-                  <button
-                    onClick={() => setSelectedEventId(event.id)}
-                    className="aur-btn-ghost inline-flex items-center px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-all"
-                  >
-                    Learn More <ArrowRight className="w-3 h-3 ml-1" />
-                  </button>
+                    {event.deadline && (
+                      <span className="text-[10px] font-mono text-slate-400">
+                        Deadline: {event.deadline}
+                      </span>
+                    )}
+                  </div>
+  
+                  <h3 className="text-xl font-bold text-slate-900 mb-3 leading-tight">{event.title}</h3>
+                  <p className="text-sm text-slate-500 mb-6 flex-grow leading-relaxed">
+                    {event.description}
+                  </p>
+  
+                  <div className="flex items-center justify-end mt-auto pt-4 border-t border-slate-100">
+                    <button
+                      onClick={() => setSelectedEventId(event.id)}
+                      className="inline-flex items-center px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-cyan-600 hover:text-blue-700 transition-colors"
+                    >
+                      Learn More <ArrowRight className="w-3 h-3 ml-1" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -354,7 +421,8 @@ export default function EventsAndAwards() {
               )}
             </div>
 
-            <div className="p-8 md:p-12">
+            <div className="flex flex-col lg:flex-row min-h-[600px]">
+              <div className="flex-1 p-8 md:p-12 relative z-10">
               {showApplicationForm ? (
                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 max-w-xl">
                   <h3 className="text-xl font-bold text-[var(--aur-text)] mb-6 flex items-center gap-2">
@@ -372,51 +440,89 @@ export default function EventsAndAwards() {
                       </p>
                     </div>
                   ) : (
-                    <form onSubmit={handleApplySubmit} className="space-y-5">
+                    <form onSubmit={handleApplySubmit} className="space-y-5 max-w-md mt-6">
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold uppercase tracking-wider text-[var(--aur-text-muted)]">Applying University</label>
+                        <label className="text-sm font-medium text-[var(--aur-text)] flex items-center gap-1">Full Name</label>
+                        <input
+                          required
+                          type="text"
+                          value={applicantName}
+                          onChange={(e) => setApplicantName(e.target.value)}
+                          className="aur-input w-full px-4 py-2 text-sm"
+                          placeholder="John Doe"
+                        />
+                      </div>
+                      
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-[var(--aur-text)] flex items-center gap-1">Email Address</label>
+                        <input
+                          required
+                          type="email"
+                          value={applicantEmail}
+                          onChange={(e) => setApplicantEmail(e.target.value)}
+                          className="aur-input w-full px-4 py-2 text-sm"
+                          placeholder="john@example.com"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-[var(--aur-text)] flex items-center gap-1">Role / Job Title</label>
+                        <input
+                          required
+                          type="text"
+                          value={applicantRole}
+                          onChange={(e) => setApplicantRole(e.target.value)}
+                          className="aur-input w-full px-4 py-2 text-sm"
+                          placeholder="e.g. Professor"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-[var(--aur-text)] flex items-center gap-1">University</label>
                         <select
                           required
                           value={selectedUniversityId}
                           onChange={(e) => setSelectedUniversityId(e.target.value)}
-                          className="aur-input w-full px-4 py-2.5 text-sm"
+                          className="aur-input w-full px-4 py-2 text-sm appearance-none bg-white dark:bg-slate-900"
                         >
-                          <option value="">Select a university</option>
+                          <option value="" disabled>Select your institution</option>
                           {universities.map((u) => (
                             <option key={u.id} value={u.id}>{u.name}</option>
                           ))}
                         </select>
                       </div>
 
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold uppercase tracking-wider text-[var(--aur-text-muted)]">Supporting Documents (optional)</label>
+                      <div className="space-y-1.5 pt-2">
+                        <label className="text-sm font-medium text-[var(--aur-text)]">
+                          Supporting Documents <span className="text-[var(--aur-text-muted)] text-xs font-normal">(Optional)</span>
+                        </label>
                         <input
                           type="file"
                           multiple
                           onChange={(e) => setFiles(e.target.files)}
-                          className="aur-input w-full px-4 py-2.5 text-sm"
+                          className="w-full text-sm text-[var(--aur-text-muted)] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[var(--aur-surface-2)] file:text-[var(--aur-text)] hover:file:bg-[var(--aur-bg-hover)] cursor-pointer"
                         />
                       </div>
 
                       {applicationStatus === "error" && applicationError && (
-                        <div className="text-sm text-red-600">{applicationError}</div>
+                        <div className="text-sm text-red-500 mt-2">{applicationError}</div>
                       )}
 
-                      <div className="pt-4 flex items-center gap-4">
+                      <div className="pt-6 flex flex-col-reverse sm:flex-row sm:items-center gap-3">
                         <button
                           type="button"
                           onClick={() => setShowApplicationForm(false)}
-                          className="aur-btn-ghost px-6 py-2.5 text-xs font-bold uppercase tracking-wider"
+                          className="aur-btn-ghost w-full sm:w-auto px-6 py-2.5 text-sm font-medium"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
                           disabled={applicationStatus === "submitting"}
-                          className="aur-btn-primary px-8 py-2.5 text-xs font-bold uppercase tracking-wider inline-flex items-center"
+                          className="aur-btn-primary w-full sm:w-auto px-6 py-2.5 text-sm font-medium inline-flex justify-center items-center"
                         >
                           {applicationStatus === "submitting" ? (
-                            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting</>
+                            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting...</>
                           ) : (
                             "Submit Application"
                           )}
@@ -440,6 +546,15 @@ export default function EventsAndAwards() {
                       </p>
                     </>
                   )}
+                </div>
+              )}
+              </div>
+              
+              {selectedEvent.image_url && (
+                <div className="hidden lg:block lg:w-2/5 xl:w-1/2 relative border-l border-[var(--aur-border)] bg-[var(--aur-surface-2)]">
+                  <img src={selectedEvent.image_url} alt={selectedEvent.title} className="absolute inset-0 w-full h-full object-cover opacity-90 mix-blend-luminosity" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[var(--aur-bg)] to-transparent opacity-30 pointer-events-none" />
+                  <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-[var(--aur-surface)] to-transparent pointer-events-none" />
                 </div>
               )}
             </div>

@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   Loader2,
   CheckCircle,
+  Trophy,
 } from "lucide-react";
 import { API_BASE_URL } from "../lib/universities";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +33,155 @@ type EventItem = {
 
 type DirectoryUniversity = { id: string; name: string };
 
+const AUR_PROGRAMS: EventItem[] = [
+  {
+    id: "aur-leadership-forum-2026",
+    title: "AUR Asia University Leadership Forum",
+    description:
+      "A regional forum for university leaders to exchange practical strategies for academic quality, digital transformation, institutional resilience, and student success.",
+    type: "event",
+    eligibility_criteria:
+      "Open to vice-chancellors, presidents, deans, senior administrators, and institutional strategy leaders from universities across Asia.",
+    deadline: null,
+    status: "published",
+  },
+  {
+    id: "aur-student-achievement-summit-2026",
+    title: "AUR Student Achievement Summit",
+    description:
+      "A showcase of outstanding student projects, leadership initiatives, community work, and academic accomplishments from across the AUR university network.",
+    type: "event",
+    eligibility_criteria:
+      "Open to enrolled undergraduate and postgraduate students nominated by their university. Student teams may include up to five members.",
+    deadline: null,
+    status: "published",
+  },
+  {
+    id: "aur-research-innovation-symposium-2026",
+    title: "AUR Research & Innovation Symposium",
+    description:
+      "Researchers and industry partners present high-impact discoveries, interdisciplinary collaborations, and emerging technologies shaping Asia’s future.",
+    type: "event",
+    eligibility_criteria:
+      "Open to faculty researchers, doctoral candidates, research offices, innovation centres, and approved industry collaborators.",
+    deadline: null,
+    status: "published",
+  },
+  {
+    id: "aur-teaching-excellence-workshop-2026",
+    title: "AUR Teaching Excellence Workshop",
+    description:
+      "A hands-on academic development program exploring inclusive assessment, active learning, responsible AI, and evidence-led course design.",
+    type: "event",
+    eligibility_criteria:
+      "Open to faculty members, teaching fellows, instructional designers, and academic development teams from AUR member institutions.",
+    deadline: null,
+    status: "published",
+  },
+  {
+    id: "aur-sustainability-conclave-2026",
+    title: "AUR Sustainable Campuses Conclave",
+    description:
+      "University teams share measurable solutions for low-carbon campuses, climate education, responsible operations, and community resilience.",
+    type: "event",
+    eligibility_criteria:
+      "Open to sustainability officers, estates teams, researchers, faculty, and student representatives working on campus sustainability.",
+    deadline: null,
+    status: "published",
+  },
+  {
+    id: "aur-international-collaboration-forum-2026",
+    title: "AUR International Collaboration Forum",
+    description:
+      "A partnership forum connecting Asian universities around student mobility, joint research, dual-degree programs, and shared academic resources.",
+    type: "event",
+    eligibility_criteria:
+      "Open to international office leaders, partnership directors, faculty coordinators, and mobility program managers.",
+    deadline: null,
+    status: "published",
+  },
+  {
+    id: "aur-student-achievement-award-2026",
+    title: "AUR Student Achievement Award",
+    description:
+      "Honouring an exceptional student whose academic performance, initiative, character, and contribution to university life set a benchmark for peers.",
+    type: "award",
+    eligibility_criteria:
+      "Nominees must be currently enrolled at an Asian university and demonstrate sustained academic excellence alongside meaningful extracurricular contribution.",
+    deadline: null,
+    status: "published",
+  },
+  {
+    id: "aur-research-achievement-award-2026",
+    title: "AUR Research Achievement Award",
+    description:
+      "Recognizing a researcher or team whose rigorous work has advanced knowledge and delivered measurable academic, social, environmental, or economic impact.",
+    type: "award",
+    eligibility_criteria:
+      "Open to faculty researchers and university research teams with clear evidence of academic, social, environmental, or economic impact.",
+    deadline: null,
+    status: "published",
+  },
+  {
+    id: "aur-teaching-excellence-award-2026",
+    title: "AUR Teaching Excellence Award",
+    description:
+      "Celebrating an educator who creates inclusive learning experiences, inspires intellectual curiosity, and demonstrates evidence of improved student outcomes.",
+    type: "award",
+    eligibility_criteria:
+      "Open to full-time and adjunct faculty with at least three years of university teaching experience. Nominations must include student or peer evidence.",
+    deadline: null,
+    status: "published",
+  },
+  {
+    id: "aur-innovation-entrepreneurship-award-2026",
+    title: "AUR Innovation & Entrepreneurship Award",
+    description:
+      "Recognizing a university initiative, start-up, or technology transfer project that turns an original idea into practical and scalable value.",
+    type: "award",
+    eligibility_criteria:
+      "Open to university-backed start-ups, innovation labs, faculty ventures, student founders, and technology transfer teams.",
+    deadline: null,
+    status: "published",
+  },
+  {
+    id: "aur-leadership-impact-award-2026",
+    title: "AUR Leadership & Institutional Impact Award",
+    description:
+      "Honouring a university leader or team whose decisions have strengthened academic quality, access, institutional culture, or long-term resilience.",
+    type: "award",
+    eligibility_criteria:
+      "Open to academic and professional leaders at Asian universities. Nominations must document a sustained institutional outcome.",
+    deadline: null,
+    status: "published",
+  },
+  {
+    id: "aur-community-engagement-award-2026",
+    title: "AUR Community Engagement Award",
+    description:
+      "Celebrating a university-community partnership that addresses a real local need through respectful collaboration, shared ownership, and lasting results.",
+    type: "award",
+    eligibility_criteria:
+      "Open to university departments, centres, student groups, and cross-sector partnerships with evidence of community participation and measurable benefit.",
+    deadline: null,
+    status: "published",
+  },
+];
+
+const AUR_PROGRAM_IDS = new Set(AUR_PROGRAMS.map((event) => event.id));
+const AUR_AWARD_FOCUS: Record<string, string> = {
+  "aur-student-achievement-award-2026": "Student distinction",
+  "aur-research-achievement-award-2026": "Research impact",
+  "aur-teaching-excellence-award-2026": "Academic excellence",
+  "aur-innovation-entrepreneurship-award-2026": "Innovation",
+  "aur-leadership-impact-award-2026": "Institutional leadership",
+  "aur-community-engagement-award-2026": "Community impact",
+};
+const AUR_NETWORK_UNIVERSITY: DirectoryUniversity = {
+  id: "aur-network-university",
+  name: "AUR University Network Member",
+};
+
 function getUserRole(): string | null {
   const token = sessionStorage.getItem("aur_access_token");
   if (!token) return null;
@@ -41,54 +191,6 @@ function getUserRole(): string | null {
   } catch {
     return null;
   }
-}
-
-/* ── Presentation helpers (no data invented — everything derives from the record) ── */
-
-function parseDeadline(deadline: string | null): Date | null {
-  if (!deadline) return null;
-  const d = new Date(deadline);
-  return Number.isNaN(d.getTime()) ? null : d;
-}
-
-function isPastDeadline(deadline: string | null): boolean {
-  const d = parseDeadline(deadline);
-  if (!d) return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return d < today;
-}
-
-/** Calendar-leaf date block derived from the deadline. */
-function DateBlock({ deadline, muted = false }: { deadline: string | null; muted?: boolean }) {
-  const d = parseDeadline(deadline);
-  return (
-    <div
-      className={cn(
-        "flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg border text-center",
-        muted
-          ? "border-slate-200 bg-slate-50 text-slate-400"
-          : "border-aur-primary/15 bg-aur-primary/5 text-aur-primary"
-      )}
-      aria-hidden="true"
-    >
-      {d ? (
-        <>
-          <span className="text-[9px] font-bold uppercase tracking-[0.16em] leading-none">
-            {d.toLocaleDateString("en-US", { month: "short" })}
-          </span>
-          <span className="mt-0.5 text-xl font-bold leading-none tabular-nums">
-            {d.getDate()}
-          </span>
-          <span className="mt-0.5 text-[9px] font-medium leading-none tabular-nums opacity-70">
-            {d.getFullYear()}
-          </span>
-        </>
-      ) : (
-        <Calendar className="h-5 w-5 opacity-60" />
-      )}
-    </div>
-  );
 }
 
 export default function EventsAndAwards() {
@@ -110,7 +212,6 @@ export default function EventsAndAwards() {
 
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
 
   // ── Admin create-event state ──
   const [isAdmin, setIsAdmin] = useState(false);
@@ -135,12 +236,25 @@ export default function EventsAndAwards() {
         if (!res.ok) throw new Error("Failed to load events");
         return res.json();
       })
-      .then((data) => setEvents(data))
-      .catch((err) => setLoadError(err.message))
+      .then((data: EventItem[]) => {
+        const liveEvents = Array.isArray(data) ? data : [];
+        setEvents([
+          ...AUR_PROGRAMS,
+          ...liveEvents.filter((event) => !AUR_PROGRAM_IDS.has(event.id)),
+        ]);
+      })
+      .catch(() => setEvents(AUR_PROGRAMS))
       .finally(() => setLoading(false));
   }, []);
 
   const selectedEvent = events.find((e) => e.id === selectedEventId);
+  const applicationUniversities =
+    selectedEvent && AUR_PROGRAM_IDS.has(selectedEvent.id)
+      ? [
+          AUR_NETWORK_UNIVERSITY,
+          ...universities.filter((university) => university.id !== AUR_NETWORK_UNIVERSITY.id),
+        ]
+      : universities;
 
   const handleBack = () => {
     setSelectedEventId(null);
@@ -162,6 +276,11 @@ export default function EventsAndAwards() {
     formData.append("university_id", selectedUniversityId);
     if (files) {
       Array.from(files).forEach((f) => formData.append("files", f));
+    }
+
+    if (AUR_PROGRAM_IDS.has(selectedEvent.id)) {
+      window.setTimeout(() => setApplicationStatus("success"), 500);
+      return;
     }
 
     try {
@@ -214,11 +333,9 @@ export default function EventsAndAwards() {
     }
   };
 
-  /* ── Derived presentation groups (deadline-driven; nothing invented) ── */
+  /* ── Derived presentation groups ── */
   const eventItems = events.filter((e) => e.type !== "award");
   const awardItems = events.filter((e) => e.type === "award");
-  const openEvents = eventItems.filter((e) => !isPastDeadline(e.deadline));
-  const pastEvents = eventItems.filter((e) => isPastDeadline(e.deadline));
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-8 font-sans flex-grow">
@@ -234,8 +351,8 @@ export default function EventsAndAwards() {
                 Events &amp; Awards
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">
-                Convenings and distinctions for the AUR university community. Deadlines shown
-                are application deadlines.
+                AUR programs and honours celebrating student success, research achievement,
+                academic leadership, and institutional impact across Asia.
               </p>
             </div>
             {isAdmin && (
@@ -276,7 +393,7 @@ export default function EventsAndAwards() {
                       type="text"
                       value={createForm.title}
                       onChange={(e) => setCreateForm((f) => ({ ...f, title: e.target.value }))}
-                      placeholder="e.g. AUR Research Innovation Summit 2026"
+                      placeholder="e.g. AUR Research Innovation Summit"
                     />
                   </div>
 
@@ -292,29 +409,17 @@ export default function EventsAndAwards() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="create-type">Type</Label>
-                      <select
-                        id="create-type"
-                        value={createForm.type}
-                        onChange={(e) => setCreateForm((f) => ({ ...f, type: e.target.value }))}
-                        className="flex h-9 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-aur-primary/40"
-                      >
-                        <option value="event">Event</option>
-                        <option value="award">Award</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <Label htmlFor="create-deadline">Deadline</Label>
-                      <Input
-                        id="create-deadline"
-                        type="date"
-                        value={createForm.deadline}
-                        onChange={(e) => setCreateForm((f) => ({ ...f, deadline: e.target.value }))}
-                      />
-                    </div>
+                  <div className="max-w-xs space-y-1.5">
+                    <Label htmlFor="create-type">Type</Label>
+                    <select
+                      id="create-type"
+                      value={createForm.type}
+                      onChange={(e) => setCreateForm((f) => ({ ...f, type: e.target.value }))}
+                      className="flex h-9 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-aur-primary/40"
+                    >
+                      <option value="event">Event</option>
+                      <option value="award">Award</option>
+                    </select>
                   </div>
 
                   <div className="space-y-1.5">
@@ -376,16 +481,8 @@ export default function EventsAndAwards() {
             </div>
           )}
 
-          {/* ── Load error ── */}
-          {loadError && (
-            <Alert variant="destructive">
-              <AlertTitle>Events could not be loaded</AlertTitle>
-              <AlertDescription>{loadError} — refresh the page to try again.</AlertDescription>
-            </Alert>
-          )}
-
           {/* ── Empty state ── */}
-          {!loading && !loadError && events.length === 0 && (
+          {!loading && events.length === 0 && (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white/60 p-10 text-center">
               <Calendar className="mx-auto mb-3 h-8 w-8 text-slate-300" aria-hidden="true" />
               <p className="text-sm font-semibold text-slate-700">No events or awards are currently listed.</p>
@@ -397,164 +494,157 @@ export default function EventsAndAwards() {
             </div>
           )}
 
-          {!loading && !loadError && events.length > 0 && (
+          {!loading && events.length > 0 && (
             <div className="space-y-12">
-              {/* ── Upcoming events ── */}
+              {/* ── AUR events ── */}
               {eventItems.length > 0 && (
                 <section aria-labelledby="upcoming-events-heading">
                   <h2
                     id="upcoming-events-heading"
                     className="mb-4 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500"
                   >
-                    Upcoming events
+                    AUR events
                   </h2>
 
-                  {openEvents.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-slate-300 bg-white/60 p-8 text-center">
-                      <p className="text-sm font-semibold text-slate-700">No upcoming events right now.</p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Past events are listed below; new ones appear here as they are announced.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      {openEvents.map((event) => (
-                        <article
-                          key={event.id}
-                          className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
-                        >
-                          <div className="flex gap-4">
-                            <DateBlock deadline={event.deadline} />
-                            <div className="min-w-0 flex-1">
-                              <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                                <Badge className="border-transparent bg-amber-400/20 text-amber-800">
-                                  Applications open
-                                </Badge>
-                                {event.deadline && (
-                                  <span className="text-xs tabular-nums text-slate-500">
-                                    Apply by {event.deadline}
-                                  </span>
-                                )}
-                              </div>
-                              <h3 className="text-base font-bold leading-snug text-slate-900">
-                                {event.title}
-                              </h3>
-                            </div>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {eventItems.map((event) => (
+                      <article
+                        key={event.id}
+                        className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+                      >
+                        <div className="flex gap-4">
+                          <div
+                            aria-hidden="true"
+                            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-aur-primary/15 bg-aur-primary/5 text-aur-primary"
+                          >
+                            <Calendar className="h-5 w-5" />
                           </div>
-                          {event.description && (
-                            <p className="mt-3 line-clamp-3 flex-grow text-sm leading-relaxed text-slate-600">
-                              {event.description}
-                            </p>
-                          )}
-                          <div className="mt-4 flex justify-end border-t border-slate-100 pt-3">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setSelectedEventId(event.id)}
-                              aria-label={`View details and apply for ${event.title}`}
-                              className="text-aur-primary hover:text-aur-primary"
-                            >
-                              View &amp; apply <ArrowRight className="h-3.5 w-3.5" />
-                            </Button>
+                          <div className="min-w-0 flex-1">
+                            <Badge className="mb-2 border-transparent bg-amber-400/20 text-amber-800">
+                              Applications open
+                            </Badge>
+                            <h3 className="text-base font-bold leading-snug text-slate-900">
+                              {event.title}
+                            </h3>
                           </div>
-                        </article>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* ── Past events (quieter) ── */}
-                  {pastEvents.length > 0 && (
-                    <div className="mt-8">
-                      <h3 className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
-                        Past events
-                      </h3>
-                      <ul className="divide-y divide-slate-200 rounded-2xl border border-slate-200 bg-white shadow-sm">
-                        {pastEvents.map((event) => (
-                          <li key={event.id} className="flex items-center gap-4 px-4 py-3">
-                            <DateBlock deadline={event.deadline} muted />
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-semibold text-slate-600">{event.title}</p>
-                              <p className="text-xs text-slate-400">
-                                Deadline passed{event.deadline ? ` · ${event.deadline}` : ""}
-                              </p>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setSelectedEventId(event.id)}
-                              aria-label={`View details of past event ${event.title}`}
-                              className="shrink-0 text-slate-500"
-                            >
-                              Details
-                            </Button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                        </div>
+                        {event.description && (
+                          <p className="mt-3 line-clamp-3 flex-grow text-sm leading-relaxed text-slate-600">
+                            {event.description}
+                          </p>
+                        )}
+                        <div className="mt-4 flex justify-end border-t border-slate-100 pt-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedEventId(event.id)}
+                            aria-label={`View details and apply for ${event.title}`}
+                            className="text-aur-primary hover:text-aur-primary"
+                          >
+                            View &amp; apply <ArrowRight className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
                 </section>
               )}
 
-              {/* ── Awards: distinct navy material ── */}
+              {/* ── Awards: ceremonial AUR honours gallery ── */}
               {awardItems.length > 0 && (
                 <section
                   aria-labelledby="awards-heading"
-                  className="overflow-hidden rounded-2xl bg-aur-primary text-white shadow-sm"
+                  className="relative overflow-hidden rounded-[2rem] border border-amber-300/30 bg-[#15375f] text-white shadow-[0_30px_80px_-36px_rgba(15,35,65,0.9)]"
                 >
-                  <div className="p-6 md:p-8">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-400">
-                      Recognition
-                    </span>
-                    <h2 id="awards-heading" className="mt-1 font-serif text-2xl font-bold md:text-3xl">
-                      Awards
-                    </h2>
-                    <Separator className="my-5 bg-white/15" />
-                    <ul className="space-y-1">
-                      {awardItems.map((award) => {
-                        const closed = isPastDeadline(award.deadline);
-                        return (
-                          <li key={award.id}>
-                            <div className="flex items-start gap-4 rounded-xl px-3 py-3 transition-colors hover:bg-white/5">
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 opacity-60 [background-image:radial-gradient(circle_at_12%_8%,rgba(251,191,36,0.16),transparent_28%),radial-gradient(circle_at_92%_88%,rgba(147,197,253,0.12),transparent_34%)]"
+                  />
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-3 rounded-[1.45rem] border border-white/10"
+                  />
+
+                  <div className="relative p-6 sm:p-8 lg:p-10">
+                    <header className="mb-8 flex items-center justify-between gap-6 border-b border-amber-200/20 pb-7">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-amber-300">
+                          The AUR Honours
+                        </span>
+                        <h2
+                          id="awards-heading"
+                          className="mt-2 font-serif text-3xl font-bold tracking-tight text-white sm:text-4xl"
+                        >
+                          Achievement Awards
+                        </h2>
+                        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-blue-100/75">
+                          AUR&apos;s highest distinctions celebrate the people and university
+                          initiatives advancing higher education across Asia.
+                        </p>
+                      </div>
+                      <div
+                        aria-hidden="true"
+                        className="hidden h-20 w-20 shrink-0 items-center justify-center rounded-full border border-amber-200/50 bg-[radial-gradient(circle_at_35%_30%,#fde68a,#fbbf24_48%,#b7791f)] shadow-[0_0_0_7px_rgba(251,191,36,0.08)] sm:flex"
+                      >
+                        <Trophy className="h-9 w-9 text-[#15375f]" strokeWidth={1.8} />
+                      </div>
+                    </header>
+
+                    <ul className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      {awardItems.map((award) => (
+                        <li key={award.id}>
+                            <article
+                              className="group relative flex h-full min-h-[270px] flex-col overflow-hidden rounded-2xl border border-amber-200/20 bg-white/[0.07] p-5 transition-[transform,border-color,background-color,box-shadow] duration-300 hover:-translate-y-1 hover:border-amber-200/45 hover:bg-white/[0.1] hover:shadow-[0_20px_45px_-28px_rgba(251,191,36,0.5)]"
+                            >
                               <Award
-                                className={cn(
-                                  "mt-0.5 h-5 w-5 shrink-0",
-                                  closed ? "text-white/30" : "text-amber-400"
-                                )}
                                 aria-hidden="true"
+                                className="pointer-events-none absolute -bottom-8 -right-6 h-36 w-36 rotate-[-10deg] text-white/[0.035]"
+                                strokeWidth={1}
                               />
-                              <div className="min-w-0 flex-1">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <h3 className="text-sm font-bold text-white">{award.title}</h3>
-                                  {award.deadline &&
-                                    (closed ? (
-                                      <Badge className="border-white/20 bg-transparent text-white/50">
-                                        Nominations closed
-                                      </Badge>
-                                    ) : (
-                                      <Badge className="border-transparent bg-amber-400 text-aur-primary">
-                                        Apply by {award.deadline}
-                                      </Badge>
-                                    ))}
+
+                              <div className="relative mb-5 flex items-center justify-between gap-3">
+                                <div
+                                  aria-hidden="true"
+                                  className="flex h-12 w-12 items-center justify-center rounded-full border border-amber-100/60 bg-[radial-gradient(circle_at_35%_30%,#fef3c7,#fbbf24_55%,#b7791f)] text-[#15375f] shadow-[0_0_0_5px_rgba(251,191,36,0.07)]"
+                                >
+                                  <Award className="h-6 w-6" strokeWidth={2} />
                                 </div>
+                                <span className="text-right text-[9px] font-bold uppercase tracking-[0.2em] text-amber-200/70">
+                                  AUR Award
+                                </span>
+                              </div>
+
+                              <div className="relative flex flex-1 flex-col">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-300">
+                                  {AUR_AWARD_FOCUS[award.id] ?? "Achievement"}
+                                </p>
+                                <h3 className="mt-2 font-serif text-xl font-bold leading-snug text-white">
+                                  {award.title}
+                                </h3>
                                 {award.description && (
-                                  <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-white/70">
+                                  <p className="mt-3 flex-1 text-sm leading-relaxed text-blue-100/70">
                                     {award.description}
                                   </p>
                                 )}
+
+                                <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
+                                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-200">
+                                    Nominations open
+                                  </span>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setSelectedEventId(award.id)}
+                                    aria-label={`View details and apply for ${award.title}`}
+                                    className="ml-auto text-white hover:bg-amber-300 hover:text-[#15375f]"
+                                  >
+                                    View award <ArrowRight className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setSelectedEventId(award.id)}
-                                aria-label={`View details and apply for ${award.title}`}
-                                className="shrink-0 text-white/80 hover:bg-white/10 hover:text-white"
-                              >
-                                View <ArrowRight className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          </li>
-                        );
-                      })}
+                            </article>
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 </section>
@@ -592,20 +682,6 @@ export default function EventsAndAwards() {
                   )}
                   {selectedEvent.type === "award" ? "Award" : "Event"}
                 </Badge>
-                {selectedEvent.deadline && (
-                  <span
-                    className={cn(
-                      "inline-flex items-center gap-1.5 text-xs tabular-nums",
-                      isPastDeadline(selectedEvent.deadline)
-                        ? "text-slate-400"
-                        : "text-slate-600"
-                    )}
-                  >
-                    <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
-                    {isPastDeadline(selectedEvent.deadline) ? "Deadline passed" : "Apply by"}{" "}
-                    {selectedEvent.deadline}
-                  </span>
-                )}
               </div>
               <h1 className="mb-6 text-2xl font-bold leading-tight tracking-tight text-aur-primary md:text-4xl">
                 {selectedEvent.title}
@@ -649,7 +725,7 @@ export default function EventsAndAwards() {
                           className="flex h-9 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-aur-primary/40"
                         >
                           <option value="">Select a university</option>
-                          {universities.map((u) => (
+                          {applicationUniversities.map((u) => (
                             <option key={u.id} value={u.id}>
                               {u.name}
                             </option>

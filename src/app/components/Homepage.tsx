@@ -6,7 +6,7 @@ import NewsFlashWidget from "./NewsFlashWidget";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  Search, BookOpen, GraduationCap, ChevronRight, ArrowRight, Mail,
+  Search, BookOpen, GraduationCap, ChevronRight, ArrowRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FEATURED_ARTICLES, University, Article } from "../data";
@@ -15,7 +15,6 @@ import { useUniversityData } from "./data/UniversityDataProvider";
 import { useSidebar } from "./navigation/SidebarContext";
 import { isProtectedView } from "./navigation/config";
 import "./home/ref-home.css";
-import { API_BASE_URL } from "../lib/universities";
 
 type SuggestionPick =
   | { kind: "uni"; uni: University }
@@ -106,9 +105,6 @@ export default function Homepage({
   const { universities } = useUniversityData();
   const { searchQuery, setSearchQuery } = useSidebar();
   const [suggestions, setSuggestions] = useState<{ universities: University[]; articles: Article[] }>({ universities: [], articles: [] });
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState("");
-  const [loading, setLoading] = useState(false);
   const [showSugg, setShowSugg] = useState(false);
   const [activeIdx, setActiveIdx] = useState(-1);
   const [blogs, setBlogs] = useState<Article[]>([]);
@@ -183,20 +179,6 @@ export default function Homepage({
   const top10 = useMemo(() => [...universities].sort((a, b) => b.overall - a.overall).slice(0, 10), [universities]);
   const countries = useMemo(() => getCountryStats(universities), [universities]);
   const nCountries = useMemo(() => new Set(universities.map(u => u.location)).size, [universities]);
-
-  const subscribe = async (ev: React.FormEvent<HTMLFormElement>) => {
-    ev.preventDefault();
-    const t = email.trim();
-    if (!t) { setStatus("Enter an email."); return; }
-    setLoading(true); setStatus("");
-    try {
-      const r = await fetch(`${API_BASE_URL}/api/newsletter/subscribe`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: t }) });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.detail || "Failed.");
-      setStatus("Thank you!"); setEmail("");
-    } catch (err) { setStatus(err instanceof Error ? err.message : "Error."); }
-    finally { setLoading(false); }
-  };
 
   return (
     <div className="ref-home flex-grow w-full relative">
@@ -492,17 +474,7 @@ export default function Homepage({
           
           <div className="pt-8 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-6">
             <span className="text-xs text-slate-400">© 2026 Asia University Rankings</span>
-            <form onSubmit={subscribe} className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
-              <div className="relative w-full sm:w-auto">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-4 w-4 text-slate-400" />
-                </div>
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Newsletter" required className="bg-slate-50 border border-slate-200 rounded-full pl-10 pr-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 w-full sm:w-64 focus:outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all" />
-              </div>
-              <button type="submit" disabled={loading} className="bg-[#1A365D] hover:bg-[#122746] transition-colors text-white font-bold text-sm px-6 py-2.5 rounded-full w-full sm:w-auto mt-2 sm:mt-0">{loading ? "Subscribing..." : "Subscribe"}</button>
-            </form>
           </div>
-          {status && <div className="text-right mt-2 text-xs"><span className={status.includes("Thank") ? "text-emerald-600 font-medium" : "text-amber-600 font-medium"}>{status}</span></div>}
         </div>
       </footer>
     </div>

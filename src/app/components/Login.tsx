@@ -2,7 +2,18 @@
 
 import "./Login.css";
 import React, { useState } from "react";
-import { API_BASE_URL } from "../lib/universities";
+import {
+  browserLocalPersistence,
+  browserSessionPersistence,
+  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  setPersistence,
+  signOut,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  updateProfile,
+  type User as FirebaseUser,
+} from "firebase/auth";
 
 import {
   ArrowRight,
@@ -18,6 +29,8 @@ import {
   Network,
   Activity,
   CheckCircle2,
+  Building2,
+  GraduationCap,
 } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 import { Input } from "@/components/ui/input";
@@ -29,6 +42,10 @@ import { useSidebar } from "./navigation/SidebarContext";
 import { useUniversityData } from "./data/UniversityDataProvider";
 import { CanvasRevealEffect } from "./ui/canvas-reveal-effect";
 import LoginGlobe from "./LoginGlobe";
+import InstitutionRegistration from "./InstitutionRegistration";
+import { authenticatedFetch } from "../lib/authenticated-fetch";
+import { firebaseAuth } from "../lib/firebase";
+import { authErrorMessage } from "../lib/auth-error-message";
 
 // ─── Variants ─────────────────────────────────────────────────────────────────
 const ease = [0.16, 1, 0.3, 1] as [number, number, number, number];
@@ -90,18 +107,6 @@ function Chip({ icon: Icon, value, label, delay, className = "" }:
   );
 }
 
-// ─── Social SVGs ─────────────────────────────────────────────────────────────
-function GoogleIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
-      <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
-      <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/>
-      <path d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z" fill="#FBBC05"/>
-      <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 6.293C4.672 4.165 6.656 3.58 9 3.58z" fill="#EA4335"/>
-    </svg>
-  );
-}
-
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function Login({ initialMode = "login" }: { initialMode?: "login" | "signup" }) {
   const { handleViewChange} = useSidebar();
@@ -119,6 +124,7 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
   const [keepIn, setKeepIn]               = useState(false);
   const [loading, setLoading]             = useState(false);
   const [error, setError]                 = useState("");
+  const [registrationType, setRegistrationType] = useState<"student" | "institution">("student");
 
   const strength   = pwStrength(password);
   const pwsMatch   = confirmPw === "" || password === confirmPw;
@@ -129,6 +135,46 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
     setError("");
     setPassword("");
     setConfirmPw("");
+    setRegistrationType("student");
+  };
+
+  const saveUserProfile = async (
+    user: FirebaseUser,
+    fallbackName = "",
+    accountType?: "student",
+  ) => {
+    const displayName = user.displayName?.trim() || fallbackName.trim();
+    await authenticatedFetch("/api/account");
+    if (accountType) {
+      await authenticatedFetch("/api/account", {
+        method: "PUT",
+        body: JSON.stringify({
+          name: displayName,
+          country: "",
+          profile_role: "Student",
+          profile_photo: user.photoURL,
+        }),
+      });
+    }
+  };
+
+  const finishAuthentication = async (
+    user: FirebaseUser,
+    accountType?: "student",
+  ) => {
+    await saveUserProfile(user, name, accountType);
+    window.dispatchEvent(new Event("aur-auth-change"));
+    localStorage.setItem("aur_logged_in", "true");
+    handleViewChange("home");
+  };
+
+  const isInstitutionAccount = async (user: FirebaseUser) => {
+    void user;
+    const response = await authenticatedFetch("/api/account");
+    const account = (await response.json()) as {
+      profile?: { account_type?: string };
+    };
+    return account.profile?.account_type === "institution";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -159,54 +205,51 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
     setLoading(true);
 
     try {
-      const endpoint = isLogin ? `${API_BASE_URL}/auth/login` : `${API_BASE_URL}/auth/register`;
-      const payload = isLogin
-        ? { email: email.trim(), password }
-        : { full_name: name.trim(), email: email.trim(), password };
+      await setPersistence(
+        firebaseAuth,
+        keepIn ? browserLocalPersistence : browserSessionPersistence,
+      );
+      const credential = isLogin
+        ? await signInWithEmailAndPassword(firebaseAuth, email.trim(), password)
+        : await createUserWithEmailAndPassword(firebaseAuth, email.trim(), password);
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-      // --- REAL API INTEGRATION START ---
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          // "X-CSRF-Token": getCsrfToken(), // BACKEND TEAM: Uncomment if using CSRF tokens
-        },
-        body: JSON.stringify(payload),
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      // Handle standard authentication HTTP status codes securely
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        if (response.status === 401) throw new Error("Invalid credentials. Please try again.");
-        if (response.status === 403) throw new Error("Account locked or access denied.");
-        if (response.status === 429) throw new Error("Too many attempts. Please try again later.");
-        throw new Error(errorData.detail || errorData.message || "An error occurred during authentication.");
+      if (isLogin && await isInstitutionAccount(credential.user)) {
+        await signOut(firebaseAuth);
+        setError("This is an institution account. Choose Institution to sign in.");
+        return;
       }
 
-      const data = await response.json();
-
-      // Store tokens (sessionStorage used here; swap to HttpOnly cookies server-side later for better security)
-      sessionStorage.setItem("aur_access_token", data.access_token);
-      sessionStorage.setItem("aur_refresh_token", data.refresh_token);
-      window.dispatchEvent(new Event("aur-auth-change"));
-      localStorage.setItem("aur_logged_in", "true");
-
-      handleViewChange("home");
-      // --- REAL API INTEGRATION END ---
-
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
-        setError("Connection timeout. Please check your network and try again.");
-      } else {
-        setError(err.message || "Authentication failed. Please contact support.");
+      if (!isLogin) {
+        await updateProfile(credential.user, { displayName: name.trim() });
       }
+
+      await finishAuthentication(credential.user, isLogin ? undefined : "student");
+    } catch (err: unknown) {
+      setError(authErrorMessage(err, isLogin ? "email-login" : "signup"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      await setPersistence(
+        firebaseAuth,
+        keepIn ? browserLocalPersistence : browserSessionPersistence,
+      );
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+      const credential = await signInWithPopup(firebaseAuth, provider);
+      if (isLogin && await isInstitutionAccount(credential.user)) {
+        await signOut(firebaseAuth);
+        setError("This is an institution account. Choose Institution to sign in.");
+        return;
+      }
+      await finishAuthentication(credential.user, isLogin ? undefined : "student");
+    } catch (err: unknown) {
+      setError(authErrorMessage(err, "google"));
     } finally {
       setLoading(false);
     }
@@ -289,7 +332,7 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
 
       {/* ── Right Form ── */}
       <div className="lp-right relative z-10"   >
-        <div className="lp-glass-card">
+        <div className={`lp-glass-card ${registrationType === "institution" ? "lp-glass-card-wide" : ""}`}>
           {/* Mobile brand — click returns to the home page */}
           <div className="lp-mobile-brand">
             <div className="lp-logo mb-6 transform scale-[0.8] origin-left">
@@ -313,15 +356,81 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
               {/* Header */}
               <div className="lp-form-header">
                 <h1 className="lp-form-title">
-                  {isLogin ? "Welcome back" : "Create your free account"}
+                  {isLogin && registrationType === "student"
+                    ? "Welcome back"
+                    : isLogin && registrationType === "institution"
+                      ? "Institution sign in"
+                      : registrationType === "institution"
+                      ? "Register your institution"
+                      : "Create your free account"}
                 </h1>
                 <p className="lp-form-sub">
-                  {isLogin
+                  {isLogin && registrationType === "student"
                     ? "Pick up your shortlists and comparisons where you left off."
-                    : "Save universities, compare side by side, and keep your research in one place."}
+                    : isLogin && registrationType === "institution"
+                      ? "Sign in to resume an application or check its verification status."
+                      : registrationType === "institution"
+                      ? "Verify a representative account and submit official institution details for review."
+                      : "Save universities, compare side by side, and keep your research in one place."}
                 </p>
               </div>
 
+              {(
+                <div className="mb-5">
+                  <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                    {isLogin ? "I am signing in as" : "I am registering as"}
+                  </p>
+                  <div className="grid grid-cols-2 gap-3" role="group" aria-label="Choose account type">
+                    <button
+                      type="button"
+                      aria-pressed={registrationType === "student"}
+                      onClick={() => setRegistrationType("student")}
+                      className={`flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors ${
+                        registrationType === "student"
+                          ? "border-2 border-[#17365f] bg-blue-50 text-[#17365f]"
+                          : "border border-slate-200 bg-white text-slate-700 hover:border-[#17365f]/50"
+                      }`}
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#17365f] text-white">
+                        <GraduationCap className="h-4 w-4" />
+                      </span>
+                      <span>
+                        <span className="block text-xs font-bold">Student</span>
+                        <span className="mt-0.5 block text-[10px] text-slate-500">Personal account</span>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={registrationType === "institution"}
+                      onClick={() => setRegistrationType("institution")}
+                      className={`flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors ${
+                        registrationType === "institution"
+                          ? "border-2 border-amber-500 bg-amber-50 text-amber-950"
+                          : "border border-slate-200 bg-white text-slate-700 hover:border-amber-500 hover:bg-amber-50"
+                      }`}
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-800">
+                        <Building2 className="h-4 w-4" />
+                      </span>
+                      <span>
+                        <span className="block text-xs font-bold">Institution</span>
+                        <span className="mt-0.5 block text-[10px] text-slate-500">Official profile</span>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {registrationType === "institution" && (
+                <InstitutionRegistration
+                  embedded
+                  authMode={isLogin ? "login" : "signup"}
+                  onBackToSignIn={() => setRegistrationType("student")}
+                  onComplete={() => handleViewChange("home")}
+                />
+              )}
+
+              {registrationType === "student" && <>
               {/* Form */}
               <form className="lp-form" onSubmit={handleSubmit}>
                 {/* Name field (signup only) */}
@@ -347,7 +456,7 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
                 {/* Email */}
                 <div className="lp-field">
                   <Label htmlFor="lp-email" className="lp-label leading-normal select-auto">
-                    {isLogin ? "Institutional Email or Username" : "Institutional Email"}
+                    {isLogin ? "Email or username" : "Email address"}
                   </Label>
                   <div className="lp-input-wrap">
                     <Mail size={16} className="lp-input-icon"/>
@@ -356,7 +465,7 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
                       type="text"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
-                      placeholder={isLogin ? "email or username" : "you@institution.edu"}
+                      placeholder={isLogin ? "email or username" : "you@example.com"}
                       required
                       autoComplete="email"
                       className="lp-input h-auto"
@@ -469,26 +578,31 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
                   </span>
                 </Button>
 
-                {/* Divider */}
-                <div className="lp-divider">
-                  <div className="lp-divider-line"/>
-                  <span className="lp-divider-text">or continue with</span>
-                  <div className="lp-divider-line"/>
-                </div>
-
-                {/* Social buttons */}
-                <div className="lp-social-row">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="lp-social-btn h-auto active:not-aria-[haspopup]:translate-y-0"
-                    onClick={() => { window.location.href = `${API_BASE_URL}/auth/google/login`; }}
-                  >
-                    <GoogleIcon/> Google
-                  </Button>
-                </div>
-
               </form>
+
+              <div className="lp-divider" aria-hidden="true">
+                <span className="lp-divider-line" />
+                <span className="lp-divider-text">or continue with</span>
+                <span className="lp-divider-line" />
+              </div>
+
+              <div className="lp-social-row">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={loading}
+                  onClick={handleGoogleSignIn}
+                  className="lp-social-btn h-auto disabled:pointer-events-auto"
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18">
+                    <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.91h5.38a4.6 4.6 0 0 1-2 3.02v2.54h3.24c1.9-1.75 2.98-4.33 2.98-7.4Z" />
+                    <path fill="#34A853" d="M12 22c2.7 0 4.98-.9 6.63-2.37l-3.24-2.54c-.9.6-2.05.96-3.39.96-2.61 0-4.82-1.76-5.61-4.13H3.04v2.62A10 10 0 0 0 12 22Z" />
+                    <path fill="#FBBC05" d="M6.39 13.92A6 6 0 0 1 6.08 12c0-.67.12-1.32.31-1.92V7.46H3.04A10 10 0 0 0 2 12c0 1.61.39 3.13 1.04 4.54l3.35-2.62Z" />
+                    <path fill="#EA4335" d="M12 5.95c1.47 0 2.79.5 3.82 1.49l2.87-2.87A9.63 9.63 0 0 0 12 2a10 10 0 0 0-8.96 5.46l3.35 2.62C7.18 7.71 9.39 5.95 12 5.95Z" />
+                  </svg>
+                  Continue with Google as Student
+                </Button>
+              </div>
 
               {/* Footer toggle */}
               <div className="lp-footer">
@@ -502,6 +616,7 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
                   </>
                 )}
               </div>
+              </>}
             </div>
           </>
         </div>

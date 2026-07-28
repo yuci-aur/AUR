@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useState } from "react";
-import type { Article } from "../../data";
+import type { Article } from "../../types";
 
 interface BlogCardProps {
   article: Article;

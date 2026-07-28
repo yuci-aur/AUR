@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../lib/universities';
 
 export interface ExternalNewsItem {
   title: string;
@@ -22,7 +21,7 @@ export function useExternalNewsData() {
       setLoading(true);
       setError(false);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/news/external`, {
+        const res = await fetch('/api/news/external', {
           signal: controller.signal,
         });
         if (!res.ok) throw new Error('Failed to fetch external news');

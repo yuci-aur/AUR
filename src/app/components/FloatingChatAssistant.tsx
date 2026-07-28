@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import { useSidebar } from "./navigation/SidebarContext";
-import { API_BASE_URL } from "../lib/universities";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -79,7 +78,7 @@ export default function FloatingChatAssistant() {
     setIsThinking(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/chat`, {
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: query }),

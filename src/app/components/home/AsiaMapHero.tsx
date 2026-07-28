@@ -2,7 +2,7 @@
 
 import React from "react";
 import { TrendingUp } from "lucide-react";
-import { University } from "../../data";
+import type { University } from "../../types";
 
 /** Pin  on the 400×280 map viewBox */
 const MAP_PINS: { x: number; y: number; cardStyle: React.CSSProperties }[] = [

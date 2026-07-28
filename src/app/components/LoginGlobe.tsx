@@ -8,14 +8,36 @@ const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
 export default function LoginGlobe() {
   const globeRef = useRef<any>(null);
   const [countries, setCountries] = useState<any>({ features: [] });
+  const [mapLoadFailed, setMapLoadFailed] = useState(false);
   const [dimensions, setDimensions] = useState({ width: 500, height: 500 });
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch('https://raw.githubusercontent.com/vasturiano/react-globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
-      .then(res => res.json())
-      .then(setCountries)
-      .catch(err => console.error("Globe data load error:", err));
+    const controller = new AbortController();
+
+    fetch("/data/ne_110m_admin_0_countries.geojson", {
+      signal: controller.signal,
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Map data request failed with ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        if (!Array.isArray(data?.features)) {
+          throw new Error("Map data has an invalid format");
+        }
+        setCountries(data);
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+        setMapLoadFailed(true);
+      });
+
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
@@ -29,8 +51,11 @@ export default function LoginGlobe() {
       }
     };
     window.addEventListener("resize", handleResize);
-    setTimeout(handleResize, 100);
-    return () => window.removeEventListener("resize", handleResize);
+    const resizeTimer = window.setTimeout(handleResize, 100);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.clearTimeout(resizeTimer);
+    };
   }, []);
 
   // We wait for the globe to be fully ready before accessing controls
@@ -66,19 +91,19 @@ export default function LoginGlobe() {
 
   return (
     <div ref={containerRef} className="w-full h-full min-h-[400px] flex items-center justify-center">
-      {countries.features.length === 0 && (
+      {countries.features.length === 0 && !mapLoadFailed && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-16 h-16 border-4 border-[#E8A020] border-t-transparent rounded-full animate-spin opacity-50"></div>
         </div>
       )}
-      {dimensions.width > 0 && countries.features.length > 0 && (
+      {dimensions.width > 0 && (countries.features.length > 0 || mapLoadFailed) && (
         <Globe
           ref={globeRef}
           width={dimensions.width}
           height={dimensions.height}
           backgroundColor="rgba(127, 86, 217, 0)"
           showAtmosphere={false}
-          showGlobe={false}
+          showGlobe={mapLoadFailed}
           polygonsData={countries.features}
           polygonAltitude={0.02}
           polygonCapColor={getCountryColor}

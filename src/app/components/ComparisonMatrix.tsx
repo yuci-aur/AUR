@@ -2,7 +2,7 @@
 
 import React, { useMemo, useRef, useState } from "react";
 import { X, Search, Plus, ArrowUpRight } from "lucide-react";
-import { University } from "../data";
+import type { University } from "../types";
 import { useUniversityData } from "./data/UniversityDataProvider";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -28,7 +28,6 @@ const SCORE_METRICS: ScoreMetric[] = [
   { key: "teaching", label: "Teaching", get: (u) => u.teaching },
   { key: "citations", label: "Citations", get: (u) => u.citations },
   { key: "employability", label: "Employability", get: (u) => u.employability },
-  { key: "intl", label: "International students", get: (u) => u.intlStudents },
 ];
 
 function parseTuition(tuition: string): number | null {

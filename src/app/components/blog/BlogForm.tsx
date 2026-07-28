@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, FileText, Send } from "lucide-react";
 import { useSidebar } from "../navigation/SidebarContext";
 import BlogImageUpload from "./BlogImageUpload";
-import { API_BASE_URL } from "../../lib/universities";
+import { createBlog } from "../../lib/admin-api";
 import type { BlogFormValues, BlogStatus } from "../../types/blog";
 
 type FormErrors = Partial<Record<keyof BlogFormValues, string>>;
@@ -93,15 +93,7 @@ export default function BlogForm() {
         status,
       };
 
-      const response = await fetch(`${API_BASE_URL}/blogs/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save blog post");
-      }
+      await createBlog(payload);
 
       if (status === "Published") {
         router.push("/?view=blog");

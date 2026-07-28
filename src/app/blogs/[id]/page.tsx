@@ -8,8 +8,8 @@ import AppLayout from "../../components/layout/AppLayout";
 import { SidebarProvider } from "../../components/navigation/SidebarContext";
 import { ToastProvider } from "../../components/feedback/ToastContext";
 import { UniversityDataProvider } from "../../components/data/UniversityDataProvider";
-import { Article } from "../../data";
-import { API_BASE_URL } from "../../lib/universities";
+import type { Article } from "../../types";
+import { getBlog, type FirestoreBlog } from "../../lib/firebase-content";
 
 function formatBlogDate(value: string | null): string {
   if (!value) return "";
@@ -18,20 +18,17 @@ function formatBlogDate(value: string | null): string {
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
-/** Map the backend blog (snake_case) to the Article shape this page renders. */
-function backendBlogToArticle(b: {
-  id: string;
-  title: string;
-  category: string;
-  description: string;
-  content: string;
-  cover_image: string | null;
-  author: string | null;
-  read_time: string | null;
-  tags: string | null;
-  publish_date: string | null;
-  created_at: string;
-}): Article {
+function blogContentToText(value: string): string {
+  return value
+    .replace(/<\s*br\s*\/?>/gi, "\n")
+    .replace(/<\s*\/p\s*>/gi, "\n\n")
+    .replace(/<[^>]*>/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/** Map a Firestore blog document to the Article shape this page renders. */
+function firestoreBlogToArticle(b: FirestoreBlog): Article {
   return {
     id: b.id,
     title: b.title,
@@ -62,18 +59,17 @@ function BlogDetailsContent() {
     if (!id) return;
     async function fetchBlog() {
       try {
-        const res = await fetch(`${API_BASE_URL}/blogs/${id}`);
-        if (!res.ok) {
-          setError(res.status === 404 ? "Blog not found" : "Failed to load blog");
+        const data = await getBlog(id);
+        if (!data || data.status !== "published") {
+          setError("Blog not found");
           return;
         }
-        const data = await res.json();
-        const article = backendBlogToArticle(data);
+        const article = firestoreBlogToArticle(data);
         setBlog(article);
         setShowImage(Boolean(article.image));
       } catch (err) {
         console.error(err);
-        setError("Network error occurred");
+        setError("Failed to load blog");
       } finally {
         setLoading(false);
       }
@@ -242,12 +238,12 @@ function BlogDetailsContent() {
             </div>
           )}
 
-          {/* Blog Rich HTML Content */}
           <div
-            className="blog-content max-w-none text-sm leading-relaxed space-y-6 pt-4 font-sans"
+            className="blog-content max-w-none whitespace-pre-line pt-4 font-sans text-sm leading-relaxed"
             style={{ color: "var(--aur-text-secondary, #2D3748)" }}
-            dangerouslySetInnerHTML={{ __html: blog.content || `<p>${blog.contentSummary}</p>` }}
-          />
+          >
+            {blogContentToText(blog.content || blog.contentSummary)}
+          </div>
 
           {/* Tags list */}
           {blog.tags && blog.tags.length > 0 && (

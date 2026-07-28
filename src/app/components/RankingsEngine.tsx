@@ -28,7 +28,7 @@ import {
   FilterX,
   Lock,
 } from "lucide-react";
-import { University } from "../data";
+import type { University } from "../types";
 import { useUniversityData } from "./data/UniversityDataProvider";
 import { useAuthGate } from "./auth/AuthGate";
 import { PREVIEW_LIMIT } from "./navigation/config";
@@ -45,11 +45,10 @@ interface RankingsEngineProps {
 
 // Preset weights
 const DEFAULT_WEIGHTS = {
-  citations: 20,
-  research: 20,
-  employability: 20,
-  intlStudents: 20,
-  teaching: 20,
+  citations: 25,
+  research: 25,
+  employability: 25,
+  teaching: 25,
 };
 
 export default function RankingsEngine({
@@ -59,7 +58,15 @@ export default function RankingsEngine({
   onToggleCompare,
   onUniversitySelect,
 }: RankingsEngineProps) {
-  const { universities, error: dataError } = useUniversityData();
+  const {
+    universities,
+    totalCount,
+    totalCountKnown,
+    loadingMore,
+    hasMore,
+    error: dataError,
+    loadMore,
+  } = useUniversityData();
   const { isAuthenticated, promptSignIn } = useAuthGate();
   const focusRing =
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--aur-text)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]";
@@ -87,7 +94,6 @@ export default function RankingsEngine({
     const wCit = searchParams.get("w_cit");
     const wRes = searchParams.get("w_res");
     const wEmp = searchParams.get("w_emp");
-    const wIntl = searchParams.get("w_intl");
     const wTeach = searchParams.get("w_teach");
 
     if (locParam) setLocations(locParam.split(","));
@@ -95,12 +101,11 @@ export default function RankingsEngine({
     if (langParam) setSelectedLanguages(langParam.split(","));
     if (searchParam) onSearchQueryChange(searchParam);
 
-    if (wCit || wRes || wEmp || wIntl || wTeach) {
+    if (wCit || wRes || wEmp || wTeach) {
       setWeights({
         citations: wCit ? parseInt(wCit) : DEFAULT_WEIGHTS.citations,
         research: wRes ? parseInt(wRes) : DEFAULT_WEIGHTS.research,
         employability: wEmp ? parseInt(wEmp) : DEFAULT_WEIGHTS.employability,
-        intlStudents: wIntl ? parseInt(wIntl) : DEFAULT_WEIGHTS.intlStudents,
         teaching: wTeach ? parseInt(wTeach) : DEFAULT_WEIGHTS.teaching,
       });
     }
@@ -127,7 +132,6 @@ export default function RankingsEngine({
       params.set("w_cit", newWeights.citations.toString());
       params.set("w_res", newWeights.research.toString());
       params.set("w_emp", newWeights.employability.toString());
-      params.set("w_intl", newWeights.intlStudents.toString());
       params.set("w_teach", newWeights.teaching.toString());
     }
 
@@ -186,7 +190,6 @@ export default function RankingsEngine({
       weights.citations +
       weights.research +
       weights.employability +
-      weights.intlStudents +
       weights.teaching;
 
     // Apply  formula weights to recalculate scores dynamically
@@ -197,7 +200,6 @@ export default function RankingsEngine({
           (uni.citations * weights.citations +
             uni.research * weights.research +
             uni.employability * weights.employability +
-            uni.intlStudents * weights.intlStudents +
             uni.teaching * weights.teaching) /
           totalWeight;
       }
@@ -282,9 +284,9 @@ export default function RankingsEngine({
     });
   }, [processedData, deferredSearchQuery, locations, selectedSubjects, selectedLanguages, filters]);
 
-  // Preview gating: logged-out visitors see at most PREVIEW_LIMIT institutions.
-  const totalMatches = filteredData.length;
-  const isPreviewCapped = !isAuthenticated && totalMatches > PREVIEW_LIMIT;
+  // Only the Firestore pages requested so far are processed in the browser.
+  const isPreviewCapped =
+    !isAuthenticated && (hasMore || totalCount > universities.length);
   const previewData = useMemo(
     () => (isPreviewCapped ? filteredData.slice(0, PREVIEW_LIMIT) : filteredData),
     [filteredData, isPreviewCapped]
@@ -422,6 +424,21 @@ export default function RankingsEngine({
     getPaginationRowModel: getPaginationRowModel(),
   });
 
+  const handleNextPage = async () => {
+    if (table.getCanNextPage()) {
+      table.nextPage();
+      return;
+    }
+    if (!hasMore || loadingMore) return;
+
+    const nextPageIndex = table.getState().pagination.pageIndex + 1;
+    await loadMore();
+    window.requestAnimationFrame(() => table.setPageIndex(nextPageIndex));
+  };
+  const canGoNext = table.getCanNextPage() || (isAuthenticated && hasMore);
+  const remainingCount = Math.max(totalCount - universities.length, 0);
+  const totalLabel = totalCountKnown ? String(totalCount) : `${universities.length}+`;
+
   return (
     <div className="relative aur-rankings-shell mx-auto w-full max-w-[1600px] px-3 sm:px-5 lg:px-8 py-6 sm:py-8 font-sans flex-grow">
       
@@ -437,7 +454,7 @@ export default function RankingsEngine({
             Asia Institutional Ranking Table
           </h2>
           <p className="text-[11px] text-white/50 font-mono mt-3 tracking-wide">
-            {dataError ? "Sample data" : "Live index"} &middot; Top {filteredData.length} of {universities.length} universities
+            {dataError ? "Live index unavailable" : "Live index"} &middot; {universities.length} of {totalLabel} universities loaded
           </p>
         </div>
 
@@ -568,13 +585,13 @@ export default function RankingsEngine({
 
       {dataError && (
         <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Live rankings couldn&apos;t be loaded right now — showing a bundled sample instead. Please try again later.
+          Live rankings couldn&apos;t be loaded right now. Please try again later.
         </div>
       )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4">
         <span className="text-[10px] text-[var(--aur-text-muted)] font-bold uppercase tracking-wider">
-          Total: <span className="text-[var(--aur-text)] font-mono">{filteredData.length}</span> matching institutions
+          Loaded: <span className="text-[var(--aur-text)] font-mono">{filteredData.length}</span> matching institutions
         </span>
         <button
           onClick={handleResetFilters}
@@ -689,17 +706,17 @@ export default function RankingsEngine({
               <Lock className="h-6 w-6" />
             </div>
             <h3 className="font-serif text-xl font-bold text-[#1A365D]">
-              {totalMatches - PREVIEW_LIMIT} more institutions
+              {totalCountKnown ? `${remainingCount} more institutions` : "More institutions available"}
             </h3>
             <p className="mx-auto mt-2 mb-6 max-w-sm text-sm leading-relaxed text-slate-500">
-              You&apos;re viewing the top {PREVIEW_LIMIT} of {totalMatches}. Create a free account to unlock the full ranking, compare institutions, and save your shortlist.
+              You&apos;re viewing the top {universities.length} of {totalLabel}. Create a free account to load more rankings, compare institutions, and save your shortlist.
             </p>
             <button
               type="button"
-              onClick={() => promptSignIn(`Sign in to see all ${totalMatches} ranked institutions.`)}
+              onClick={() => promptSignIn("Sign in to see the full institution ranking.")}
               className="rounded-lg bg-[#1A365D] px-6 py-3 text-sm font-bold text-white shadow-md transition-colors hover:bg-blue-900"
             >
-              Unlock all {totalMatches} universities
+              {totalCountKnown ? `Unlock all ${totalCount} universities` : "Unlock full ranking"}
             </button>
           </div>
         </div>
@@ -716,18 +733,19 @@ export default function RankingsEngine({
             Previous
           </button>
           <button
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
+            onClick={() => void handleNextPage()}
+            disabled={!canGoNext || loadingMore}
             className={`relative ml-3 inline-flex items-center border border-[var(--aur-border)] bg-[var(--aur-surface-2)] px-4 py-2 text-xs font-bold uppercase tracking-wider text-[var(--aur-text)] hover:bg-[var(--aur-surface-hover)] disabled:opacity-50 rounded-lg ${focusRing}`}
           >
-            Next
+            {loadingMore ? "Loading…" : "Next"}
           </button>
         </div>
         <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
           <div>
             <p className="text-[10px] text-[var(--aur-text-muted)] font-bold uppercase tracking-widest">
-              Showing page <span className="font-mono text-[var(--aur-text)]">{table.getState().pagination.pageIndex + 1}</span> of{" "}
-              <span className="font-mono text-[var(--aur-text)]">{table.getPageCount()}</span>
+              Showing page <span className="font-mono text-[var(--aur-text)]">{table.getState().pagination.pageIndex + 1}</span>
+              {" "}&middot; <span className="font-mono text-[var(--aur-text)]">{universities.length}</span> of{" "}
+              <span className="font-mono text-[var(--aur-text)]">{totalLabel}</span> loaded
             </p>
           </div>
           <div>
@@ -740,11 +758,11 @@ export default function RankingsEngine({
                 Previous
               </button>
               <button
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
+                onClick={() => void handleNextPage()}
+                disabled={!canGoNext || loadingMore}
                 className={`relative inline-flex items-center border border-l-0 border-[var(--aur-border)] bg-[var(--aur-surface)] px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-[var(--aur-text-secondary)] hover:bg-[var(--aur-surface-hover)] disabled:opacity-50 rounded-r-md transition-colors ${focusRing}`}
               >
-                Next
+                {loadingMore ? "Loading…" : "Next"}
               </button>
             </nav>
           </div>
@@ -787,7 +805,6 @@ export default function RankingsEngine({
                   { key: "citations", label: "Citations Impact", desc: "Scientific citation frequency per paper" },
                   { key: "research", label: "Research Metric", desc: "Academic staff peer assessment" },
                   { key: "employability", label: "Employability Ratio", desc: "Alumni professional career placement" },
-                  { key: "intlStudents", label: "International Ratio", desc: "Percentage of international students enrolled" },
                   { key: "teaching", label: "Teaching Staff", desc: "Faculty-to-student metrics ratio" },
                 ].map((slider) => {
                   const currentValue = weights[slider.key as keyof typeof weights];

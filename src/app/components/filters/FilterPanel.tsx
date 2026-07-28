@@ -7,7 +7,7 @@ import { useSidebar } from "../navigation/SidebarContext";
 import { useUniversityData } from "../data/UniversityDataProvider";
 import { RANK_FILTER_MAX } from "../navigation/config";
 
-// List of all unique subjects in the mock data
+// Subjects supported by the ranking filters.
 const ALL_SUBJECTS = ["Medicine", "Engineering", "Sciences", "Business", "Humanities", "Law", "Social Sciences"];
 
 export default function FilterPanel() {
@@ -37,7 +37,7 @@ export default function FilterPanel() {
     if (filters.isPublic !== null) count += 1;
     if (filters.scholarshipOnly) count += 1;
     return count;
-  }, [filters]);
+  }, [filters, rankMax]);
 
   const toggleSection = (key: keyof typeof openSections) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));

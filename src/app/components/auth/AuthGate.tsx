@@ -9,6 +9,9 @@ import React, {
 } from "react";
 import { useRouter } from "next/navigation";
 import { Lock, X } from "lucide-react";
+import { onAuthStateChanged } from "firebase/auth";
+
+import { firebaseAuth } from "../../lib/firebase";
 
 interface AuthGateContextValue {
   /** True when a valid access token is present. */
@@ -36,13 +39,10 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
   const [dialogReason, setDialogReason] = useState<string | null>(null);
 
   useEffect(() => {
-    const sync = () => {
-      setIsAuthenticated(Boolean(sessionStorage.getItem("aur_access_token")));
+    return onAuthStateChanged(firebaseAuth, (user) => {
+      setIsAuthenticated(Boolean(user));
       setAuthReady(true);
-    };
-    sync();
-    window.addEventListener("aur-auth-change", sync);
-    return () => window.removeEventListener("aur-auth-change", sync);
+    });
   }, []);
 
   const promptSignIn = useCallback((reason?: string) => {

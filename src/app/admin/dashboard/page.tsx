@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   Mail,
   Trash2,
+  Pencil,
   Plus,
   Search,
   RefreshCw,
@@ -20,6 +21,8 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle2,
+  Trophy,
+  Upload,
 } from "lucide-react";
 import {
   AdminBlog,
@@ -30,15 +33,26 @@ import {
   createBlog,
   deleteBlog,
   getAdminStats,
-  getAdminToken,
   listAdminBlogs,
   listUsers,
   registerUniversity,
+  updateBlog,
   updateUserRole,
   verifyAdmin,
 } from "../../lib/admin-api";
+import EventsAwardsTab from "./EventsAwardsTab";
+import { uploadToCloudinary } from "../../lib/cloudinary-upload";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
-type Tab = "overview" | "blogs" | "universities" | "users";
+type Tab = "overview" | "blogs" | "events-awards" | "universities" | "users";
 
 // ------------------------------------------------------------------ Sidebar
 const Sidebar = ({
@@ -55,6 +69,7 @@ const Sidebar = ({
   const tabs: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
     { id: "blogs", label: "Manage Blogs", icon: BookOpen },
+    { id: "events-awards", label: "Events & Awards", icon: Trophy },
     { id: "universities", label: "Universities", icon: Building2 },
     { id: "users", label: "Users", icon: Users },
   ];
@@ -173,7 +188,20 @@ const OverviewTab = () => {
 };
 
 // -------------------------------------------------------------- Blogs tab
-const emptyBlog = {
+type BlogEditorState = {
+  title: string;
+  category: string;
+  description: string;
+  content: string;
+  author: string;
+  read_time: string;
+  tags: string;
+  cover_image: string;
+  featured: boolean;
+  status: string;
+};
+
+const emptyBlog: BlogEditorState = {
   title: "",
   category: "Featured Insight",
   description: "",
@@ -191,9 +219,13 @@ const BlogsTab = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ ...emptyBlog });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<BlogEditorState>({ ...emptyBlog });
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<AdminBlog | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const load = useCallback(() => {
     setLoading(true);
@@ -206,34 +238,86 @@ const BlogsTab = () => {
 
   useEffect(() => load(), [load]);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const closeForm = () => {
+    setForm({ ...emptyBlog });
+    setEditingId(null);
+    setFormError("");
+    setShowForm(false);
+  };
+
+  const openCreateForm = () => {
+    if (showForm && editingId === null) {
+      closeForm();
+      return;
+    }
+    setForm({ ...emptyBlog });
+    setEditingId(null);
+    setFormError("");
+    setShowForm(true);
+  };
+
+  const openEditForm = (blog: AdminBlog) => {
+    setForm({
+      title: blog.title,
+      category: blog.category,
+      description: blog.description,
+      content: blog.content,
+      author: blog.author ?? "",
+      read_time: blog.read_time ?? "",
+      tags: blog.tags ?? "",
+      cover_image: blog.cover_image ?? "",
+      featured: blog.featured,
+      status: blog.status,
+    });
+    setEditingId(blog.id);
+    setFormError("");
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
-    if (!form.title || !form.description || !form.content) {
+    if (!form.title.trim() || !form.description.trim() || !form.content.trim()) {
       setFormError("Title, description and content are required.");
       return;
     }
     setSubmitting(true);
     try {
-      await createBlog({ ...form });
-      setForm({ ...emptyBlog });
-      setShowForm(false);
-      load();
+      const savedBlog = editingId
+        ? await updateBlog(editingId, { ...form })
+        : await createBlog({ ...form });
+
+      setBlogs((current) =>
+        editingId
+          ? current.map((blog) => (blog.id === savedBlog.id ? savedBlog : blog))
+          : [savedBlog, ...current]
+      );
+      closeForm();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Failed to create blog.");
+      setFormError(
+        err instanceof Error
+          ? err.message
+          : `Failed to ${editingId ? "update" : "create"} blog.`
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this blog post? This cannot be undone.")) return;
-    setBlogs((prev) => prev.filter((b) => b.id !== id));
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setDeleteError("");
     try {
-      await deleteBlog(id);
+      await deleteBlog(deleteTarget.id);
+      setBlogs((current) => current.filter((blog) => blog.id !== deleteTarget.id));
+      if (editingId === deleteTarget.id) closeForm();
+      setDeleteTarget(null);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to delete.");
-      load();
+      setDeleteError(err instanceof Error ? err.message : "Failed to delete blog.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -242,19 +326,38 @@ const BlogsTab = () => {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-black text-[#1A365D]">Blog Posts</h2>
         <button
-          onClick={() => setShowForm((s) => !s)}
+          onClick={openCreateForm}
           className="flex items-center gap-2 bg-[#1A365D] hover:bg-[#122540] text-white font-bold px-4 py-2.5 rounded-xl transition-colors shadow-sm"
         >
           <Plus className="w-4 h-4" />
-          {showForm ? "Close" : "New Blog"}
+          {showForm && editingId === null ? "Close" : "New Blog"}
         </button>
       </div>
 
       {showForm && (
         <form
-          onSubmit={handleCreate}
+          onSubmit={handleSave}
           className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4"
         >
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                {editingId ? "Editing post" : "New post"}
+              </p>
+              <h3 className="text-lg font-black text-[#1A365D]">
+                {editingId ? form.title || "Untitled blog" : "Create a blog post"}
+              </h3>
+            </div>
+            {editingId && (
+              <button
+                type="button"
+                onClick={closeForm}
+                className="text-sm font-bold text-slate-500 hover:text-[#1A365D]"
+              >
+                Cancel editing
+              </button>
+            )}
+          </div>
           {formError && (
             <div className="bg-red-50 border border-red-200 text-red-600 text-sm p-3 rounded-xl">
               {formError}
@@ -265,11 +368,23 @@ const BlogsTab = () => {
               <input className={inputCls} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
             </Field>
             <Field label="Category">
-              <select className={inputCls} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
-                <option>Featured Insight</option>
-                <option>Latest Report</option>
-                <option>Regional Briefing</option>
-              </select>
+              <input
+                className={inputCls}
+                list="blog-category-options"
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+              />
+              <datalist id="blog-category-options">
+                <option value="Featured Insight" />
+                <option value="Latest Report" />
+                <option value="Regional Briefing" />
+                <option value="Ranking Insights" />
+                <option value="Research" />
+                <option value="Student Outcomes" />
+                <option value="Global Engagement" />
+                <option value="Teaching & Learning" />
+                <option value="Sustainability" />
+              </datalist>
             </Field>
             <Field label="Author">
               <input className={inputCls} value={form.author} onChange={(e) => setForm({ ...form, author: e.target.value })} />
@@ -306,7 +421,11 @@ const BlogsTab = () => {
                 className="flex items-center gap-2 bg-[#1A365D] hover:bg-[#122540] text-white font-bold px-6 py-2.5 rounded-xl transition-colors disabled:opacity-50"
               >
                 {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                {submitting ? "Saving..." : "Save Blog"}
+                {submitting
+                  ? "Saving..."
+                  : editingId
+                    ? "Save Changes"
+                    : "Save Blog"}
               </button>
             </div>
           </div>
@@ -350,12 +469,29 @@ const BlogsTab = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => handleDelete(b.id)}
-                      className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="inline-flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => openEditForm(b)}
+                        aria-label={`Edit ${b.title}`}
+                        title="Edit blog"
+                        className="p-2 text-slate-400 hover:text-[#1A365D] hover:bg-blue-50 rounded-lg transition-colors"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeleteError("");
+                          setDeleteTarget(b);
+                        }}
+                        aria-label={`Delete ${b.title}`}
+                        title="Delete blog"
+                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -363,6 +499,57 @@ const BlogsTab = () => {
           </table>
         </div>
       )}
+
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleting) {
+            setDeleteError("");
+            setDeleteTarget(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md p-6" showCloseButton={!deleting}>
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black text-[#1A365D]">
+              Delete blog post?
+            </DialogTitle>
+            <DialogDescription className="leading-6 text-slate-600">
+              “{deleteTarget?.title}” will be permanently deleted. This action
+              cannot be undone.
+            </DialogDescription>
+            {deleteError && (
+              <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-700">
+                {deleteError}
+              </p>
+            )}
+          </DialogHeader>
+          <DialogFooter className="-mx-6 -mb-6 mt-2 px-6">
+            <DialogClose asChild>
+              <button
+                type="button"
+                disabled={deleting}
+                className="px-4 py-2 text-sm font-bold text-slate-600 border border-slate-300 rounded-lg hover:bg-white disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </DialogClose>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+            >
+              {deleting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+              {deleting ? "Deleting..." : "Delete blog"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
@@ -404,11 +591,32 @@ const UniversitiesTab = () => {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [uploadingMedia, setUploadingMedia] = useState<"logo" | "campus" | null>(null);
 
   const set = <K extends keyof typeof emptyUniversity>(
     key: K,
     value: (typeof emptyUniversity)[K]
   ) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  const uploadUniversityMedia = async (
+    file: File | undefined,
+    kind: "logo" | "campus",
+  ) => {
+    if (!file) return;
+    setFormError("");
+    setUploadingMedia(kind);
+    try {
+      const uploaded = await uploadToCloudinary(file, {
+        folder: kind === "logo" ? "aur/logos" : "aur/campuses",
+        resourceType: "image",
+      });
+      set(kind === "logo" ? "logo_url" : "campus_photo", uploaded.secure_url);
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : "Media upload failed.");
+    } finally {
+      setUploadingMedia(null);
+    }
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -602,11 +810,31 @@ const UniversitiesTab = () => {
               <Field label="Website URL">
                 <input className={inputCls} value={form.website_url} onChange={(e) => set("website_url", e.target.value)} placeholder="https://..." />
               </Field>
-              <Field label="Logo URL">
-                <input className={inputCls} value={form.logo_url} onChange={(e) => set("logo_url", e.target.value)} placeholder="https://..." />
+              <Field label="University Logo">
+                <label className={`${inputCls} flex cursor-pointer items-center justify-center gap-2`}>
+                  {uploadingMedia === "logo" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  {form.logo_url ? "Replace logo" : "Upload logo"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={(event) => void uploadUniversityMedia(event.target.files?.[0], "logo")}
+                  />
+                </label>
+                {form.logo_url && <p className="mt-1 truncate text-xs text-emerald-700">Cloudinary upload ready</p>}
               </Field>
-              <Field label="Campus Photo URL">
-                <input className={inputCls} value={form.campus_photo} onChange={(e) => set("campus_photo", e.target.value)} placeholder="https://..." />
+              <Field label="Campus Photo">
+                <label className={`${inputCls} flex cursor-pointer items-center justify-center gap-2`}>
+                  {uploadingMedia === "campus" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  {form.campus_photo ? "Replace photo" : "Upload campus photo"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={(event) => void uploadUniversityMedia(event.target.files?.[0], "campus")}
+                  />
+                </label>
+                {form.campus_photo && <p className="mt-1 truncate text-xs text-emerald-700">Cloudinary upload ready</p>}
               </Field>
             </div>
             <div className="flex flex-wrap gap-6 pt-1">
@@ -844,10 +1072,6 @@ export default function Dashboard() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    if (!getAdminToken()) {
-      router.replace("/admin/login");
-      return;
-    }
     verifyAdmin()
       .then((profile) => {
         setAdmin(profile);
@@ -880,7 +1104,11 @@ export default function Dashboard() {
         <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 h-20 px-8 flex items-center justify-between sticky top-0 z-10 shadow-sm">
           <div>
             <h1 className="text-xl font-black text-[#1A365D] tracking-tight capitalize">
-              {activeTab === "overview" ? "Dashboard Overview" : activeTab}
+              {activeTab === "overview"
+                ? "Dashboard Overview"
+                : activeTab === "events-awards"
+                  ? "Events & Awards"
+                  : activeTab}
             </h1>
             <p className="text-xs text-slate-500 font-medium mt-0.5">
               Advanced University Ranking — Admin
@@ -896,6 +1124,7 @@ export default function Dashboard() {
         <main className="flex-1 p-8">
           {activeTab === "overview" && <OverviewTab />}
           {activeTab === "blogs" && <BlogsTab />}
+          {activeTab === "events-awards" && <EventsAwardsTab />}
           {activeTab === "universities" && <UniversitiesTab />}
           {activeTab === "users" && <UsersTab />}
         </main>

@@ -49,10 +49,11 @@
   z-index: 1;
   flex: 1;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   height: 100vh;
-  padding: 3rem;
+  overflow-y: auto;
+  padding: 2rem 3rem;
   background: #FFFFFF;
 }
 
@@ -577,6 +578,13 @@
     background: transparent;
   }
   .lp-mobile-brand { display: flex; }
+}
+.lp-glass-card-wide {
+  max-width: 640px;
+}
+
+@media (min-height: 900px) {
+  .lp-right { align-items: center; }
 }
 
 @media (max-height: 750px) {

@@ -7,7 +7,9 @@ import { BrandLogo } from "../BrandLogo";
 import { useSidebar } from "../navigation/SidebarContext";
 import { useToast } from "../feedback/ToastContext";
 import { TOP_NAV_LINKS } from "../navigation/config";
-import { API_BASE_URL } from "../../lib/universities";
+import { authenticatedFetch } from "../../lib/authenticated-fetch";
+import { firebaseAuth } from "../../lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -31,6 +33,7 @@ type AuthenticatedUser = {
   first_name: string;
   last_name: string;
   role: string;
+  profile_photo: string | null;
 };
 
 interface NavbarProps {
@@ -60,6 +63,7 @@ export default function Navbar({
 
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(null);
+  const [avatarFailed, setAvatarFailed] = useState(false);
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [notifLoading, setNotifLoading] = useState(true);
@@ -68,33 +72,46 @@ export default function Navbar({
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const controller = new AbortController();
-
-    async function fetchCurrentUser() {
-      const token = sessionStorage.getItem("aur_access_token");
-      if (!token) return;
-
+    async function fetchCurrentUser(user = firebaseAuth.currentUser) {
+      if (!user) {
+        setCurrentUser(null);
+        return;
+      }
       try {
-        const response = await fetch(`${API_BASE_URL}/users/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-          signal: controller.signal,
+        const response = await authenticatedFetch("/api/account");
+        const payload = (await response.json()) as {
+          profile?: Record<string, unknown>;
+        };
+        const data = payload.profile ?? {};
+        setCurrentUser({
+          id: user.uid,
+          email: user.email ?? String(data.email ?? ""),
+          first_name: String(data.first_name ?? user.displayName?.split(" ")[0] ?? "AUR"),
+          last_name: String(data.last_name ?? user.displayName?.split(" ").slice(1).join(" ") ?? ""),
+          role: String(data.role ?? "user"),
+          profile_photo:
+            typeof data.profile_photo === "string"
+              ? data.profile_photo
+              : user.photoURL,
         });
-        if (!response.ok) throw new Error("Failed to fetch signed-in user");
-        setCurrentUser(await response.json());
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") return;
         console.error("Unable to load signed-in user:", error);
         setCurrentUser(null);
       }
     }
 
-    fetchCurrentUser();
-    window.addEventListener("aur-profile-change", fetchCurrentUser);
+    const unsubscribe = onAuthStateChanged(firebaseAuth, fetchCurrentUser);
+    const refreshCurrentUser = () => void fetchCurrentUser();
+    window.addEventListener("aur-profile-change", refreshCurrentUser);
     return () => {
-      controller.abort();
-      window.removeEventListener("aur-profile-change", fetchCurrentUser);
+      unsubscribe();
+      window.removeEventListener("aur-profile-change", refreshCurrentUser);
     };
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    setAvatarFailed(false);
+  }, [currentUser?.profile_photo]);
 
   // Fetch notifications once on mount (for the unread badge) and refresh when
   // the menu is opened; closing the menu does not refetch.
@@ -103,11 +120,8 @@ export default function Navbar({
     if (hasFetchedNotifs.current && !showNotifMenu) return;
     hasFetchedNotifs.current = true;
 
-    const controller = new AbortController();
-
     async function fetchNotifications() {
-      const token = sessionStorage.getItem("aur_access_token");
-      if (!token) {
+      if (!firebaseAuth.currentUser) {
         setNotifications([]);
         setNotifLoading(false);
         return;
@@ -115,15 +129,10 @@ export default function Navbar({
 
       setNotifLoading(true);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/notifications`, {
-          headers: { Authorization: `Bearer ${token}` },
-          signal: controller.signal,
-        });
-        if (!res.ok) throw new Error("Failed to fetch notifications");
-        const data = await res.json();
-        setNotifications(data);
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") return;
+        const response = await fetch("/api/data/misc?resource=notifications");
+        if (!response.ok) throw new Error("Notifications unavailable.");
+        setNotifications((await response.json()) as NotificationItem[]);
+      } catch {
         setNotifications([]);
       } finally {
         setNotifLoading(false);
@@ -131,7 +140,6 @@ export default function Navbar({
     }
     fetchNotifications();
 
-    return () => controller.abort();
   }, [showNotifMenu]);
 
   function timeAgo(dateString: string) {
@@ -146,18 +154,11 @@ export default function Navbar({
   }
 
   async function markAsRead(id: string) {
-    try {
-      const token = sessionStorage.getItem("aur_access_token");
-      await fetch(`${API_BASE_URL}/api/notifications/${id}/read`, {
-        method: "PATCH",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
-      );
-    } catch (err) {
-      console.error("Error marking notification as read:", err);
-    }
+    setNotifications((prev) =>
+      prev.map((notification) =>
+        notification.id === id ? { ...notification, is_read: true } : notification,
+      ),
+    );
   }
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
@@ -320,8 +321,21 @@ export default function Navbar({
                     aria-label="Open profile menu"
                     className="group flex h-auto items-center gap-1.5 rounded-none border-0 p-0 hover:bg-transparent aria-expanded:bg-transparent focus-visible:ring-0 focus-visible:border-transparent"
                   >
-                    <div className="h-8 w-8 rounded-full bg-aur-primary flex items-center justify-center text-white text-[11px] font-bold tracking-wide transition-transform duration-200 group-hover:scale-105">
-                      {initials}
+                    <div className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-aur-primary text-[11px] font-bold tracking-wide text-white shadow-sm ring-1 ring-slate-200 transition-transform duration-200 group-hover:scale-105">
+                      {currentUser?.profile_photo && !avatarFailed ? (
+                        <Image
+                          src={currentUser.profile_photo}
+                          alt=""
+                          fill
+                          unoptimized
+                          referrerPolicy="no-referrer"
+                          sizes="36px"
+                          className="object-cover"
+                          onError={() => setAvatarFailed(true)}
+                        />
+                      ) : (
+                        initials
+                      )}
                     </div>
                     <ChevronDown className="size-3 text-slate-600 group-hover:text-slate-900 transition-colors hidden sm:block" />
                   </Button>
@@ -352,8 +366,6 @@ export default function Navbar({
                   <div className="border-t border-[var(--aur-border)] my-1" />
                   <DropdownMenuItem
                     onSelect={() => {
-                      sessionStorage.removeItem("aur_access_token");
-                      sessionStorage.removeItem("aur_refresh_token");
                       localStorage.removeItem("aur_logged_in");
                       setCurrentUser(null);
                       onSignOut?.();

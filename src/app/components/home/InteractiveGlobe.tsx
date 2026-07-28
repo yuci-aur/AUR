@@ -2,8 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { University } from "../../data";
-import { TrendingUp } from "lucide-react";
+import type { University } from "../../types";
 
 // Dynamically import react-globe.gl to avoid SSR issues with Three.js
 const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
@@ -44,15 +43,7 @@ interface GlobeProps {
 export default function InteractiveGlobe({ universities, onUniversitySelect }: GlobeProps) {
   const globeRef = useRef<any>(null);
   const [dimensions, setDimensions] = useState({ width: 600, height: 400 });
-  const [countries, setCountries] = useState({ features: [] });
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Fetch GeoJSON for countries to render vector globe
-  useEffect(() => {
-    fetch('https://raw.githubusercontent.com/vasturiano/react-globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
-      .then(res => res.json())
-      .then(setCountries);
-  }, []);
 
   // Resize listener
   useEffect(() => {
@@ -127,20 +118,40 @@ export default function InteractiveGlobe({ universities, onUniversitySelect }: G
           el.style.transform = "translate(-50%, -100%)";
           el.style.marginTop = "-10px"; // Shift above the marker point
           
-          el.innerHTML = `
-            <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-slate-900 border-b border-r border-slate-700 rotate-45 transform"></div>
-            <div class="relative bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-xl p-3 shadow-2xl group-hover:border-blue-500 transition-colors cursor-pointer">
-              <p class="text-[12px] font-semibold text-white leading-tight line-clamp-2 mb-1">${d.name}</p>
-              <p class="text-[9px] font-medium text-blue-400 uppercase tracking-wider mb-2">#${d.rank} in Asia</p>
-              <div class="flex items-end justify-between">
-                <span class="text-xl font-bold font-mono text-white leading-none">${d.score.toFixed(1)}</span>
-                <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-green-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
-                  ${d.trend.toFixed(1)}
-                </span>
-              </div>
-            </div>
-          `;
+          const pointer = document.createElement("div");
+          pointer.className =
+            "absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-slate-900 border-b border-r border-slate-700 rotate-45 transform";
+
+          const card = document.createElement("div");
+          card.className =
+            "relative bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-xl p-3 shadow-2xl group-hover:border-blue-500 transition-colors cursor-pointer";
+
+          const name = document.createElement("p");
+          name.className =
+            "text-[12px] font-semibold text-white leading-tight line-clamp-2 mb-1";
+          name.textContent = String(d.name);
+
+          const rank = document.createElement("p");
+          rank.className =
+            "text-[9px] font-medium text-blue-400 uppercase tracking-wider mb-2";
+          rank.textContent = `#${d.rank} in Asia`;
+
+          const metrics = document.createElement("div");
+          metrics.className = "flex items-end justify-between";
+
+          const score = document.createElement("span");
+          score.className =
+            "text-xl font-bold font-mono text-white leading-none";
+          score.textContent = Number(d.score).toFixed(1);
+
+          const trend = document.createElement("span");
+          trend.className =
+            "inline-flex items-center gap-1 text-[10px] font-semibold text-green-400";
+          trend.textContent = `↗ ${Number(d.trend).toFixed(1)}`;
+
+          metrics.append(score, trend);
+          card.append(name, rank, metrics);
+          el.append(pointer, card);
           
           // Attach click listener
           el.onclick = (e) => {

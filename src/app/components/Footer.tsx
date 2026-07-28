@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSidebar } from "./navigation/SidebarContext";
-import { API_BASE_URL } from "../lib/universities";
+import { subscribeToNewsletter } from "../lib/firebase-content";
 
 import {
   ArrowRight,
@@ -55,17 +55,7 @@ const handleSubscribe = async (event: React.FormEvent<HTMLFormElement>) => {
   setStatus("");
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/newsletter/subscribe`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: trimmedEmail }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.detail || "Subscription failed.");
-    }
+    await subscribeToNewsletter(trimmedEmail);
 
     setStatus("Thank you for subscribing!");
     setEmail("");

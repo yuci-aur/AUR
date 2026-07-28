@@ -25,7 +25,7 @@ import {
   GitBranch,
   History,
 } from "lucide-react";
-import { API_BASE_URL } from "../lib/universities";
+import { listMethodologyVersions } from "../lib/firebase-content";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -461,18 +461,20 @@ export default function Methodology() {
   }, []);
 
   React.useEffect(() => {
-    const controller = new AbortController();
-    fetch(`${API_BASE_URL}/api/methodology/version-history`, { signal: controller.signal })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to load version history");
-        return res.json();
+    let active = true;
+    listMethodologyVersions()
+      .then((data) => {
+        if (active) setVersions(data as unknown as MethodologyVersion[]);
       })
-      .then((data: MethodologyVersion[]) => setVersions(data))
       .catch((err) => {
-        if (err.name !== "AbortError") setVersionsError(err.message);
+        if (active) setVersionsError(err.message);
       })
-      .finally(() => setVersionsLoading(false));
-    return () => controller.abort();
+      .finally(() => {
+        if (active) setVersionsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const toggleMetric = (id: string) => {

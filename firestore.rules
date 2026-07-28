@@ -1,0 +1,149 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    function ownsDocument() {
+      return signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    function createsOwnedDocument() {
+      return signedIn() && request.resource.data.userId == request.auth.uid;
+    }
+
+    match /universities/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /rankings/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /events/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /blogs/{id} {
+      allow read: if resource.data.status == "published" || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /methodologyVersions/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /newsItems/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /notifications/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /adminProfiles/{uid} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /userProfiles/{uid} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && !request.resource.data.keys().hasAny(["admin", "role"]);
+      allow update: if signedIn()
+        && request.auth.uid == uid
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(["admin", "role"]);
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /userProfiles/{uid}/bookmarks/{universityId} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /institutionApplications/{uid} {
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly([
+          "userId",
+          "institutionName",
+          "institutionType",
+          "country",
+          "website",
+          "accreditationId",
+          "representativeName",
+          "representativeEmail",
+          "status",
+          "submittedAt"
+        ])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == "pending"
+        && request.resource.data.institutionName is string
+        && request.resource.data.institutionName.size() >= 2
+        && request.resource.data.institutionName.size() <= 160
+        && request.resource.data.institutionType is string
+        && request.resource.data.country is string
+        && request.resource.data.website is string
+        && request.resource.data.accreditationId is string
+        && request.resource.data.representativeName is string
+        && request.resource.data.representativeEmail is string
+        && request.resource.data.submittedAt is string;
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+      allow update, delete: if isAdmin();
+    }
+
+    match /applications/{id} {
+      allow create: if createsOwnedDocument()
+        && request.resource.data.eventId is string
+        && request.resource.data.universityId is string
+        && request.resource.data.documents is list
+        && request.resource.data.documents.size() <= 10;
+      allow read: if isAdmin() || ownsDocument();
+      allow update, delete: if isAdmin();
+    }
+
+    match /nominations/{id} {
+      allow create: if createsOwnedDocument()
+        && request.resource.data.nominee_name is string
+        && request.resource.data.nominee_email is string
+        && request.resource.data.documents is list
+        && request.resource.data.documents.size() <= 10;
+      allow read: if isAdmin() || ownsDocument();
+      allow update, delete: if isAdmin();
+    }
+
+    match /newsletterSubscribers/{id} {
+      allow create: if request.resource.data.keys().hasOnly([
+          "email", "active", "subscribed_at"
+        ])
+        && request.resource.data.email is string
+        && request.resource.data.email.size() >= 5
+        && request.resource.data.email.size() <= 254;
+      allow update: if isAdmin()
+        || (
+          request.resource.data.keys().hasOnly([
+            "email", "active", "subscribed_at"
+          ])
+          && request.resource.data.email == resource.data.email
+          && request.resource.data.active == true
+        );
+      allow read, delete: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

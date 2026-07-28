@@ -5,27 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Article } from "../../data";
-import { API_BASE_URL } from "../../lib/universities";
+import type { Article } from "../../types";
+import { listPublishedBlogs, type FirestoreBlog } from "../../lib/firebase-content";
 import BlogCard from "./BlogCard";
-
-/** Blog row as returned by the backend /blogs/ endpoint (snake_case). */
-interface BackendBlog {
-  id: string;
-  slug: string;
-  title: string;
-  category: string;
-  status: string;
-  description: string;
-  content: string;
-  cover_image: string | null;
-  author: string | null;
-  read_time: string | null;
-  tags: string | null;
-  featured: boolean;
-  publish_date: string | null;
-  created_at: string;
-}
 
 function formatDate(value: string | null): string {
   if (!value) return "";
@@ -34,8 +16,8 @@ function formatDate(value: string | null): string {
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
-/** Map a backend blog to the Article shape the blog cards render. */
-function blogToArticle(blog: BackendBlog): Article {
+/** Map a Firestore blog document to the Article shape the blog cards render. */
+function blogToArticle(blog: FirestoreBlog): Article {
   return {
     id: blog.id,
     title: blog.title,
@@ -150,16 +132,10 @@ export default function BlogGrid() {
 
   useEffect(() => {
     let active = true;
-    const controller = new AbortController();
-
-    fetch(`${API_BASE_URL}/blogs/`, { signal: controller.signal })
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("Failed to load"))))
-      .then((data: BackendBlog[]) => {
+    listPublishedBlogs()
+      .then((data) => {
         if (!active) return;
-        const published = (Array.isArray(data) ? data : [])
-          .filter((b) => (b.status ?? "Published") === "Published")
-          .map(blogToArticle);
-        setArticles(published);
+        setArticles(data.map(blogToArticle));
         setError(false);
       })
       .catch(() => {
@@ -171,7 +147,6 @@ export default function BlogGrid() {
 
     return () => {
       active = false;
-      controller.abort();
     };
   }, []);
 

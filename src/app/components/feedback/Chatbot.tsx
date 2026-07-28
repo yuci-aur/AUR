@@ -348,24 +348,18 @@ You can dynamically adjust these weights in the **Rankings Engine** page!`;
 
   const formatText = (text: string) => {
     return text.split("\n").map((line, i) => {
-      const content = line;
-      const boldRegex = /\*\*(.*?)\*\*/g;
-      const italicRegex = /\*(.*?)\*/g;
-      const tempText = content.replace(boldRegex, "<b>$1</b>").replace(italicRegex, "<i>$1</i>");
-
       return (
-        <div
-          key={i}
-          className="mb-1 leading-relaxed text-xs"
-          dangerouslySetInnerHTML={{
-            __html: tempText
-              .replace(/&/g, "&amp;")
-              .replace(/</g, "&lt;")
-              .replace(/>/g, "&gt;")
-              .replace(/&lt;b&gt;(.*?)&lt;\/b&gt;/g, "<strong>$1</strong>")
-              .replace(/&lt;i&gt;(.*?)&lt;\/i&gt;/g, "<em>$1</em>"),
-          }}
-        />
+        <div key={i} className="mb-1 text-xs leading-relaxed">
+          {line.split(/(\*\*.*?\*\*|\*.*?\*)/g).map((part, partIndex) => {
+            if (part.startsWith("**") && part.endsWith("**")) {
+              return <strong key={partIndex}>{part.slice(2, -2)}</strong>;
+            }
+            if (part.startsWith("*") && part.endsWith("*")) {
+              return <em key={partIndex}>{part.slice(1, -1)}</em>;
+            }
+            return <React.Fragment key={partIndex}>{part}</React.Fragment>;
+          })}
+        </div>
       );
     });
   };

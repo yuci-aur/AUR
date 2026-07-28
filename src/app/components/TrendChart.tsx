@@ -1,85 +1,144 @@
-import React from "react";
+import { LineChart } from "lucide-react";
 
 interface TrendChartProps {
   history: number[];
 }
 
+const EDITION_YEAR = 2026;
+
 export default function TrendChart({ history }: TrendChartProps) {
-  // history is an array of ranks from current year back to 5 years ago
-  // e.g., [1, 2, 3, 4, 5] (where index 0 is 2026, index 4 is 2022)
-  // We want to plot from left to right (past to present): 2022 -> 2026
+  const data = history
+    .filter((value) => Number.isFinite(value) && value > 0)
+    .slice(0, 5)
+    .reverse();
 
-  const data = [...history].reverse(); // Now index 0 is 2022, index 4 is 2026
-  const years = [2022, 2023, 2024, 2025, 2026];
+  if (data.length < 2) {
+    return (
+      <div className="flex min-h-64 flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 text-center">
+        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-[#1a365d] shadow-sm ring-1 ring-slate-200">
+          <LineChart className="h-5 w-5" />
+        </span>
+        <h4 className="mt-4 text-sm font-bold text-slate-900">
+          More ranking history is needed
+        </h4>
+        <p className="mt-1 max-w-sm text-xs leading-5 text-slate-500">
+          This institution currently has one verified ranking edition. The trend chart
+          will appear after a second edition is available.
+        </p>
+      </div>
+    );
+  }
 
-  // SVG dimensions and padding
-  const width = 600;
-  const height = 300;
-  const padding = 40;
+  const width = 640;
+  const height = 280;
+  const padding = 44;
+  const years = data.map(
+    (_, index) => EDITION_YEAR - (data.length - 1 - index),
+  );
+  const dataMin = Math.min(...data);
+  const dataMax = Math.max(...data);
+  const domainPadding = Math.max(2, Math.ceil((dataMax - dataMin) * 0.2));
+  const minRank = Math.max(1, dataMin - domainPadding);
+  const maxRank = Math.max(minRank + 1, dataMax + domainPadding);
+  const xSpan = width - padding * 2;
+  const ySpan = height - padding * 2;
 
-  // Determine min and max ranks to scale the Y-axis
-  // Rank 1 is at the TOP (highest Y value conceptually, but smallest pixel value)
-  const maxRank = Math.max(...data, 10); // Ensure at least 10 for scale
-  const minRank = Math.max(1, Math.min(...data) - 5); // Add some padding to the top
+  const getX = (index: number) =>
+    padding + (index * xSpan) / Math.max(data.length - 1, 1);
+  const getY = (value: number) =>
+    padding + ((value - minRank) / (maxRank - minRank)) * ySpan;
 
-  // Function to calculate X and Y coordinates
-  const getX = (index: number) => padding + (index * (width - padding * 2)) / (data.length - 1);
-  const getY = (value: number) => padding + ((value - minRank) / (maxRank - minRank)) * (height - padding * 2);
-
-  // Generate SVG path string
   const pathData = data
-    .map((value, index) => {
-      const x = getX(index);
-      const y = getY(value);
-      return `${index === 0 ? "M" : "L"} ${x} ${y}`;
-    })
+    .map(
+      (value, index) =>
+        `${index === 0 ? "M" : "L"} ${getX(index)} ${getY(value)}`,
+    )
     .join(" ");
 
   return (
-    <div className="w-full overflow-x-auto border border-slate-200 bg-white p-6 shadow-sm font-sans">
-      <div className="mb-4">
-        <h4 className="font-serif text-lg font-bold text-slate-900">5-Year Ranking Trajectory</h4>
-        <p className="text-xs text-slate-500">Historical performance across the Asia University Index</p>
+    <div className="w-full overflow-x-auto rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="mb-5">
+        <h4 className="font-serif text-lg font-bold text-slate-900">
+          Ranking trajectory
+        </h4>
+        <p className="text-xs text-slate-500">
+          Verified AUR edition history. A lower rank is better.
+        </p>
       </div>
 
-      <div className="min-w-[500px]">
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto">
-          {/* Grid lines (horizontal) */}
+      <div className="min-w-[520px]">
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          className="h-auto w-full"
+          role="img"
+          aria-label={`Ranking history from ${years[0]} to ${years.at(-1)}`}
+        >
           {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-            const y = padding + ratio * (height - padding * 2);
+            const y = padding + ratio * ySpan;
             const rankLabel = Math.round(minRank + ratio * (maxRank - minRank));
             return (
               <g key={ratio}>
-                <line x1={padding} y1={y} x2={width - padding} y2={y} stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 4" />
-                <text x={padding - 10} y={y + 4} textAnchor="end" className="fill-slate-400 text-[10px] font-mono">
+                <line
+                  x1={padding}
+                  y1={y}
+                  x2={width - padding}
+                  y2={y}
+                  stroke="#e2e8f0"
+                  strokeWidth="1"
+                  strokeDasharray="4 4"
+                />
+                <text
+                  x={padding - 10}
+                  y={y + 4}
+                  textAnchor="end"
+                  className="fill-slate-400 font-mono text-[10px]"
+                >
                   #{rankLabel}
                 </text>
               </g>
             );
           })}
 
-          {/* X-axis labels (Years) */}
-          {years.map((year, index) => {
-            const x = getX(index);
-            return (
-              <text key={year} x={x} y={height - padding + 20} textAnchor="middle" className="fill-slate-500 text-[10px] font-bold">
-                {year}
-              </text>
-            );
-          })}
+          {years.map((year, index) => (
+            <text
+              key={year}
+              x={getX(index)}
+              y={height - padding + 22}
+              textAnchor="middle"
+              className="fill-slate-500 text-[10px] font-bold"
+            >
+              {year}
+            </text>
+          ))}
 
-          {/* Trend Line */}
-          <path d={pathData} fill="none" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d={pathData}
+            fill="none"
+            stroke="#1a365d"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
 
-          {/* Data Points */}
           {data.map((value, index) => {
             const x = getX(index);
             const y = getY(value);
             return (
-              <g key={index} className="group cursor-pointer">
-                <circle cx={x} cy={y} r="5" fill="#ffffff" stroke="#b45309" strokeWidth="2" className="transition-all duration-200 group-hover:r-6 group-hover:fill-amber-700" />
-                {/* Tooltip (CSS based hover) */}
-                <text x={x} y={y - 15} textAnchor="middle" className="fill-amber-700 text-[10px] font-bold font-mono opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <g key={`${years[index]}-${value}`}>
+                <circle
+                  cx={x}
+                  cy={y}
+                  r="6"
+                  fill="#ffffff"
+                  stroke="#d89b22"
+                  strokeWidth="3"
+                />
+                <text
+                  x={x}
+                  y={y - 14}
+                  textAnchor="middle"
+                  className="fill-amber-700 font-mono text-[10px] font-bold"
+                >
                   #{value}
                 </text>
               </g>

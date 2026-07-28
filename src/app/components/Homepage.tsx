@@ -9,8 +9,8 @@ import {
   Search, BookOpen, GraduationCap, ChevronRight, ArrowRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FEATURED_ARTICLES, University, Article } from "../data";
-import { getPublishedStoredBlogs, storedBlogToArticle } from "../lib/blog-storage";
+import type { University, Article } from "../types";
+import { listPublishedBlogs } from "../lib/firebase-content";
 import { useUniversityData } from "./data/UniversityDataProvider";
 import { useSidebar } from "./navigation/SidebarContext";
 import { isProtectedView } from "./navigation/config";
@@ -98,11 +98,15 @@ export default function Homepage({
 }: HomepageProps) {
 
   const guard = useCallback(
-    (v: string) => { (!isAuthenticated && isProtectedView(v)) ? onViewChange("login") : onViewChange(v); },
+    (view: string) => {
+      onViewChange(
+        !isAuthenticated && isProtectedView(view) ? "login" : view
+      );
+    },
     [isAuthenticated, onViewChange]
   );
 
-  const { universities } = useUniversityData();
+  const { universities, loading: universitiesLoading } = useUniversityData();
   const { searchQuery, setSearchQuery } = useSidebar();
   const [suggestions, setSuggestions] = useState<{ universities: University[]; articles: Article[] }>({ universities: [], articles: [] });
   const [showSugg, setShowSugg] = useState(false);
@@ -120,11 +124,40 @@ export default function Homepage({
   useEffect(() => { const id = setInterval(() => setSlide(p => (p + 1) % HERO_SLIDES.length), 4000); return () => clearInterval(id); }, []);
 
   useEffect(() => {
-    const load = () => setBlogs(getPublishedStoredBlogs().map(storedBlogToArticle));
-    load(); window.addEventListener("storage", load); return () => window.removeEventListener("storage", load);
+    let active = true;
+    listPublishedBlogs()
+      .then((data) => {
+        if (!active) return;
+        const published = data.map((blog): Article => ({
+            id: String(blog.id ?? ""),
+            title: String(blog.title ?? ""),
+            subtitle: String(blog.description ?? ""),
+            source: String(blog.author ?? "AUR Editorial"),
+            date: blog.publish_date
+              ? new Date(String(blog.publish_date)).toLocaleDateString()
+              : "",
+            contentSummary: String(blog.description ?? ""),
+            image: String(blog.cover_image ?? ""),
+            content: String(blog.content ?? ""),
+            category: String(blog.category ?? ""),
+            readTime: blog.read_time ? String(blog.read_time) : undefined,
+            tags:
+              typeof blog.tags === "string"
+                ? blog.tags.split(",").map((tag) => tag.trim()).filter(Boolean)
+                : [],
+          }));
+        setBlogs(published);
+      })
+      .catch((error) => {
+        console.error("Blog feed unavailable", error);
+        setBlogs([]);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
-  const allArticles = useMemo(() => [...blogs, ...FEATURED_ARTICLES], [blogs]);
+  const allArticles = blogs;
 
   useEffect(() => {
     if (!searchQuery.trim()) { setSuggestions({ universities: [], articles: [] }); return; }
@@ -176,7 +209,8 @@ export default function Homepage({
     if (searchQuery.trim()) { onSearchSubmit(searchQuery); onViewChange("rankings"); setShowSugg(false); }
   };
 
-  const top10 = useMemo(() => [...universities].sort((a, b) => b.overall - a.overall).slice(0, 10), [universities]);
+  const top10 = useMemo(() => universities.slice(0, 10), [universities]);
+  const top10Loading = top10.length === 0 && universitiesLoading;
   const countries = useMemo(() => getCountryStats(universities), [universities]);
   const nCountries = useMemo(() => new Set(universities.map(u => u.location)).size, [universities]);
 
@@ -234,7 +268,9 @@ export default function Homepage({
             <div className="rh-hero__edition">2026 Official Edition</div>
             <h1 className="rh-hero__title">Asia University Rankings</h1>
             <p className="rh-hero__sub">
-              Compare {universities.length || "500+"} institutions across {nCountries || "20+"} countries on research, teaching, employability, and internationalization.
+              {universitiesLoading
+                ? "Compare universities across Asia on research, teaching, employability, and internationalization."
+                : `Compare ${universities.length} institutions across ${nCountries} countries on research, teaching, employability, and internationalization.`}
             </p>
 
             <div className="rh-hero-search" ref={ref}>
@@ -305,13 +341,22 @@ export default function Homepage({
       {/* ═══ STATS STRIP ═══ */}
       <div className="rh-stats">
         {[
-          { num: universities.length || "500+", label: "Universities Ranked" },
-          { num: nCountries || "20+", label: "Countries & Territories" },
+          { num: universities.length || null, loading: universitiesLoading, label: "Universities Ranked" },
+          { num: nCountries || null, loading: universitiesLoading, label: "Countries & Territories" },
           { num: "5", label: "Performance Pillars" },
           { num: "2026", label: "Edition Year" },
         ].map(s => (
           <div key={s.label} className="rh-stat">
-            <div className="rh-stat__num">{s.num}</div>
+            <div className="rh-stat__num">
+              {s.loading ? (
+                <>
+                  <span className="rh-stat__skeleton" aria-hidden="true" />
+                  <span className="sr-only">Loading</span>
+                </>
+              ) : (
+                s.num ?? "—"
+              )}
+            </div>
             <div className="rh-stat__label">{s.label}</div>
           </div>
         ))}
@@ -356,8 +401,22 @@ export default function Homepage({
               <div>#</div><div>University</div><div>Location</div><div>Score</div>
               <div className="hidden md:block">Research</div>
               <div className="hidden md:block">Employ.</div>
-              <div className="hidden lg:block">Intl</div>
             </div>
+            {top10Loading && (
+              <div role="status" aria-label="Loading top universities">
+                {Array.from({ length: 5 }, (_, idx) => (
+                  <div key={idx} className="rh-tbl__row animate-pulse" aria-hidden="true">
+                    <div><span className="block h-7 w-7 rounded-full bg-slate-200" /></div>
+                    <div><span className="block h-4 w-3/4 rounded bg-slate-200" /></div>
+                    <div><span className="block h-4 w-2/3 rounded bg-slate-200" /></div>
+                    <div><span className="block h-4 w-12 rounded bg-slate-200" /></div>
+                    <div className="hidden md:block"><span className="block h-4 w-16 rounded bg-slate-200" /></div>
+                    <div className="hidden md:block"><span className="block h-4 w-16 rounded bg-slate-200" /></div>
+                  </div>
+                ))}
+                <span className="sr-only">Loading top universities…</span>
+              </div>
+            )}
             {top10.map((uni, idx) => (
               <div
                 key={uni.id}
@@ -372,7 +431,6 @@ export default function Homepage({
                 <div className="rh-score-num">{uni.overall.toFixed(1)}</div>
                 <div className="rh-bar-cell"><div className="rh-bar__val">{uni.research.toFixed(1)}</div><div className="rh-bar__track"><div className="rh-bar__fill" style={{ width: `${uni.research}%`, background: "#2563eb" }} /></div></div>
                 <div className="rh-bar-cell"><div className="rh-bar__val">{uni.employability.toFixed(1)}</div><div className="rh-bar__track"><div className="rh-bar__fill" style={{ width: `${uni.employability}%`, background: "#059669" }} /></div></div>
-                <div className="rh-bar-cell hidden lg:block"><div className="rh-bar__val">{uni.intlStudents.toFixed(1)}</div><div className="rh-bar__track"><div className="rh-bar__fill" style={{ width: `${uni.intlStudents}%`, background: "#7c3aed" }} /></div></div>
               </div>
             ))}
             <div className="rh-tbl__foot">

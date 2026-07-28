@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { adminLogin, AdminApiError } from "../../lib/admin-api";
+import { authErrorMessage } from "../../lib/auth-error-message";
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -28,17 +30,17 @@ export default function AdminLogin() {
 
     setLoading(true);
 
-    // Mock API call
-    setTimeout(() => {
-      // For mock purposes, any valid-looking input works if it's not empty
-      if (email.includes("@") && password.length >= 6) {
-        localStorage.setItem("adminToken", "mock-secure-token-12345");
-        router.push("/admin/dashboard");
-      } else {
-        setError("Invalid credentials. Use a valid email and 6+ char password.");
-        setLoading(false);
-      }
-    }, 800);
+    try {
+      await adminLogin(email.trim(), password);
+      router.push("/admin/dashboard");
+    } catch (err) {
+      setError(
+        err instanceof AdminApiError && err.status === 403
+          ? "This account does not have administrator access."
+          : authErrorMessage(err),
+      );
+      setLoading(false);
+    }
   };
 
   return (
@@ -130,7 +132,7 @@ export default function AdminLogin() {
         </div>
         
         <p className="text-center text-slate-500 text-xs mt-6 font-medium">
-          Protected by AES-256 Encryption • Advanced University Ranking
+          Secure authentication • Advanced University Ranking
         </p>
       </motion.div>
     </div>

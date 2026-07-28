@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Upload, X } from "lucide-react";
+import { uploadToCloudinary } from "../../lib/cloudinary-upload";
 
 interface BlogImageUploadProps {
   value: string;
@@ -11,13 +12,26 @@ interface BlogImageUploadProps {
 
 export default function BlogImageUpload({ value, error, onChange }: BlogImageUploadProps) {
   const [dragOver, setDragOver] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const readFile = (file?: File) => {
+  const readFile = async (file?: File) => {
     if (!file) return;
-
-    const reader = new FileReader();
-    reader.onloadend = () => onChange(reader.result as string);
-    reader.readAsDataURL(file);
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const uploaded = await uploadToCloudinary(file, {
+        folder: "aur/blogs",
+        resourceType: "image",
+      });
+      onChange(uploaded.secure_url);
+    } catch (uploadFailure) {
+      setUploadError(
+        uploadFailure instanceof Error ? uploadFailure.message : "Image upload failed.",
+      );
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -54,12 +68,15 @@ export default function BlogImageUpload({ value, error, onChange }: BlogImageUpl
         />
         <label htmlFor="blog-cover-image" className="cursor-pointer flex flex-col items-center">
           <Upload className="h-6 w-6 text-[var(--aur-text-muted)] mb-2" />
-          <span className="text-xs font-semibold text-[var(--aur-text)]">Upload cover image</span>
+          <span className="text-xs font-semibold text-[var(--aur-text)]">
+            {uploading ? "Uploading to Cloudinary…" : "Upload cover image"}
+          </span>
           <span className="text-[10px] text-[var(--aur-text-muted)] mt-1">Drag and drop or browse files</span>
         </label>
       </div>
 
       {error && <span className="block text-[10px] text-red-600 font-medium">{error}</span>}
+      {uploadError && <span className="block text-[10px] text-red-600 font-medium">{uploadError}</span>}
 
       {value && (
         <div className="relative aspect-video w-full overflow-hidden border border-[var(--aur-border)] bg-[var(--aur-surface-2)] rounded-lg mt-3">

@@ -1,13 +1,19 @@
-import { API_BASE_URL } from "./universities";
+"use client";
 
-/**
- * Admin API helpers — real JWT auth against the FastAPI /admin router.
- *
- * The access token returned by POST /admin/login is stored in localStorage
- * under ADMIN_TOKEN_KEY and sent as a Bearer token on every admin request.
- */
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+  type User,
+} from "firebase/auth";
 
-export const ADMIN_TOKEN_KEY = "aur_admin_token";
+import {
+  ensureFirebasePersistence,
+  firebaseAuth,
+} from "./firebase";
+import { authenticatedFetch } from "./authenticated-fetch";
+
+export const ADMIN_TOKEN_KEY = "firebase-managed-session";
 
 export type AdminProfile = {
   id: string;
@@ -44,128 +50,36 @@ export type AdminBlog = {
   slug: string;
   category: string;
   status: string;
+  description: string;
+  content: string;
+  cover_image: string | null;
   author: string | null;
+  read_time: string | null;
+  tags: string | null;
   featured: boolean;
   created_at: string;
+  updated_at: string;
   publish_date: string | null;
 };
 
-export function getAdminToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(ADMIN_TOKEN_KEY);
-}
+export type AdminEventAward = {
+  id: string;
+  title: string;
+  description: string | null;
+  type: "event" | "award";
+  eligibility_criteria: string | null;
+  deadline: string | null;
+  status: "open" | "closed" | "archived";
+  created_at: string;
+};
 
-export function setAdminToken(token: string): void {
-  localStorage.setItem(ADMIN_TOKEN_KEY, token);
-}
-
-export function clearAdminToken(): void {
-  localStorage.removeItem(ADMIN_TOKEN_KEY);
-}
-
-export class AdminApiError extends Error {
-  status: number;
-  constructor(message: string, status: number) {
-    super(message);
-    this.status = status;
-  }
-}
-
-/**
- * Fetch wrapper that attaches the admin Bearer token and throws
- * AdminApiError with the backend's `detail` message on failure.
- */
-export async function adminFetch<T = unknown>(
-  path: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const token = getAdminToken();
-  const headers = new Headers(options.headers);
-  if (token) headers.set("Authorization", `Bearer ${token}`);
-  if (options.body && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
-
-  const res = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
-
-  if (res.status === 204) {
-    return undefined as T;
-  }
-
-  let payload: unknown = null;
-  const text = await res.text();
-  if (text) {
-    try {
-      payload = JSON.parse(text);
-    } catch {
-      payload = text;
-    }
-  }
-
-  if (!res.ok) {
-    const detail =
-      (payload as { detail?: string })?.detail ??
-      (typeof payload === "string" ? payload : res.statusText);
-    throw new AdminApiError(detail || "Request failed", res.status);
-  }
-
-  return payload as T;
-}
-
-// --- Auth ---
-export async function adminLogin(email: string, password: string) {
-  const res = await fetch(`${API_BASE_URL}/admin/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-
-  const text = await res.text();
-  const payload = text ? JSON.parse(text) : null;
-
-  if (!res.ok) {
-    throw new AdminApiError(payload?.detail || "Login failed", res.status);
-  }
-
-  setAdminToken(payload.access_token);
-  return payload as { access_token: string; refresh_token: string };
-}
-
-export function verifyAdmin() {
-  return adminFetch<AdminProfile>("/admin/verify");
-}
-
-// --- Dashboard ---
-export function getAdminStats() {
-  return adminFetch<AdminStats>("/admin/stats");
-}
-
-// --- Users ---
-export function listUsers(params: { q?: string; role?: string } = {}) {
-  const search = new URLSearchParams();
-  if (params.q) search.set("q", params.q);
-  if (params.role) search.set("role", params.role);
-  const qs = search.toString();
-  return adminFetch<{ total: number; data: AdminUser[] }>(
-    `/admin/users${qs ? `?${qs}` : ""}`
-  );
-}
-
-export function updateUserRole(userId: string, role: "user" | "admin") {
-  return adminFetch<AdminUser>(`/admin/users/${userId}/role`, {
-    method: "PATCH",
-    body: JSON.stringify({ role }),
-  });
-}
-
-// --- Blogs ---
-export function listAdminBlogs() {
-  return adminFetch<AdminBlog[]>("/admin/blogs");
-}
-
-export function deleteBlog(blogId: string) {
-  return adminFetch(`/admin/blogs/${blogId}`, { method: "DELETE" });
-}
+export type EventAwardPayload = {
+  title: string;
+  description?: string | null;
+  type: "event" | "award";
+  eligibility_criteria?: string | null;
+  status?: "open" | "closed" | "archived";
+};
 
 export type BlogPayload = {
   title: string;
@@ -181,22 +95,11 @@ export type BlogPayload = {
   status: string;
 };
 
-export async function createBlog(payload: BlogPayload) {
-  // The public POST /blogs/ endpoint handles slug generation.
-  return adminFetch("/blogs/", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
-
-// --- Universities ---
 export type UniversityRegisterPayload = {
-  // Required
   name: string;
   registration_code: string;
   ranking_score: number;
   description: string;
-  // Optional
   country?: string | null;
   subregion?: string | null;
   state?: string | null;
@@ -217,12 +120,175 @@ export type UniversityRegisterPayload = {
   has_scholarship?: boolean | null;
 };
 
-export function registerUniversity(payload: UniversityRegisterPayload) {
-  return adminFetch<{ status: string; university_id: string }>(
-    "/admin/university/register",
+export class AdminApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
+function authReady(): Promise<User | null> {
+  if (firebaseAuth.currentUser) return Promise.resolve(firebaseAuth.currentUser);
+  return new Promise((resolve) => {
+    const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
+      unsubscribe();
+      resolve(user);
+    });
+  });
+}
+
+async function requireAdminUser() {
+  const user = await authReady();
+  if (!user) throw new AdminApiError("Admin sign-in required.", 401);
+  const token = await user.getIdTokenResult();
+  if (token.claims.admin !== true) {
+    throw new AdminApiError("This account does not have admin access.", 403);
+  }
+  return user;
+}
+
+async function adminGet<T>(action: string): Promise<T> {
+  await requireAdminUser();
+  const response = await authenticatedFetch(
+    `/api/admin/data?action=${encodeURIComponent(action)}`,
+  );
+  return response.json() as Promise<T>;
+}
+
+async function adminPost<T>(
+  action: string,
+  options: { id?: string; payload?: Record<string, unknown> } = {},
+): Promise<T> {
+  await requireAdminUser();
+  const response = await authenticatedFetch("/api/admin/data", {
+    method: "POST",
+    body: JSON.stringify({ action, ...options }),
+  });
+  return response.json() as Promise<T>;
+}
+
+export function getAdminToken(): string | null {
+  return firebaseAuth.currentUser ? ADMIN_TOKEN_KEY : null;
+}
+
+export function setAdminToken(_token: string): void {
+  // Firebase Authentication owns token persistence and refresh.
+}
+
+export function clearAdminToken(): void {
+  void signOut(firebaseAuth);
+}
+
+export async function adminLogin(email: string, password: string) {
+  await ensureFirebasePersistence();
+  const credential = await signInWithEmailAndPassword(
+    firebaseAuth,
+    email,
+    password,
+  );
+  const token = await credential.user.getIdTokenResult(true);
+  if (token.claims.admin !== true) {
+    await signOut(firebaseAuth);
+    throw new AdminApiError("Admin access only.", 403);
+  }
+  return {
+    access_token: token.token,
+    refresh_token: "",
+  };
+}
+
+export async function verifyAdmin(): Promise<AdminProfile> {
+  return adminGet<AdminProfile>("verify");
+}
+
+export async function getAdminStats(): Promise<AdminStats> {
+  return adminGet<AdminStats>("stats");
+}
+
+export async function listUsers(
+  params: { q?: string; role?: string } = {},
+): Promise<{ total: number; data: AdminUser[] }> {
+  const response = await adminGet<{ total: number; data: AdminUser[] }>("users");
+  let users = response.data;
+  if (params.q) {
+    const search = params.q.toLowerCase();
+    users = users.filter(
+      (user) =>
+        user.email.toLowerCase().includes(search) ||
+        `${user.first_name} ${user.last_name}`.toLowerCase().includes(search),
+    );
+  }
+  if (params.role) users = users.filter((user) => user.role === params.role);
+  return { total: users.length, data: users };
+}
+
+export async function updateUserRole(
+  _userId: string,
+  _role: "user" | "admin",
+): Promise<AdminUser> {
+  throw new AdminApiError(
+    "User-role management is disabled because regular user data was not migrated.",
+    400,
+  );
+}
+
+export async function listAdminBlogs(): Promise<AdminBlog[]> {
+  return adminGet<AdminBlog[]>("blogs");
+}
+
+export async function deleteBlog(blogId: string) {
+  await adminPost("delete-blog", { id: blogId });
+}
+
+export async function createBlog(payload: BlogPayload): Promise<AdminBlog> {
+  return adminPost<AdminBlog>("create-blog", {
+    payload: payload as Record<string, unknown>,
+  });
+}
+
+export async function updateBlog(
+  blogId: string,
+  payload: BlogPayload,
+): Promise<AdminBlog> {
+  return adminPost<AdminBlog>("update-blog", {
+    id: blogId,
+    payload: payload as Record<string, unknown>,
+  });
+}
+
+export async function listEventsAndAwards(): Promise<AdminEventAward[]> {
+  return adminGet<AdminEventAward[]>("events");
+}
+
+export async function createEventOrAward(
+  payload: EventAwardPayload,
+): Promise<AdminEventAward> {
+  return adminPost<AdminEventAward>("create-event", {
+    payload: payload as Record<string, unknown>,
+  });
+}
+
+export async function updateEventOrAward(
+  itemId: string,
+  payload: Partial<EventAwardPayload>,
+): Promise<AdminEventAward> {
+  return adminPost<AdminEventAward>("update-event", {
+    id: itemId,
+    payload: payload as Record<string, unknown>,
+  });
+}
+
+export async function deleteEventOrAward(itemId: string) {
+  await adminPost("delete-event", { id: itemId });
+}
+
+export async function registerUniversity(payload: UniversityRegisterPayload) {
+  return adminPost<{ status: string; university_id: string }>(
+    "create-university",
     {
-      method: "POST",
-      body: JSON.stringify(payload),
-    }
+      payload: payload as Record<string, unknown>,
+    },
   );
 }

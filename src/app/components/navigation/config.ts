@@ -66,7 +66,7 @@ export const SIDEBAR_ITEMS: NavItem[] = [
   {
     id: "analytics",
     label: "Analytics",
-    view: "analytics", // a new analytics view we can mock or showcase
+    view: "analytics",
     icon: BarChart3,
   },
   {

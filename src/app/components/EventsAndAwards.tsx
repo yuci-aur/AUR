@@ -11,7 +11,12 @@ import {
   CheckCircle,
   Trophy,
 } from "lucide-react";
-import { API_BASE_URL } from "../lib/universities";
+import {
+  createApplication,
+  listEvents,
+  listUniversityDirectory,
+} from "../lib/firebase-content";
+import { uploadToCloudinary } from "../lib/cloudinary-upload";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -33,172 +38,26 @@ type EventItem = {
 
 type DirectoryUniversity = { id: string; name: string };
 
-const AUR_PROGRAMS: EventItem[] = [
-  {
-    id: "aur-leadership-forum-2026",
-    title: "AUR Asia University Leadership Forum",
-    description:
-      "A regional forum for university leaders to exchange practical strategies for academic quality, digital transformation, institutional resilience, and student success.",
-    type: "event",
-    eligibility_criteria:
-      "Open to vice-chancellors, presidents, deans, senior administrators, and institutional strategy leaders from universities across Asia.",
-    deadline: null,
-    status: "published",
-  },
-  {
-    id: "aur-student-achievement-summit-2026",
-    title: "AUR Student Achievement Summit",
-    description:
-      "A showcase of outstanding student projects, leadership initiatives, community work, and academic accomplishments from across the AUR university network.",
-    type: "event",
-    eligibility_criteria:
-      "Open to enrolled undergraduate and postgraduate students nominated by their university. Student teams may include up to five members.",
-    deadline: null,
-    status: "published",
-  },
-  {
-    id: "aur-research-innovation-symposium-2026",
-    title: "AUR Research & Innovation Symposium",
-    description:
-      "Researchers and industry partners present high-impact discoveries, interdisciplinary collaborations, and emerging technologies shaping Asia’s future.",
-    type: "event",
-    eligibility_criteria:
-      "Open to faculty researchers, doctoral candidates, research offices, innovation centres, and approved industry collaborators.",
-    deadline: null,
-    status: "published",
-  },
-  {
-    id: "aur-teaching-excellence-workshop-2026",
-    title: "AUR Teaching Excellence Workshop",
-    description:
-      "A hands-on academic development program exploring inclusive assessment, active learning, responsible AI, and evidence-led course design.",
-    type: "event",
-    eligibility_criteria:
-      "Open to faculty members, teaching fellows, instructional designers, and academic development teams from AUR member institutions.",
-    deadline: null,
-    status: "published",
-  },
-  {
-    id: "aur-sustainability-conclave-2026",
-    title: "AUR Sustainable Campuses Conclave",
-    description:
-      "University teams share measurable solutions for low-carbon campuses, climate education, responsible operations, and community resilience.",
-    type: "event",
-    eligibility_criteria:
-      "Open to sustainability officers, estates teams, researchers, faculty, and student representatives working on campus sustainability.",
-    deadline: null,
-    status: "published",
-  },
-  {
-    id: "aur-international-collaboration-forum-2026",
-    title: "AUR International Collaboration Forum",
-    description:
-      "A partnership forum connecting Asian universities around student mobility, joint research, dual-degree programs, and shared academic resources.",
-    type: "event",
-    eligibility_criteria:
-      "Open to international office leaders, partnership directors, faculty coordinators, and mobility program managers.",
-    deadline: null,
-    status: "published",
-  },
-  {
-    id: "aur-student-achievement-award-2026",
-    title: "AUR Student Achievement Award",
-    description:
-      "Honouring an exceptional student whose academic performance, initiative, character, and contribution to university life set a benchmark for peers.",
-    type: "award",
-    eligibility_criteria:
-      "Nominees must be currently enrolled at an Asian university and demonstrate sustained academic excellence alongside meaningful extracurricular contribution.",
-    deadline: null,
-    status: "published",
-  },
-  {
-    id: "aur-research-achievement-award-2026",
-    title: "AUR Research Achievement Award",
-    description:
-      "Recognizing a researcher or team whose rigorous work has advanced knowledge and delivered measurable academic, social, environmental, or economic impact.",
-    type: "award",
-    eligibility_criteria:
-      "Open to faculty researchers and university research teams with clear evidence of academic, social, environmental, or economic impact.",
-    deadline: null,
-    status: "published",
-  },
-  {
-    id: "aur-teaching-excellence-award-2026",
-    title: "AUR Teaching Excellence Award",
-    description:
-      "Celebrating an educator who creates inclusive learning experiences, inspires intellectual curiosity, and demonstrates evidence of improved student outcomes.",
-    type: "award",
-    eligibility_criteria:
-      "Open to full-time and adjunct faculty with at least three years of university teaching experience. Nominations must include student or peer evidence.",
-    deadline: null,
-    status: "published",
-  },
-  {
-    id: "aur-innovation-entrepreneurship-award-2026",
-    title: "AUR Innovation & Entrepreneurship Award",
-    description:
-      "Recognizing a university initiative, start-up, or technology transfer project that turns an original idea into practical and scalable value.",
-    type: "award",
-    eligibility_criteria:
-      "Open to university-backed start-ups, innovation labs, faculty ventures, student founders, and technology transfer teams.",
-    deadline: null,
-    status: "published",
-  },
-  {
-    id: "aur-leadership-impact-award-2026",
-    title: "AUR Leadership & Institutional Impact Award",
-    description:
-      "Honouring a university leader or team whose decisions have strengthened academic quality, access, institutional culture, or long-term resilience.",
-    type: "award",
-    eligibility_criteria:
-      "Open to academic and professional leaders at Asian universities. Nominations must document a sustained institutional outcome.",
-    deadline: null,
-    status: "published",
-  },
-  {
-    id: "aur-community-engagement-award-2026",
-    title: "AUR Community Engagement Award",
-    description:
-      "Celebrating a university-community partnership that addresses a real local need through respectful collaboration, shared ownership, and lasting results.",
-    type: "award",
-    eligibility_criteria:
-      "Open to university departments, centres, student groups, and cross-sector partnerships with evidence of community participation and measurable benefit.",
-    deadline: null,
-    status: "published",
-  },
-];
+function getAwardFocus(title: string): string {
+  const normalized = title.toLowerCase();
+  if (normalized.includes("student")) return "Student distinction";
+  if (normalized.includes("research")) return "Research impact";
+  if (normalized.includes("teaching")) return "Academic excellence";
+  if (normalized.includes("innovation") || normalized.includes("entrepreneur")) return "Innovation";
+  if (normalized.includes("leadership")) return "Institutional leadership";
+  if (normalized.includes("community")) return "Community impact";
+  return "Achievement";
+}
 
-const AUR_PROGRAM_IDS = new Set(AUR_PROGRAMS.map((event) => event.id));
-const AUR_AWARD_FOCUS: Record<string, string> = {
-  "aur-student-achievement-award-2026": "Student distinction",
-  "aur-research-achievement-award-2026": "Research impact",
-  "aur-teaching-excellence-award-2026": "Academic excellence",
-  "aur-innovation-entrepreneurship-award-2026": "Innovation",
-  "aur-leadership-impact-award-2026": "Institutional leadership",
-  "aur-community-engagement-award-2026": "Community impact",
-};
-const AUR_NETWORK_UNIVERSITY: DirectoryUniversity = {
-  id: "aur-network-university",
-  name: "AUR University Network Member",
-};
-
-function getUserRole(): string | null {
-  const token = sessionStorage.getItem("aur_access_token");
-  if (!token) return null;
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload.role ?? null;
-  } catch {
-    return null;
-  }
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Something went wrong.";
 }
 
 export default function EventsAndAwards() {
   const [universities, setUniversities] = useState<DirectoryUniversity[]>([]);
 
   React.useEffect(() => {
-    fetch(`${API_BASE_URL}/api/universities/directory`)
-      .then((res) => res.json())
+    listUniversityDirectory()
       .then(setUniversities)
       .catch(() => setUniversities([]));
   }, []);
@@ -212,49 +71,24 @@ export default function EventsAndAwards() {
 
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // ── Admin create-event state ──
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [createForm, setCreateForm] = useState({
-    title: "",
-    description: "",
-    type: "event",
-    eligibility_criteria: "",
-    deadline: "",
-  });
-  const [createStatus, setCreateStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
-  const [createError, setCreateError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setIsAdmin(getUserRole() === "admin");
-  }, []);
+  const [loadError, setLoadError] = useState(false);
 
   React.useEffect(() => {
-    fetch(`${API_BASE_URL}/api/events-awards/`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to load events");
-        return res.json();
-      })
+    listEvents()
       .then((data: EventItem[]) => {
         const liveEvents = Array.isArray(data) ? data : [];
-        setEvents([
-          ...AUR_PROGRAMS,
-          ...liveEvents.filter((event) => !AUR_PROGRAM_IDS.has(event.id)),
-        ]);
+        setEvents(liveEvents);
+        setLoadError(false);
       })
-      .catch(() => setEvents(AUR_PROGRAMS))
+      .catch(() => {
+        setEvents([]);
+        setLoadError(true);
+      })
       .finally(() => setLoading(false));
   }, []);
 
   const selectedEvent = events.find((e) => e.id === selectedEventId);
-  const applicationUniversities =
-    selectedEvent && AUR_PROGRAM_IDS.has(selectedEvent.id)
-      ? [
-          AUR_NETWORK_UNIVERSITY,
-          ...universities.filter((university) => university.id !== AUR_NETWORK_UNIVERSITY.id),
-        ]
-      : universities;
+  const applicationUniversities = universities;
 
   const handleBack = () => {
     setSelectedEventId(null);
@@ -271,65 +105,25 @@ export default function EventsAndAwards() {
     setApplicationStatus("submitting");
     setApplicationError(null);
 
-    const formData = new FormData();
-    formData.append("event_id", selectedEvent.id);
-    formData.append("university_id", selectedUniversityId);
-    if (files) {
-      Array.from(files).forEach((f) => formData.append("files", f));
-    }
-
-    if (AUR_PROGRAM_IDS.has(selectedEvent.id)) {
-      window.setTimeout(() => setApplicationStatus("success"), 500);
-      return;
-    }
-
     try {
-      const res = await fetch(`${API_BASE_URL}/api/events-awards/applications`, {
-        method: "POST",
-        body: formData,
+      const documents = await Promise.all(
+        Array.from(files ?? []).map(async (file) => {
+          const uploaded = await uploadToCloudinary(file, {
+            folder: "aur/applications",
+            resourceType: "auto",
+          });
+          return uploaded.secure_url;
+        }),
+      );
+      await createApplication({
+        eventId: selectedEvent.id,
+        universityId: selectedUniversityId,
+        documents,
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail || "Failed to submit application");
-      }
       setApplicationStatus("success");
-    } catch (err: any) {
+    } catch (err: unknown) {
       setApplicationStatus("error");
-      setApplicationError(err.message);
-    }
-  };
-
-  const handleCreateSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCreateStatus("submitting");
-    setCreateError(null);
-
-    const token = sessionStorage.getItem("aur_access_token");
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/events-awards/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(createForm),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail || "Failed to create event");
-      }
-      const newEvent = await res.json();
-      setEvents((prev) => [newEvent, ...prev]);
-      setCreateStatus("success");
-      setTimeout(() => {
-        setShowCreateForm(false);
-        setCreateStatus("idle");
-        setCreateForm({ title: "", description: "", type: "event", eligibility_criteria: "", deadline: "" });
-      }, 1200);
-    } catch (err: any) {
-      setCreateStatus("error");
-      setCreateError(err.message);
+      setApplicationError(getErrorMessage(err));
     }
   };
 
@@ -355,113 +149,7 @@ export default function EventsAndAwards() {
                 academic leadership, and institutional impact across Asia.
               </p>
             </div>
-            {isAdmin && (
-              <Button
-                type="button"
-                onClick={() => setShowCreateForm((prev) => !prev)}
-                className="bg-aur-primary text-white hover:bg-aur-primary/90 shrink-0"
-              >
-                <Calendar className="h-4 w-4" />
-                {showCreateForm ? "Cancel" : "Create event"}
-              </Button>
-            )}
           </div>
-
-          {/* ── Admin: create form ── */}
-          {isAdmin && showCreateForm && (
-            <section
-              aria-label="Create a new event or award"
-              className="mb-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8"
-            >
-              <h2 className="mb-6 flex items-center gap-2 text-lg font-bold text-slate-900">
-                <Calendar className="h-5 w-5 text-amber-500" aria-hidden="true" />
-                New event or award
-              </h2>
-
-              {createStatus === "success" ? (
-                <div className="flex flex-col items-center rounded-xl border border-green-200 bg-green-50 p-6 text-center">
-                  <CheckCircle className="mb-2 h-8 w-8 text-green-600" aria-hidden="true" />
-                  <p className="text-sm font-semibold text-green-800">Event published successfully.</p>
-                </div>
-              ) : (
-                <form onSubmit={handleCreateSubmit} className="max-w-2xl space-y-5">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="create-title">Title</Label>
-                    <Input
-                      id="create-title"
-                      required
-                      type="text"
-                      value={createForm.title}
-                      onChange={(e) => setCreateForm((f) => ({ ...f, title: e.target.value }))}
-                      placeholder="e.g. AUR Research Innovation Summit"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="create-description">Description</Label>
-                    <textarea
-                      id="create-description"
-                      required
-                      value={createForm.description}
-                      onChange={(e) => setCreateForm((f) => ({ ...f, description: e.target.value }))}
-                      className="flex min-h-[90px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-aur-primary/40"
-                      placeholder="Brief description of the event or award"
-                    />
-                  </div>
-
-                  <div className="max-w-xs space-y-1.5">
-                    <Label htmlFor="create-type">Type</Label>
-                    <select
-                      id="create-type"
-                      value={createForm.type}
-                      onChange={(e) => setCreateForm((f) => ({ ...f, type: e.target.value }))}
-                      className="flex h-9 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-aur-primary/40"
-                    >
-                      <option value="event">Event</option>
-                      <option value="award">Award</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="create-eligibility">Eligibility criteria</Label>
-                    <textarea
-                      id="create-eligibility"
-                      value={createForm.eligibility_criteria}
-                      onChange={(e) => setCreateForm((f) => ({ ...f, eligibility_criteria: e.target.value }))}
-                      className="flex min-h-[70px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-aur-primary/40"
-                      placeholder="e.g. Open to all accredited universities"
-                    />
-                  </div>
-
-                  {createStatus === "error" && createError && (
-                    <Alert variant="destructive">
-                      <AlertTitle>Could not publish</AlertTitle>
-                      <AlertDescription>{createError}</AlertDescription>
-                    </Alert>
-                  )}
-
-                  <div className="flex items-center gap-3 pt-2">
-                    <Button type="button" variant="ghost" onClick={() => setShowCreateForm(false)}>
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={createStatus === "submitting"}
-                      className="bg-aur-primary text-white hover:bg-aur-primary/90"
-                    >
-                      {createStatus === "submitting" ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" /> Publishing
-                        </>
-                      ) : (
-                        "Publish event"
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              )}
-            </section>
-          )}
 
           {/* ── Loading skeletons ── */}
           {loading && (
@@ -487,8 +175,8 @@ export default function EventsAndAwards() {
               <Calendar className="mx-auto mb-3 h-8 w-8 text-slate-300" aria-hidden="true" />
               <p className="text-sm font-semibold text-slate-700">No events or awards are currently listed.</p>
               <p className="mt-1 text-sm text-slate-500">
-                {isAdmin
-                  ? "Use the Create event button above to publish the first one."
+                {loadError
+                  ? "The live listings could not be loaded. Refresh the page to try again."
                   : "Check back soon — new events and awards appear here as they are announced."}
               </p>
             </div>
@@ -616,7 +304,7 @@ export default function EventsAndAwards() {
 
                               <div className="relative flex flex-1 flex-col">
                                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-300">
-                                  {AUR_AWARD_FOCUS[award.id] ?? "Achievement"}
+                                  {getAwardFocus(award.title)}
                                 </p>
                                 <h3 className="mt-2 font-serif text-xl font-bold leading-snug text-white">
                                   {award.title}
@@ -793,6 +481,7 @@ export default function EventsAndAwards() {
           </article>
         </div>
       )}
+
     </div>
   );
 }

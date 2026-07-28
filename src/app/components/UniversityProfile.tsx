@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import {
@@ -35,13 +35,18 @@ interface UniversityProfileProps {
 export default function UniversityProfile({ universityId, onBack, onViewChange, savedUniIds, onToggleSave }: UniversityProfileProps) {
   const { universities } = useUniversityData();
   const [activeTab, setActiveTab] = useState<"overview" | "metrics" | "admissions">("overview");
+  const [campusImageFailed, setCampusImageFailed] = useState(false);
+  const [logoImageFailed, setLogoImageFailed] = useState(false);
   
   // Eligibility State
-  const [showEligibility, setShowEligibility] = useState(false);
-  const [eligibilityResult, setEligibilityResult] = useState<null | { chance: number, message: string }>(null);
 
   const uni = universities.find((u) => u.id === universityId);
   const isShortlisted = savedUniIds?.includes(universityId) || false;
+
+  useEffect(() => {
+    setCampusImageFailed(false);
+    setLogoImageFailed(false);
+  }, [universityId]);
 
   if (!uni) {
     return (
@@ -51,6 +56,17 @@ export default function UniversityProfile({ universityId, onBack, onViewChange, 
       </div>
     );
   }
+
+  const primaryRank =
+    uni.history.find((rank) => Number.isFinite(rank) && rank > 0) ?? null;
+  const programmeCount = uni.programs.length || uni.subjects.length;
+  const institutionInitials = uni.name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 3)
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase();
 
   return (
     <div className="mx-auto w-full pb-16 font-sans flex-grow animate-fadeIn bg-[var(--background)]">
@@ -71,78 +87,100 @@ export default function UniversityProfile({ universityId, onBack, onViewChange, 
       </div>
 
       {/* Hero Section */}
-      <div className="relative mb-8 md:mb-24 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mt-4 sm:mt-6">
-        <div className="relative min-h-[360px] md:h-[420px] w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-[var(--aur-surface-2)] shadow-[var(--aur-shadow)] flex flex-col justify-end p-6 sm:p-8 md:p-12">
-          <Image
-            src={uni.campusPhoto}
-            alt={`${uni.name} Campus`}
-            fill
-            className="object-cover opacity-90"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#000000]/90 via-[#000000]/50 to-transparent pointer-events-none" />
-          
-          {/* Content inside banner */}
-          <div className="relative z-10 flex flex-col md:flex-row items-center md:items-end gap-4 sm:gap-6 md:gap-8 text-white w-full">
-            <div className="h-20 w-20 sm:h-28 sm:w-28 md:h-32 md:w-32 bg-[var(--aur-surface)] rounded-2xl shadow-2xl border-2 sm:border-4 border-white/10 overflow-hidden shrink-0 flex items-center justify-center">
-               <Image
-                 src={uni.logo || uni.campusPhoto}
-                 alt={`${uni.name} Logo`}
-                 width={128}
-                 height={128}
-                 className="object-cover w-full h-full opacity-80 mix-blend-luminosity"
-               />
-            </div>
-            <div className="flex-grow flex flex-col md:flex-row justify-between items-center md:items-end w-full pb-1 sm:pb-2">
-              <div className="text-center md:text-left min-w-0 max-w-full">
-                <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-serif tracking-tight mb-2 sm:mb-3 text-white drop-shadow-md break-words">
-                  {uni.name}
-                </h1>
-                <div className="flex items-center gap-2 text-xs sm:text-sm text-white/80 justify-center md:justify-start font-medium">
-                  <MapPin className="h-4 w-4 opacity-80 shrink-0" />
-                  <span>{uni.location}</span>
-                </div>
-              </div>
-              <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mt-4 sm:mt-6 md:mt-0 shrink-0">
+      <div className="relative mx-auto mt-4 max-w-[1500px] px-4 sm:mt-6 sm:px-6 lg:px-8">
+        <section className="relative min-h-[390px] overflow-hidden rounded-3xl bg-[#102a4c] shadow-[0_28px_80px_-38px_rgba(15,42,76,0.7)] sm:min-h-[430px]">
+          {uni.campusPhoto && !campusImageFailed && (
+            <Image
+              src={uni.campusPhoto}
+              alt={`${uni.name} campus`}
+              fill
+              className="object-cover"
+              priority
+              onError={() => setCampusImageFailed(true)}
+            />
+          )}
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(8,26,48,0.96)_0%,rgba(8,26,48,0.82)_44%,rgba(8,26,48,0.2)_100%)]" />
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#081a30]/90 to-transparent" />
+
+          <div className="relative z-10 flex min-h-[390px] flex-col justify-between p-6 sm:min-h-[430px] sm:p-9 lg:p-12">
+            <div className="flex items-start justify-between gap-4">
+              <p className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-white/80 backdrop-blur-sm">
+                AUR institutional profile
+              </p>
+              <div className="flex gap-2">
                 <Button
                   onClick={() => onToggleSave(universityId)}
-                  className={`${isShortlisted ? "border-0 bg-red-500 hover:bg-red-500 text-white" : "bg-cyber-black/50 hover:bg-cyber-black/70 text-white border-white/20"} h-auto font-bold px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl text-[10px] sm:text-xs uppercase tracking-wider gap-2 transition-all shadow-lg backdrop-blur-sm`}>
-                  <Bookmark className={`h-4 w-4 ${isShortlisted ? "fill-current" : ""}`} /> {isShortlisted ? "Saved" : "Save"}
+                  className={`h-auto gap-2 rounded-xl border px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-md ${
+                    isShortlisted
+                      ? "border-amber-400 bg-amber-500 hover:bg-amber-500"
+                      : "border-white/25 bg-black/25 hover:bg-black/40"
+                  }`}
+                >
+                  <Bookmark className={`h-4 w-4 ${isShortlisted ? "fill-current" : ""}`} />
+                  {isShortlisted ? "Saved" : "Save"}
                 </Button>
                 <Button
                   onClick={() => onViewChange("rankings")}
-                  className="h-auto bg-cyber-black/50 hover:bg-cyber-black/70 text-white border-white/20 font-bold px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl text-[10px] sm:text-xs uppercase tracking-wider gap-2 transition-all shadow-lg backdrop-blur-sm">
-                  <Square className="h-4 w-4" /> Compare
+                  className="h-auto gap-2 rounded-xl border border-white/25 bg-black/25 px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-md hover:bg-black/40"
+                >
+                  <Square className="h-4 w-4" />
+                  Compare
                 </Button>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* 3 Stat Cards — In-flow on mobile, absolute overlap on desktop */}
-        <div className="mt-4 sm:mt-6 md:mt-0 md:absolute md:-bottom-12 md:left-0 md:right-0 px-0 sm:px-4 md:px-10 lg:px-16 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 md:gap-6 z-20">
-           <div className="bg-[var(--aur-surface)] border border-[var(--aur-border)] rounded-2xl p-4 sm:p-6 shadow-[var(--aur-shadow-sm)] md:shadow-[var(--aur-shadow)] flex flex-col items-center justify-center text-center transform transition-transform hover:-translate-y-1">
-             <span className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[var(--aur-text)] mb-1 sm:mb-2">
-                #{uni.history[0] || uni.qsSubjectRankings?.[0]?.worldRank || 587}
-             </span>
-             <span className="text-[10px] uppercase tracking-widest text-[var(--aur-text-muted)] font-bold">QS World Rank</span>
-           </div>
-           <div className="bg-[var(--aur-surface)] border border-[var(--aur-border)] rounded-2xl p-4 sm:p-6 shadow-[var(--aur-shadow-sm)] md:shadow-[var(--aur-shadow)] flex flex-col items-center justify-center text-center transform transition-transform hover:-translate-y-1">
-             <span className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[var(--aur-text)] mb-1 sm:mb-2">
-                {uni.subjects.length * 15}
-             </span>
-             <span className="text-[10px] uppercase tracking-widest text-[var(--aur-text-muted)] font-bold">Total Programmes</span>
-           </div>
-           <div className="bg-[var(--aur-surface)] border border-[var(--aur-border)] rounded-2xl p-4 sm:p-6 shadow-[var(--aur-shadow-sm)] md:shadow-[var(--aur-shadow)] flex flex-col items-center justify-center text-center transform transition-transform hover:-translate-y-1">
-             <span className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[var(--aur-text)] mb-1 sm:mb-2">
-                {uni.intlStudents || 12}%
-             </span>
-             <span className="text-[10px] uppercase tracking-widest text-[var(--aur-text-muted)] font-bold">Intl Students</span>
-           </div>
+            <div className="flex max-w-4xl flex-col gap-5 sm:flex-row sm:items-end">
+              <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/40 bg-white p-3 shadow-2xl">
+                {uni.logo && !logoImageFailed ? (
+                  <Image
+                    src={uni.logo}
+                    alt={`${uni.name} logo`}
+                    width={96}
+                    height={96}
+                    className="h-full w-full object-contain"
+                    onError={() => setLogoImageFailed(true)}
+                  />
+                ) : (
+                  <span className="font-serif text-2xl font-bold tracking-tight text-[#1a365d]">
+                    {institutionInitials}
+                  </span>
+                )}
+              </div>
+              <div className="min-w-0 pb-1 text-white">
+                <div className="mb-2 flex items-center gap-2 text-sm font-medium text-white/75">
+                  <MapPin className="h-4 w-4 shrink-0 text-amber-400" />
+                  <span>{uni.location}</span>
+                </div>
+                <h1 className="max-w-3xl text-3xl font-bold leading-[1.05] tracking-tight text-white sm:text-4xl lg:text-5xl">
+                  {uni.name}
+                </h1>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div className="mt-4 grid grid-cols-1 overflow-hidden rounded-2xl border border-[var(--aur-border)] bg-[var(--aur-surface)] shadow-[var(--aur-shadow-sm)] sm:grid-cols-3">
+          {[
+            { label: "AUR rank", value: primaryRank ? `#${primaryRank}` : "Pending" },
+            { label: "Overall score", value: Number.isFinite(uni.overall) ? uni.overall.toFixed(1) : "—" },
+            { label: "Programmes listed", value: programmeCount || "—" },
+          ].map((stat, index) => (
+            <div
+              key={stat.label}
+              className={`px-6 py-5 ${index > 0 ? "border-t border-[var(--aur-border)] sm:border-l sm:border-t-0" : ""}`}
+            >
+              <span className="block font-serif text-2xl font-bold text-[var(--aur-text)]">
+                {stat.value}
+              </span>
+              <span className="mt-1 block text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--aur-text-muted)]">
+                {stat.label}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
         {/* Accessible Tab Navigation */}
         <div className="border-b border-[var(--aur-border)] mb-12 flex overflow-x-auto hide-scrollbar gap-8">
           {[
@@ -254,7 +292,6 @@ export default function UniversityProfile({ universityId, onBack, onViewChange, 
                         { label: "Employer Reputation", value: uni.employerReputation || uni.employability },
                         { label: "Citations per Faculty", value: uni.citations },
                         { label: "Faculty/Student Ratio", value: uni.facultyStudentRatio || uni.teaching },
-                        { label: "International Students", value: uni.intlStudents }
                       ].map((metric) => (
                         <div key={metric.label}>
                           <div className="flex justify-between text-xs font-bold mb-2">
@@ -296,7 +333,7 @@ export default function UniversityProfile({ universityId, onBack, onViewChange, 
                   { label: "Employer Rep", value: uni.employerReputation || uni.employability },
                   { label: "Citations/Faculty", value: uni.citations },
                   { label: "Faculty/Student", value: uni.facultyStudentRatio || uni.teaching },
-                  { label: "Intl Students", value: uni.intlStudents },
+                  { label: "Teaching", value: uni.teaching },
                 ].map((metric, idx) => (
                   <div key={idx} className={`rounded-3xl p-8 flex flex-col justify-between shadow-sm transition-transform hover:-translate-y-1 ${
                     metric.highlight 
@@ -432,102 +469,6 @@ export default function UniversityProfile({ universityId, onBack, onViewChange, 
                     ))}
                   </ul>
                 </div>
-              </div>
-
-              {/* ── Eligibility Check Feature ── */}
-              <div className="bg-[var(--aur-surface)] border border-[var(--aur-border)] rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-[var(--aur-shadow-sm)]">
-                
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10 mb-6">
-                  <div className="flex items-center gap-4">
-                    <div className="bg-[var(--aur-surface-2)] border border-[var(--aur-border)] p-3 rounded-xl text-[var(--aur-text)]">
-                      <GraduationCap className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold font-serif text-[var(--aur-text)] leading-tight">Eligibility Predictor</h3>
-                      <p className="text-xs text-[var(--aur-text-muted)] mt-1 font-medium tracking-wide">Enter your marks and exam scores to check your chances at {uni.name}.</p>
-                    </div>
-                  </div>
-                  
-                  {!showEligibility && !eligibilityResult && (
-                    <Button
-                      onClick={() => setShowEligibility(true)}
-                      className="h-auto border-0 bg-[var(--aur-text)] hover:bg-[var(--aur-text)] text-[var(--background)] hover:opacity-80 font-bold text-xs uppercase tracking-wider py-3 px-6 rounded-xl transition-all shadow-md shrink-0 w-full md:w-auto"
-                    >
-                      Calculate Chances
-                    </Button>
-                  )}
-                </div>
-
-                {showEligibility && !eligibilityResult && (
-                  <div className="animate-fadeIn mt-8 pt-6 border-t border-[var(--aur-border)] relative z-10">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
-                      <div>
-                        <label className="block text-[10px] uppercase font-bold tracking-wider text-[var(--aur-text-muted)] mb-2 ml-1">Current Academic Marks</label>
-                        <input type="text" placeholder="e.g. 92% or 3.8 GPA" className="w-full bg-[var(--aur-surface-2)] border border-[var(--aur-border)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--aur-text)] placeholder-[var(--aur-text-muted)] focus:outline-none focus:border-[var(--aur-text)] transition-colors" />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] uppercase font-bold tracking-wider text-[var(--aur-text-muted)] mb-2 ml-1">Standardized Exam (Optional)</label>
-                        <input type="text" placeholder="e.g. SAT 1450" className="w-full bg-[var(--aur-surface-2)] border border-[var(--aur-border)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--aur-text)] placeholder-[var(--aur-text-muted)] focus:outline-none focus:border-[var(--aur-text)] transition-colors" />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] uppercase font-bold tracking-wider text-[var(--aur-text-muted)] mb-2 ml-1">English Proficiency</label>
-                        <select className="w-full bg-[var(--aur-surface-2)] border border-[var(--aur-border)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--aur-text)] focus:outline-none focus:border-[var(--aur-text)] transition-colors cursor-pointer appearance-none">
-                          <option>IELTS (7.0+)</option>
-                          <option>TOEFL (100+)</option>
-                          <option>None / Pending</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="flex gap-3 justify-end">
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowEligibility(false)}
-                        className="h-auto font-bold text-xs uppercase tracking-wider py-3 px-6 rounded-xl border-[var(--aur-border)] dark:border-[var(--aur-border)] bg-transparent dark:bg-transparent text-[var(--aur-text-secondary)] hover:text-[var(--aur-text)] hover:bg-[var(--aur-surface-hover)] dark:hover:bg-[var(--aur-surface-hover)] transition-all"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          setShowEligibility(false);
-                          setEligibilityResult({
-                            chance: Math.floor(Math.random() * 40) + 50, // Mock percentage between 50-90%
-                            message: "Your academic profile is competitive. To maximize your chances, focus on highlighting your extracurricular achievements and securing strong letters of recommendation."
-                          });
-                        }}
-                        className="h-auto border-0 bg-[var(--aur-text)] hover:bg-[var(--aur-text)] text-[var(--background)] hover:opacity-80 font-bold text-xs uppercase tracking-wider py-3 px-8 rounded-xl transition-all shadow-md"
-                      >
-                        Analyze Profile
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {eligibilityResult && (
-                  <div className="animate-fadeIn mt-6 pt-6 border-t border-[var(--aur-border)] relative z-10 flex flex-col md:flex-row gap-8 items-center">
-                    <div className="relative w-32 h-32 shrink-0 flex items-center justify-center">
-                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="8" className="text-[var(--aur-surface-2)]" />
-                        <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="8" strokeDasharray={`${eligibilityResult.chance * 2.83} 283`} className="text-[#10b981]" strokeLinecap="round" />
-                      </svg>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-3xl font-black text-[var(--aur-text)]">{eligibilityResult.chance}%</span>
-                      </div>
-                    </div>
-                    <div className="flex-1 text-center md:text-left">
-                      <h4 className="font-bold text-lg text-[var(--aur-text)] mb-2">Estimated Admission Chance</h4>
-                      <p className="text-[var(--aur-text-secondary)] text-sm leading-relaxed mb-4">{eligibilityResult.message}</p>
-                      <Button
-                        onClick={() => {
-                          setEligibilityResult(null);
-                          setShowEligibility(true);
-                        }}
-                        className="h-auto text-[11px] font-bold uppercase tracking-wider text-[#10b981] hover:text-white bg-[#10b981]/10 hover:bg-[#10b981] px-5 py-2.5 rounded-lg transition-all border-[#10b981]/20 gap-2"
-                      >
-                        Recalculate <ArrowLeft className="size-3 rotate-180" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* ── Languages of Instruction ── */}

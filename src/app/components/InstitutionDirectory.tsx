@@ -1,9 +1,10 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { Search, MapPin, Lock, ChevronRight } from "lucide-react";
-import { University } from "../data";
+import React, { useEffect, useMemo, useState } from "react";
+import { Search, MapPin, Lock, ChevronLeft, ChevronRight } from "lucide-react";
+import type { University } from "../types";
+import { fetchUniversityPage, UNIVERSITY_PAGE_SIZE } from "../lib/universities";
 import { useSidebar } from "./navigation/SidebarContext";
 import { useUniversityData } from "./data/UniversityDataProvider";
 import { useAuthGate } from "./auth/AuthGate";
@@ -17,75 +18,85 @@ const COUNTRY_FLAGS: Record<string, string> = {
 
 interface Props { onUniversitySelect: (id: string) => void; }
 
-function UniversityCard({ uni, rank, onClick }: { uni: University; rank: number; onClick: () => void }) {
+function getPaginationItems(currentPage: number, totalPages: number) {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  if (currentPage <= 4) return [1, 2, 3, 4, 5, "end-gap", totalPages];
+  if (currentPage >= totalPages - 3) {
+    return [1, "start-gap", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+  }
+  return [1, "start-gap", currentPage - 1, currentPage, currentPage + 1, "end-gap", totalPages];
+}
+
+function UniversityCard({ uni, rank, onClick }: { uni: University; rank: number | null; onClick: () => void }) {
   return (
-    <div
+    <button
+      type="button"
       onClick={onClick}
-      className="group bg-[var(--aur-surface)] border border-[var(--aur-border)] hover:border-[var(--aur-border-strong)] rounded-xl overflow-hidden cursor-pointer transition-all duration-300 shadow-[var(--aur-shadow-sm)] hover:shadow-[var(--aur-shadow)] hover:-translate-y-1 flex flex-col h-full"
+      aria-label={`View ${uni.name}`}
+      className="group flex h-full w-full flex-col overflow-hidden rounded-[18px] border border-slate-200 bg-white text-left shadow-[0_8px_30px_rgba(15,35,64,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-[#1A365D]/30 hover:shadow-[0_18px_45px_rgba(15,35,64,0.13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A365D] focus-visible:ring-offset-2"
     >
-      {/* Top Image Section */}
-      <div className="relative h-44 w-full bg-slate-100 overflow-hidden">
+      <div className="relative h-36 w-full shrink-0 overflow-hidden bg-[#e8eef5]">
         {uni.campusPhoto && (
           <img
             src={uni.campusPhoto}
-            alt={`${uni.name} Campus`}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            alt={`${uni.name} campus`}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.035]"
             loading="lazy"
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/30 via-transparent to-transparent" />
-        
-        {/* Rank Badge */}
-        <div className="absolute top-3 left-3 px-2.5 py-1 rounded-md bg-[var(--aur-navy)]/90 text-white font-mono text-[11px] font-bold shadow-sm backdrop-blur-sm">
-          #{rank}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#102a4c]/55 via-transparent to-[#102a4c]/10" />
+
+        <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-md bg-[#132f55]/95 px-2.5 py-1.5 text-white shadow-sm backdrop-blur-sm">
+          <span className="text-[8px] font-bold uppercase tracking-[0.16em] text-white/60">AUR</span>
+          <span className="font-mono text-xs font-bold">
+            {rank ? `#${rank}` : "Unranked"}
+          </span>
         </div>
 
-        {/* Med Badge */}
         {uni.hasMedicine && (
-          <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold text-[9px] uppercase tracking-wider shadow-sm">
-            Med
+          <div className="absolute right-3 top-3 rounded-md border border-white/25 bg-white/90 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-rose-700 shadow-sm backdrop-blur-sm">
+            Medicine
           </div>
         )}
 
-        {/* University Logo - Bottom Left */}
         {uni.logo && (
-          <div className="absolute bottom-3 left-3 h-12 w-12 bg-white rounded-lg shadow-md overflow-hidden border border-slate-200 flex items-center justify-center">
+          <div className="absolute bottom-3 left-3 flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border-2 border-white bg-white p-1 shadow-lg">
             <img
               src={uni.logo}
-              alt={`${uni.name} Logo`}
-              className="w-full h-full object-cover"
+              alt=""
+              className="h-full w-full object-contain"
               loading="lazy"
             />
           </div>
         )}
       </div>
 
-      {/* Info Section */}
-      <div className="p-5 flex-1 flex flex-col">
-        {/* Name + location */}
+      <div className="flex flex-1 flex-col p-5">
         <div>
-          <h3 className="aur-section-title text-[17px] group-hover:text-[var(--aur-navy)] transition-colors leading-snug line-clamp-2">
+          <h3 className="line-clamp-2 min-h-[2.75rem] font-serif text-[18px] font-bold leading-snug text-[#132f55] transition-colors group-hover:text-[#0b2445]">
             {uni.name}
           </h3>
-          <div className="mt-1.5 flex items-center gap-2 text-[13px] text-slate-500">
+          <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
             <span className="inline-flex items-center gap-1 font-medium">
-              <MapPin className="h-3.5 w-3.5 text-slate-400" />
+              <MapPin className="h-3.5 w-3.5 text-[#52709a]" />
               {uni.location}
             </span>
             {typeof uni.isPublic === "boolean" && (
               <>
                 <span className="h-1 w-1 rounded-full bg-slate-300" />
-                <span className="text-[11px] font-semibold text-slate-400">{uni.isPublic ? "Public" : "Private"}</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{uni.isPublic ? "Public" : "Private"}</span>
               </>
             )}
           </div>
         </div>
 
-        {/* Subject chips */}
         {uni.subjects.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {uni.subjects.slice(0, 2).map((s) => (
-              <span key={s} className="rounded-full bg-[var(--aur-surface-2)] px-2 py-0.5 text-[10px] font-semibold text-[var(--aur-text-secondary)]">
+              <span key={s} className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-semibold text-slate-600">
                 {s}
               </span>
             ))}
@@ -95,44 +106,58 @@ function UniversityCard({ uni, rank, onClick }: { uni: University; rank: number;
           </div>
         )}
 
-        {/* Key metrics — real 0-100 scores */}
-        <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+        <div className="mt-4 grid grid-cols-2 divide-x divide-slate-200 border-y border-slate-200 py-3 [&>*:first-child]:pl-0 [&>*:last-child]:pr-0">
           <Metric label="Academic" value={uni.academicReputation ?? uni.research} />
           <Metric label="Careers" value={uni.employerReputation ?? uni.employability} />
-          <Metric label="Intl" value={uni.intlStudents} />
         </div>
 
-        {/* Footer — overall score */}
-        <div className="mt-4 flex items-end justify-between border-t border-slate-100 pt-3">
+        <div className="mt-5 flex items-end justify-between border-t border-slate-200 pt-4">
           <div>
-            <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Overall</div>
+            <div className="text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400">Overall score</div>
             <div className="mt-0.5 flex items-baseline gap-1">
-              <span className="text-[22px] font-extrabold leading-none text-[var(--aur-navy)] font-mono">{uni.overall.toFixed(1)}</span>
+              <span className="font-mono text-[24px] font-extrabold leading-none text-[#132f55]">{uni.overall.toFixed(1)}</span>
               <span className="text-[11px] font-bold text-slate-400">/100</span>
             </div>
           </div>
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-[var(--aur-navy)] group-hover:gap-2 transition-all">
-            View <ChevronRight className="h-3.5 w-3.5" />
+          <span className="inline-flex items-center gap-1 rounded-full bg-[#132f55] px-3 py-2 text-[9px] font-bold uppercase tracking-[0.12em] text-white transition-colors group-hover:bg-[#0b2445]">
+            Profile <ChevronRight className="h-3 w-3" />
           </span>
         </div>
+      </div>
+    </button>
+  );
+}
+
+function Metric({ label, value }: { label: string; value?: number }) {
+  const v = typeof value === "number" ? Math.round(value) : null;
+  return (
+    <div className="px-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">{label}</span>
+        <span className="flex items-baseline gap-0.5 font-mono text-lg font-extrabold leading-none text-[#132f55]">
+          {v ?? "—"}
+          {v !== null && <span className="text-[8px] font-semibold text-slate-400">/100</span>}
+        </span>
+      </div>
+      <div className="mt-2.5 h-0.5 overflow-hidden bg-slate-200">
+        <div
+          className="h-full bg-[#d5a021] transition-[width] duration-500"
+          style={{ width: `${Math.max(0, Math.min(100, v ?? 0))}%` }}
+        />
       </div>
     </div>
   );
 }
 
-/** Compact labeled metric (0-100) shown in the directory card. */
-function Metric({ label, value }: { label: string; value?: number }) {
-  const v = typeof value === "number" ? Math.round(value) : null;
-  return (
-    <div className="rounded-lg bg-[var(--aur-surface-2)] py-1.5">
-      <div className="text-[15px] font-bold leading-none text-[var(--aur-text)] font-mono">{v ?? "—"}</div>
-      <div className="mt-1 text-[9px] font-bold uppercase tracking-wider text-slate-400">{label}</div>
-    </div>
-  );
-}
-
 export default function InstitutionDirectory({ onUniversitySelect }: Props) {
-  const { universities, loading, error } = useUniversityData();
+  const {
+    universities,
+    totalCount,
+    totalCountKnown,
+    loading,
+    hasMore,
+    error,
+  } = useUniversityData();
   const { isAuthenticated, promptSignIn } = useAuthGate();
   const ALL_COUNTRIES = useMemo(
     () => ["All", ...Array.from(new Set(universities.map((u) => u.location))).sort()],
@@ -141,9 +166,45 @@ export default function InstitutionDirectory({ onUniversitySelect }: Props) {
   const { searchQuery: search, setSearchQuery: setSearch } = useSidebar();
   const [country, setCountry] = useState("All");
   const [medOnly, setMedOnly] = useState(false);
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageUniversities, setPageUniversities] = useState<University[] | null>(null);
+  const [pageLoading, setPageLoading] = useState(false);
+  const [pageError, setPageError] = useState<string | null>(null);
+  const directoryUniversities = pageUniversities ?? universities;
+
+  useEffect(() => {
+    if (pageIndex === 0) setPageUniversities(universities);
+  }, [pageIndex, universities]);
+
+  const goToPage = async (nextPageIndex: number) => {
+    if (pageLoading || nextPageIndex === pageIndex || nextPageIndex < 0) return;
+
+    setPageLoading(true);
+    setPageError(null);
+    try {
+      const offset = nextPageIndex * UNIVERSITY_PAGE_SIZE;
+      const page = await fetchUniversityPage(
+        offset,
+        UNIVERSITY_PAGE_SIZE,
+        offset,
+      );
+      setPageUniversities(page.universities);
+      setPageIndex(nextPageIndex);
+      setSearch("");
+      setCountry("All");
+      setMedOnly(false);
+      document
+        .getElementById("institution-directory-results")
+        ?.scrollIntoView({ block: "start", behavior: "smooth" });
+    } catch {
+      setPageError("That page could not be loaded. Please try again.");
+    } finally {
+      setPageLoading(false);
+    }
+  };
 
   const filtered = useMemo(() =>
-    universities.filter((u) => {
+    directoryUniversities.filter((u) => {
       const q = search.toLowerCase();
       return (
         (!search || u.name.toLowerCase().includes(q) || u.location.toLowerCase().includes(q)) &&
@@ -151,13 +212,25 @@ export default function InstitutionDirectory({ onUniversitySelect }: Props) {
         (!medOnly || u.hasMedicine)
       );
     }),
-    [universities, search, country, medOnly]
+    [directoryUniversities, search, country, medOnly]
   );
 
-  // Preview gating: logged-out visitors see at most PREVIEW_LIMIT institutions.
+  // Only the loaded Firestore pages are filtered in the browser.
   const totalMatches = filtered.length;
-  const isPreviewCapped = !isAuthenticated && totalMatches > PREVIEW_LIMIT;
+  const isPreviewCapped =
+    !isAuthenticated && (hasMore || totalCount > universities.length);
   const visible = isPreviewCapped ? filtered.slice(0, PREVIEW_LIMIT) : filtered;
+  const remainingCount = Math.max(totalCount - universities.length, 0);
+  const totalLabel = totalCountKnown ? String(totalCount) : `${universities.length}+`;
+  const totalPages = totalCountKnown
+    ? Math.max(1, Math.ceil(totalCount / UNIVERSITY_PAGE_SIZE))
+    : 1;
+  const paginationItems = getPaginationItems(pageIndex + 1, totalPages);
+  const pageStart = pageIndex * UNIVERSITY_PAGE_SIZE + 1;
+  const pageEnd = Math.min(
+    pageStart + directoryUniversities.length - 1,
+    totalCount,
+  );
 
   return (
     <div className="w-full min-h-screen bg-[var(--background)] pb-12">
@@ -169,10 +242,10 @@ export default function InstitutionDirectory({ onUniversitySelect }: Props) {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
             <div className="border-l-[3px] border-[var(--aur-accent-muted)] pl-4">
               <h1 className="font-serif text-2xl md:text-3xl font-bold text-white">Institution Directory</h1>
-              <p className="text-[12px] text-white/60 mt-1">{universities.length} universities across Asia</p>
+              <p className="text-[12px] text-white/60 mt-1">{totalLabel} universities across Asia</p>
             </div>
             <span className="text-[11px] text-white font-bold bg-white/10 border border-white/15 px-3 py-1.5 rounded-lg self-start md:self-auto backdrop-blur-sm">
-              {filtered.length} result{filtered.length !== 1 ? "s" : ""}
+              {filtered.length} loaded result{filtered.length !== 1 ? "s" : ""}
             </span>
           </div>
 
@@ -219,10 +292,15 @@ export default function InstitutionDirectory({ onUniversitySelect }: Props) {
       </div>
 
       {/* ── CARD GRID ── */}
-      <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-8">
+      <div id="institution-directory-results" className="max-w-[1600px] mx-auto scroll-mt-20 px-4 md:px-8 py-8">
         {error && !loading && (
           <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Live rankings couldn&apos;t be loaded right now — showing a bundled sample instead. Please try again later.
+            Live rankings couldn&apos;t be loaded right now. Please try again later.
+          </div>
+        )}
+        {pageError && (
+          <div className="mb-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+            {pageError}
           </div>
         )}
         {loading ? (
@@ -253,16 +331,92 @@ export default function InstitutionDirectory({ onUniversitySelect }: Props) {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {visible.map((uni, i) => (
+            <div
+              aria-busy={pageLoading}
+              className={`grid grid-cols-1 gap-6 transition-opacity sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${
+                pageLoading ? "pointer-events-none opacity-45" : "opacity-100"
+              }`}
+            >
+              {visible.map((uni) => (
                 <UniversityCard
                   key={uni.id}
                   uni={uni}
-                  rank={i + 1}
+                  rank={uni.history[0] ?? null}
                   onClick={() => onUniversitySelect(uni.id)}
                 />
               ))}
             </div>
+
+            {isAuthenticated && totalPages > 1 && (
+              <div className="mt-10 border-t border-slate-200 pt-6">
+                <div className="mb-4 flex items-center justify-between sm:mb-0">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                    Showing <span className="text-[#1A365D]">{pageStart}–{pageEnd}</span> of{" "}
+                    <span className="text-[#1A365D]">{totalCount}</span>
+                  </p>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400 sm:hidden">
+                    Page {pageIndex + 1} / {totalPages}
+                  </p>
+                </div>
+
+                <nav
+                  aria-label="Institution directory pagination"
+                  className="flex items-center justify-between gap-3 sm:-mt-6 sm:justify-end"
+                >
+                  <button
+                    type="button"
+                    onClick={() => void goToPage(pageIndex - 1)}
+                    disabled={pageIndex === 0 || pageLoading}
+                    aria-label="Previous page"
+                    className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-[#1A365D] shadow-sm transition hover:border-[#1A365D]/30 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d5a021] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    <span className="hidden sm:inline">Previous</span>
+                  </button>
+
+                  <div className="hidden items-center gap-1 sm:flex">
+                    {paginationItems.map((item) =>
+                      typeof item === "string" ? (
+                        <span
+                          key={item}
+                          aria-hidden="true"
+                          className="flex h-10 w-8 items-center justify-center text-sm font-bold text-slate-400"
+                        >
+                          …
+                        </span>
+                      ) : (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => void goToPage(item - 1)}
+                          disabled={pageLoading}
+                          aria-current={item === pageIndex + 1 ? "page" : undefined}
+                          aria-label={`Page ${item}`}
+                          className={`relative h-10 min-w-10 rounded-lg px-3 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d5a021] ${
+                            item === pageIndex + 1
+                              ? "bg-[#1A365D] text-white shadow-[0_7px_18px_rgba(26,54,93,0.22)] after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-[#f3b90b]"
+                              : "border border-transparent bg-white text-slate-600 hover:border-slate-200 hover:text-[#1A365D]"
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      ),
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => void goToPage(pageIndex + 1)}
+                    disabled={pageIndex >= totalPages - 1 || pageLoading}
+                    aria-label="Next page"
+                    className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-[#1A365D] shadow-sm transition hover:border-[#1A365D]/30 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d5a021] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <span className="hidden sm:inline">Next</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </nav>
+              </div>
+            )}
 
             {isPreviewCapped && (
               <div className="relative mt-8 overflow-hidden rounded-2xl border border-[#1A365D]/15 bg-gradient-to-b from-white to-[#1A365D]/[0.06] px-6 py-10 text-center">
@@ -270,17 +424,17 @@ export default function InstitutionDirectory({ onUniversitySelect }: Props) {
                   <Lock className="h-6 w-6" />
                 </div>
                 <h3 className="font-serif text-xl font-bold text-[#1A365D]">
-                  {totalMatches - PREVIEW_LIMIT} more institutions
+                  {totalCountKnown ? `${remainingCount} more institutions` : "More institutions available"}
                 </h3>
                 <p className="mx-auto mt-2 mb-6 max-w-sm text-sm leading-relaxed text-slate-500">
-                  You&apos;re viewing {PREVIEW_LIMIT} of {totalMatches}. Create a free account to explore the full directory, compare institutions, and save your shortlist.
+                  You&apos;re viewing {universities.length} of {totalLabel}. Create a free account to explore more of the directory, compare institutions, and save your shortlist.
                 </p>
                 <button
                   type="button"
-                  onClick={() => promptSignIn(`Sign in to browse all ${totalMatches} institutions.`)}
+                  onClick={() => promptSignIn("Sign in to browse the full institution directory.")}
                   className="rounded-lg bg-[#1A365D] px-6 py-3 text-sm font-bold text-white shadow-md transition-colors hover:bg-blue-900"
                 >
-                  Unlock all {totalMatches} institutions
+                  {totalCountKnown ? `Unlock all ${totalCount} institutions` : "Unlock full directory"}
                 </button>
               </div>
             )}

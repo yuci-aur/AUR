@@ -19,7 +19,7 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-import type { University } from "../data";
+import type { University } from "../types";
 import { useUniversityData } from "./data/UniversityDataProvider";
 import { useSidebar } from "./navigation/SidebarContext";
 import { Input } from "@/components/ui/input";
@@ -426,7 +426,6 @@ export default function UniversitiesList({
                 {/* ── Image Banner ── */}
                 <div className="relative h-44 overflow-hidden bg-[var(--aur-surface-2)]">
                   {uni.campusPhoto && (
-                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={uni.campusPhoto}
                       alt={uni.name}

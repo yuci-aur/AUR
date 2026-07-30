@@ -110,8 +110,7 @@ function Chip({ icon: Icon, value, label, delay, className = "" }:
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function Login({ initialMode = "login" }: { initialMode?: "login" | "signup" }) {
   const { handleViewChange} = useSidebar();
-  const { universities, loading: dataLoading } = useUniversityData();
-  const countryCount = new Set(universities.map((u) => u.location)).size;
+  const { totalCount, totalCountries, loading: dataLoading } = useUniversityData();
 
   const [isLogin, setIsLogin]             = useState(initialMode === "login");
   const [dir, setDir]                     = useState(1);
@@ -163,8 +162,6 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
     accountType?: "student",
   ) => {
     await saveUserProfile(user, name, accountType);
-    window.dispatchEvent(new Event("aur-auth-change"));
-    localStorage.setItem("aur_logged_in", "true");
     handleViewChange("home");
   };
 
@@ -257,8 +254,8 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
 
   // Real dataset facts — the same trust numbers the homepage cites.
   const chips = [
-    { icon: BarChart3, value: dataLoading ? "—" : universities.length.toLocaleString(), label: "Universities ranked", delay: 0.2, cls: "lp-chip-1" },
-    { icon: Network,   value: dataLoading ? "—" : String(countryCount),                 label: "Countries & territories", delay: 0.4, cls: "lp-chip-2" },
+    { icon: BarChart3, value: dataLoading || !totalCount ? "—" : totalCount.toLocaleString(), label: "Universities ranked", delay: 0.2, cls: "lp-chip-1" },
+    { icon: Network,   value: dataLoading || !totalCountries ? "—" : String(totalCountries),  label: "Countries & territories", delay: 0.4, cls: "lp-chip-2" },
     { icon: Activity,  value: "11",                                                     label: "Weighted indicators", delay: 0.6, cls: "lp-chip-3" },
   ];
 

@@ -106,7 +106,12 @@ export default function Homepage({
     [isAuthenticated, onViewChange]
   );
 
-  const { universities, loading: universitiesLoading } = useUniversityData();
+  const {
+    universities,
+    totalCount,
+    totalCountries,
+    loading: universitiesLoading,
+  } = useUniversityData();
   const { searchQuery, setSearchQuery } = useSidebar();
   const [suggestions, setSuggestions] = useState<{ universities: University[]; articles: Article[] }>({ universities: [], articles: [] });
   const [showSugg, setShowSugg] = useState(false);
@@ -212,7 +217,6 @@ export default function Homepage({
   const top10 = useMemo(() => universities.slice(0, 10), [universities]);
   const top10Loading = top10.length === 0 && universitiesLoading;
   const countries = useMemo(() => getCountryStats(universities), [universities]);
-  const nCountries = useMemo(() => new Set(universities.map(u => u.location)).size, [universities]);
 
   return (
     <div className="ref-home flex-grow w-full relative">
@@ -268,9 +272,9 @@ export default function Homepage({
             <div className="rh-hero__edition">2026 Official Edition</div>
             <h1 className="rh-hero__title">Asia University Rankings</h1>
             <p className="rh-hero__sub">
-              {universitiesLoading
+              {universitiesLoading || !totalCount || !totalCountries
                 ? "Compare universities across Asia on research, teaching, employability, and internationalization."
-                : `Compare ${universities.length} institutions across ${nCountries} countries on research, teaching, employability, and internationalization.`}
+                : `Compare ${totalCount.toLocaleString()} institutions across ${totalCountries} countries on research, teaching, employability, and internationalization.`}
             </p>
 
             <div className="rh-hero-search" ref={ref}>
@@ -341,8 +345,10 @@ export default function Homepage({
       {/* ═══ STATS STRIP ═══ */}
       <div className="rh-stats">
         {[
-          { num: universities.length || null, loading: universitiesLoading, label: "Universities Ranked" },
-          { num: nCountries || null, loading: universitiesLoading, label: "Countries & Territories" },
+          // Dataset-wide totals — `universities` only holds the loaded pages,
+          // so counting it would report the 20-item page size.
+          { num: totalCount ? totalCount.toLocaleString() : null, loading: universitiesLoading, label: "Universities Ranked" },
+          { num: totalCountries || null, loading: universitiesLoading, label: "Countries & Territories" },
           { num: "5", label: "Performance Pillars" },
           { num: "2026", label: "Edition Year" },
         ].map(s => (

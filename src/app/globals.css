@@ -645,6 +645,20 @@ button:not([class*="rounded"]) {
   background: var(--aur-text-muted);
 }
 
+/* Opt-out for strips that must stay swipeable on narrow screens without
+   showing a track (e.g. the university profile tab bar). The global
+   ::-webkit-scrollbar rule above styles every scroller, so overflow-x-auto
+   containers need this to suppress it. */
+.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge/IE */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
 /* Micro-animations â€” GPU-only (opacity + transform never trigger layout) */
 @keyframes fadeInUp {
   from {

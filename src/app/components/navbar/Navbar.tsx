@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { Search, Bell, Menu, X, ChevronDown, User, Shield, LogOut } from "lucide-react";
+import { Menu, X, ChevronDown, User, Shield, Settings, LogOut } from "lucide-react";
 import { BrandLogo } from "../BrandLogo";
+import { useRouter } from "next/navigation";
 import { useSidebar } from "../navigation/SidebarContext";
-import { useToast } from "../feedback/ToastContext";
 import { TOP_NAV_LINKS } from "../navigation/config";
 import { authenticatedFetch } from "../../lib/authenticated-fetch";
 import { firebaseAuth } from "../../lib/firebase";
@@ -18,21 +18,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type NotificationItem = {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  is_read: boolean;
-  created_at: string;
-};
-
 type AuthenticatedUser = {
   id: string;
   email: string;
   first_name: string;
   last_name: string;
-  role: string;
+  isAdmin: boolean;
   profile_photo: string | null;
 };
 
@@ -49,24 +40,16 @@ export default function Navbar({
   onSignUp,
   onSignOut,
 }: NavbarProps) {
-  const { showToast } = useToast();
+  const router = useRouter();
   const {
     isMobileOpen,
     setIsMobileOpen,
     activeView,
     handleViewChange,
-    filters,
-    setFilters,
-    searchQuery,
-    setSearchQuery,
   } = useSidebar();
 
-  const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(null);
   const [avatarFailed, setAvatarFailed] = useState(false);
-
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [notifLoading, setNotifLoading] = useState(true);
 
   // Fetch the real logged-in user's profile
   useEffect(() => {
@@ -83,12 +66,16 @@ export default function Navbar({
           profile?: Record<string, unknown>;
         };
         const data = payload.profile ?? {};
+        // Admin rights come from the Firebase `admin` custom claim (the same
+        // check the admin API enforces) — there is no `role` column on
+        // aur_user_profiles, so reading one would never surface the console.
+        const tokenResult = await user.getIdTokenResult();
         setCurrentUser({
           id: user.uid,
           email: user.email ?? String(data.email ?? ""),
           first_name: String(data.first_name ?? user.displayName?.split(" ")[0] ?? "AUR"),
           last_name: String(data.last_name ?? user.displayName?.split(" ").slice(1).join(" ") ?? ""),
-          role: String(data.role ?? "user"),
+          isAdmin: tokenResult.claims.admin === true,
           profile_photo:
             typeof data.profile_photo === "string"
               ? data.profile_photo
@@ -112,56 +99,6 @@ export default function Navbar({
   useEffect(() => {
     setAvatarFailed(false);
   }, [currentUser?.profile_photo]);
-
-  // Fetch notifications once on mount (for the unread badge) and refresh when
-  // the menu is opened; closing the menu does not refetch.
-  const hasFetchedNotifs = useRef(false);
-  useEffect(() => {
-    if (hasFetchedNotifs.current && !showNotifMenu) return;
-    hasFetchedNotifs.current = true;
-
-    async function fetchNotifications() {
-      if (!firebaseAuth.currentUser) {
-        setNotifications([]);
-        setNotifLoading(false);
-        return;
-      }
-
-      setNotifLoading(true);
-      try {
-        const response = await fetch("/api/data/misc?resource=notifications");
-        if (!response.ok) throw new Error("Notifications unavailable.");
-        setNotifications((await response.json()) as NotificationItem[]);
-      } catch {
-        setNotifications([]);
-      } finally {
-        setNotifLoading(false);
-      }
-    }
-    fetchNotifications();
-
-  }, [showNotifMenu]);
-
-  function timeAgo(dateString: string) {
-    const diffMs = Date.now() - new Date(dateString).getTime();
-    const mins = Math.floor(diffMs / 60000);
-    if (mins < 1) return "just now";
-    if (mins < 60) return `${mins} min${mins > 1 ? "s" : ""} ago`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
-    const days = Math.floor(hours / 24);
-    return `${days} day${days > 1 ? "s" : ""} ago`;
-  }
-
-  async function markAsRead(id: string) {
-    setNotifications((prev) =>
-      prev.map((notification) =>
-        notification.id === id ? { ...notification, is_read: true } : notification,
-      ),
-    );
-  }
-
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   const displayName = currentUser
     ? [currentUser.first_name, currentUser.last_name === "-" ? "" : currentUser.last_name].filter(Boolean).join(" ")
@@ -244,73 +181,6 @@ export default function Navbar({
               </div>
             )}
 
-            {/* Notification bell */}
-            {isAuthenticated && (
-              <div className="flex items-center gap-2">
-                <DropdownMenu onOpenChange={setShowNotifMenu}>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      aria-label="Open notifications"
-                      className="relative h-auto w-auto rounded-md border-0 p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 aria-expanded:bg-slate-100 aria-expanded:text-slate-900 transition-all duration-200"
-                    >
-                      <Bell className="size-4" />
-                      {unreadCount > 0 && (
-                        <span className="absolute top-1.5 right-1.5 flex h-1.5 w-1.5">
-                          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500" />
-                        </span>
-                      )}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="end"
-                    sideOffset={8}
-                    className="w-80 rounded-none border border-[var(--aur-border)] ring-0 bg-[var(--aur-surface)] shadow-xl p-0 py-2 text-xs text-[var(--aur-text-secondary)]"
-                  >
-                    <div className="px-4 py-2.5 border-b border-[var(--aur-border)] flex justify-between items-center">
-                      <span className="font-bold text-[var(--aur-text)] uppercase tracking-wider text-[10px]">Notifications</span>
-                      {unreadCount > 0 && (
-                        <span className="text-[10px] text-red-500 font-semibold">{unreadCount} New</span>
-                      )}
-                    </div>
-                    <div className="max-h-64 overflow-y-auto divide-y divide-[var(--aur-border)]">
-                      {notifLoading ? (
-                        <div className="px-4 py-6 text-center text-[10px] text-[var(--aur-text-muted)]">
-                          Loading...
-                        </div>
-                      ) : notifications.length === 0 ? (
-                        <div className="px-4 py-6 text-center text-[10px] text-[var(--aur-text-muted)]">
-                          No notifications yet.
-                        </div>
-                      ) : (
-                        notifications.map((n) => (
-                          <div
-                            key={n.id}
-                            onClick={() => markAsRead(n.id)}
-                            className={`px-4 py-3 hover:bg-[var(--aur-hover)] transition-colors cursor-pointer ${
-                              !n.is_read ? "bg-[var(--aur-surface-2)]" : ""
-                            }`}
-                          >
-                            <div className="flex justify-between mb-0.5">
-                              <span className="font-semibold text-[var(--aur-text)] text-[11px]">{n.title}</span>
-                              <span className="text-[9px] text-[var(--aur-text-muted)] shrink-0 ml-2">
-                                {timeAgo(n.created_at)}
-                              </span>
-                            </div>
-                            <p className="text-[10px] text-[var(--aur-text-muted)] leading-relaxed">{n.description}</p>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            )}
-
-            {/* Divider */}
-            {isAuthenticated && <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block" />}
-
             {/* Profile avatar */}
             {isAuthenticated && (
               <DropdownMenu>
@@ -351,8 +221,10 @@ export default function Navbar({
                   </div>
                   {[
                     { label: "My Profile", icon: User, action: () => handleViewChange("profile") },
-                    ...(currentUser?.role === "admin" ? [{ label: "Admin Console", icon: Shield, action: () => handleViewChange("admin") }] : []),
-                    { label: "Settings", icon: Shield, action: () => handleViewChange("settings") },
+                    // The console is a real route, not an in-app view — a
+                    // `?view=admin` push would render an empty page.
+                    ...(currentUser?.isAdmin ? [{ label: "Admin Console", icon: Shield, action: () => router.push("/admin/dashboard") }] : []),
+                    { label: "Settings", icon: Settings, action: () => handleViewChange("settings") },
                   ].map((item) => (
                     <DropdownMenuItem
                       key={item.label}
@@ -366,7 +238,6 @@ export default function Navbar({
                   <div className="border-t border-[var(--aur-border)] my-1" />
                   <DropdownMenuItem
                     onSelect={() => {
-                      localStorage.removeItem("aur_logged_in");
                       setCurrentUser(null);
                       onSignOut?.();
                     }}

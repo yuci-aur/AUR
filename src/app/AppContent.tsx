@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 import Navbar from "./components/navbar/Navbar";
@@ -16,22 +16,19 @@ import FloatingChatAssistant from "./components/FloatingChatAssistant";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import Login from "./components/Login";
 import UserDashboard from "./components/UserDashboard";
-import UniversitiesList from "./components/UniversitiesList";
 // import Methodology from "./components/Methodology";
-import Methodology from "./components/Methodology";
 import EventsAndAwards from "./components/EventsAndAwards";
 import NewsFeed from "./components/NewsFeed";
 import BlogFeed from "./components/BlogFeed";
-import BlogForm from "./components/blog/BlogForm";
 import { useSidebar } from "./components/navigation/SidebarContext";
 import { useUniversityData } from "./components/data/UniversityDataProvider";
 import type { Article } from "./types";
-import { Bookmark, ShieldAlert } from "lucide-react";
 import { signOut } from "firebase/auth";
 import DiscoveryJoinModal from "./components/DiscoveryJoinModal";
 import ProfileSection from "./components/ProfileSection";
 import { isProtectedView } from "./components/navigation/config";
 import { useAuthGate } from "./components/auth/AuthGate";
+import { useToast } from "./components/feedback/ToastContext";
 import { authenticatedFetch } from "./lib/authenticated-fetch";
 import { firebaseAuth } from "./lib/firebase";
 
@@ -40,6 +37,7 @@ export default function AppContent() {
   const searchParams = useSearchParams();
   const { universities } = useUniversityData();
   const { requireAuth, isAuthenticated, authReady } = useAuthGate();
+  const { showToast } = useToast();
 
   const {
     activeView,
@@ -55,20 +53,32 @@ export default function AppContent() {
   } = useSidebar();
 
 
-const [savedUniIds, setSavedUniIds] = useState<string[]>([]);
+  const [savedUniIds, setSavedUniIds] = useState<string[]>([]);
 
-// Load real bookmarks on mount (only if logged in)
-useEffect(() => {
-  const user = firebaseAuth.currentUser;
-  if (!user) {
-    setSavedUniIds([]);
-    return;
-  }
-  authenticatedFetch("/api/account/bookmarks")
-    .then((response) => response.json() as Promise<string[]>)
-    .then(setSavedUniIds)
-    .catch((err) => console.error("Failed to load bookmarks", err));
-}, [isAuthenticated]);
+  // Load the signed-in user's bookmarks. Waits for `authReady` because
+  // `firebaseAuth.currentUser` is still null while the SDK restores the
+  // session, and clears the list on sign-out so the next user never inherits
+  // the previous one's shortlist.
+  useEffect(() => {
+    if (!authReady) return;
+
+    if (!isAuthenticated) {
+      setSavedUniIds([]);
+      return;
+    }
+
+    let active = true;
+    authenticatedFetch("/api/account/bookmarks")
+      .then((response) => response.json() as Promise<string[]>)
+      .then((ids) => {
+        if (active) setSavedUniIds(ids);
+      })
+      .catch((err) => console.error("Failed to load bookmarks", err));
+
+    return () => {
+      active = false;
+    };
+  }, [authReady, isAuthenticated]);
   // Derived state from URL (synced with context)
   const requestedView =
     activeView === "institution-register"
@@ -85,31 +95,36 @@ useEffect(() => {
   const viewKey = view + (id ?? "");
 
   const handleToggleSave = async (uniId: string) => {
-  const user = firebaseAuth.currentUser;
-  if (!user) {
-    requireAuth(undefined, "Sign in to save universities to your shortlist.");
-    return;
-  }
-
-  const isCurrentlySaved = savedUniIds.includes(uniId);
-  try {
-    if (isCurrentlySaved) {
-      await authenticatedFetch(
-        `/api/account/bookmarks?universityId=${encodeURIComponent(uniId)}`,
-        { method: "DELETE" },
-      );
-      setSavedUniIds((prev) => prev.filter((id) => id !== uniId));
-    } else {
-      await authenticatedFetch("/api/account/bookmarks", {
-        method: "POST",
-        body: JSON.stringify({ universityId: uniId }),
-      });
-      setSavedUniIds((prev) => [...prev, uniId]);
+    if (!isAuthenticated) {
+      requireAuth(undefined, "Sign in to save universities to your shortlist.");
+      return;
     }
-  } catch (err) {
-    console.error("Failed to toggle bookmark", err);
-  }
-};
+
+    const isCurrentlySaved = savedUniIds.includes(uniId);
+    try {
+      if (isCurrentlySaved) {
+        await authenticatedFetch(
+          `/api/account/bookmarks?universityId=${encodeURIComponent(uniId)}`,
+          { method: "DELETE" },
+        );
+        setSavedUniIds((prev) => prev.filter((id) => id !== uniId));
+      } else {
+        await authenticatedFetch("/api/account/bookmarks", {
+          method: "POST",
+          body: JSON.stringify({ universityId: uniId }),
+        });
+        setSavedUniIds((prev) => [...prev, uniId]);
+      }
+    } catch (err) {
+      console.error("Failed to toggle bookmark", err);
+      showToast(
+        isCurrentlySaved
+          ? "Could not remove this university from your shortlist. Please try again."
+          : "Could not save this university to your shortlist. Please try again.",
+        "warning",
+      );
+    }
+  };
 
   const handleUniversitySelect = (uniId: string) => {
     requireAuth(() => {
@@ -147,8 +162,6 @@ useEffect(() => {
 
   const handleSignOut = async () => {
     await signOut(firebaseAuth);
-    localStorage.removeItem("aur_logged_in");
-    window.dispatchEvent(new Event("aur-auth-change"));
     router.push("?view=login&mode=login");
   };
 
@@ -182,14 +195,7 @@ useEffect(() => {
           style={{ isolation: "isolate" }}
         >
           <>
-            <div
-              key={viewKey}
-              
-              
-              
-              
-              className="flex flex-col flex-grow"
-            >
+            <div key={viewKey} className="flex flex-col flex-grow">
           {view === "home" && (
             <Homepage
               onSearchSubmit={(q) => setSearchQuery(q)}
@@ -200,6 +206,7 @@ useEffect(() => {
             />
           )}
 
+          {/* "countries" is a legacy alias kept so older links still resolve. */}
           {(view === "rankings" || view === "countries") && (
             <RankingsEngine
               searchQuery={searchQuery}
@@ -236,14 +243,13 @@ useEffect(() => {
           {/* Blog (in-app feed) */}
           {view === "blog" && <BlogFeed />}
 
-          {/* Methodology */}
+          {/* Methodology — disabled. Re-enable this line and the nav entries in
+              navigation/config.ts + Footer.tsx together, or the links dead-end. */}
           {/* {view === "methodology" && <Methodology />} */}
 
-          {/* Events & Awards */}
-          {view === "events" && <EventsAndAwards />}
-
-          {/* Faculty & Student Awards */}
-          {view === "faculty-awards" && <EventsAndAwards />}
+          {/* Events & Awards. "faculty-awards" is kept as an alias so older
+              bookmarked links still resolve to the same showcase. */}
+          {(view === "events" || view === "faculty-awards") && <EventsAndAwards />}
 
           {/* Login View */}
           {view === "login" && (
@@ -258,6 +264,7 @@ useEffect(() => {
               savedUniversities={savedUniversities}
               onUniversitySelect={handleUniversitySelect}
               onNavigateToRankings={() => handleViewChange("rankings")}
+              onNavigateToProfile={() => handleViewChange("profile")}
               onSignOut={handleSignOut}
             />
           )}

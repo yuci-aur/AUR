@@ -4,6 +4,7 @@ import BlogForm from "../../components/blog/BlogForm";
 import { ToastProvider } from "../../components/feedback/ToastContext";
 import { SidebarProvider } from "../../components/navigation/SidebarContext";
 import { UniversityDataProvider } from "../../components/data/UniversityDataProvider";
+import { AuthGateProvider } from "../../components/auth/AuthGate";
 
 export default function CreateBlogPage() {
   return (
@@ -14,11 +15,13 @@ export default function CreateBlogPage() {
     }>
       <ToastProvider>
         <SidebarProvider>
-          <UniversityDataProvider>
-            <AppLayout>
-              <BlogForm />
-            </AppLayout>
-          </UniversityDataProvider>
+          <AuthGateProvider>
+            <UniversityDataProvider>
+              <AppLayout>
+                <BlogForm />
+              </AppLayout>
+            </UniversityDataProvider>
+          </AuthGateProvider>
         </SidebarProvider>
       </ToastProvider>
     </React.Suspense>

@@ -11,22 +11,22 @@ import {
   ArrowRight,
 } from "lucide-react";
 
+/**
+ * Only destinations that actually resolve are listed. Entries without a target
+ * used to render as italic text behind a clickable-looking arrow, which read as
+ * broken links — unbuilt sections are simply omitted until they exist.
+ */
 const exploreLinks = [
   { label: "Universities", view: "universities" },
-  { label: "Countries", view: "countries" },
-  { label: "Scholarships", missing: true },
   { label: "Rankings", view: "rankings" },
   { label: "Compare Universities", view: "saved" },
-  { label: "Trending Universities", missing: true },
+  { label: "Events & Awards", view: "events" },
 ];
 
 const resourcesLinks = [
-  { label: "Admission Guide", missing: true },
-  { label: "Visa Information", missing: true },
-  { label: "Student Life", missing: true },
-  { label: "FAQ", missing: true },
-  { label: "Blog", missing: true },
-  { label: "Contact", missing: true },
+  // { label: "Methodology", view: "methodology" },
+  { label: "Blog", view: "blog" },
+  { label: "News", view: "news" },
 ];
 
 const socialLinks = [
@@ -72,13 +72,7 @@ const handleSubscribe = async (event: React.FormEvent<HTMLFormElement>) => {
 
   return (
     <footer className="mt-12 bg-white text-slate-900">
-      <div
-        
-        
-        
-        
-        className="border-t border-slate-200 bg-white px-4 sm:px-6 lg:px-8 py-12"
-      >
+      <div className="border-t border-slate-200 bg-white px-4 sm:px-6 lg:px-8 py-12">
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-1 gap-10 md:grid-cols-2 xl:grid-cols-4">
             <div className="space-y-5">
@@ -127,21 +121,14 @@ const handleSubscribe = async (event: React.FormEvent<HTMLFormElement>) => {
               <ul className="mt-6 space-y-3 text-sm text-slate-600">
                 {exploreLinks.map((item) => (
                   <li key={item.label}>
-                    {item.view ? (
-                      <button
-                        type="button"
-                        onClick={() => handleViewChange(item.view!)}
-                        className="flex w-full items-center justify-start gap-3 transition-colors duration-200 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
-                      >
-                        <ArrowRight className="h-3.5 w-3.5 text-amber-500" aria-hidden="true" />
-                        {item.label}
-                      </button>
-                    ) : (
-                      <span className="flex w-full items-center justify-start gap-3 text-slate-600 italic">
-                        <ArrowRight className="h-3.5 w-3.5 text-slate-600" aria-hidden="true" />
-                        {item.label}
-                      </span>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleViewChange(item.view)}
+                      className="flex w-full items-center justify-start gap-3 transition-colors duration-200 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                    >
+                      <ArrowRight className="h-3.5 w-3.5 text-amber-500" aria-hidden="true" />
+                      {item.label}
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -154,10 +141,14 @@ const handleSubscribe = async (event: React.FormEvent<HTMLFormElement>) => {
               <ul className="mt-6 space-y-3 text-sm text-slate-600">
                 {resourcesLinks.map((item) => (
                   <li key={item.label}>
-                    <span className="inline-flex items-center gap-3 text-slate-600 italic">
-                      <ArrowRight className="h-3.5 w-3.5 text-slate-600" aria-hidden="true" />
+                    <button
+                      type="button"
+                      onClick={() => handleViewChange(item.view)}
+                      className="flex w-full items-center justify-start gap-3 transition-colors duration-200 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                    >
+                      <ArrowRight className="h-3.5 w-3.5 text-amber-500" aria-hidden="true" />
                       {item.label}
-                    </span>
+                    </button>
                   </li>
                 ))}
               </ul>

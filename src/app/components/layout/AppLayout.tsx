@@ -1,17 +1,23 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
+import { signOut } from "firebase/auth";
 import Navbar from "../navbar/Navbar";
 import MobileMenu from "../mobile/MobileMenu";
 import FloatingChatAssistant from "../FloatingChatAssistant";
 import ComparisonDock from "../ComparisonDock";
 import { useSidebar } from "../navigation/SidebarContext";
+import { useAuthGate } from "../auth/AuthGate";
+import { firebaseAuth } from "../../lib/firebase";
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
 export default function AppLayout({ children }: AppLayoutProps) {
+  const router = useRouter();
+  const { isAuthenticated } = useAuthGate();
   const {
     selectedUniIds,
     handleRemoveCompare,
@@ -23,12 +29,30 @@ export default function AppLayout({ children }: AppLayoutProps) {
     setSelectedUniId(uniId);
   };
 
+  // Sub-routes such as /blogs render the shared chrome too, so the auth
+  // controls have to reflect the real session — without these props Navbar and
+  // MobileMenu fall back to `isAuthenticated = true` and show a signed-in
+  // avatar to logged-out visitors.
+  const openAuth = (mode: "login" | "signup") => {
+    router.push(`/?view=login&mode=${mode}`);
+  };
+
+  const handleSignOut = async () => {
+    await signOut(firebaseAuth);
+    router.push("/?view=login&mode=login");
+  };
+
   return (
     <div
       className="flex min-h-screen flex-col transition-colors duration-300"
     >
       {/* Top Navigation Bar */}
-      <Navbar />
+      <Navbar
+        isAuthenticated={isAuthenticated}
+        onLogIn={() => openAuth("login")}
+        onSignUp={() => openAuth("signup")}
+        onSignOut={handleSignOut}
+      />
 
       {/* Main Core Layout */}
       <div className="flex w-full grow mx-auto max-w-none px-0">
@@ -39,7 +63,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
       </div>
 
       {/* Mobile Responsive Navigation Drawer & Bottom Bar */}
-      <MobileMenu />
+      <MobileMenu
+        isAuthenticated={isAuthenticated}
+        onLogIn={() => openAuth("login")}
+        onSignUp={() => openAuth("signup")}
+      />
 
       <FloatingChatAssistant />
 
@@ -49,8 +77,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
         onClearAll={handleClearCompare}
         onUniversitySelect={handleUniversitySelect}
       />
-
-
     </div>
   );
 }

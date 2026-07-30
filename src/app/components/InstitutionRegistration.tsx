@@ -214,8 +214,6 @@ export default function InstitutionRegistration({
         }),
       });
 
-      localStorage.setItem("aur_logged_in", "true");
-      window.dispatchEvent(new Event("aur-auth-change"));
       setCurrentUser(user);
       setApplicationStatus("pending");
       setSubmitted(true);

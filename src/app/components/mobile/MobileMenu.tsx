@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useSidebar } from "../navigation/SidebarContext";
-import { SIDEBAR_ITEMS, NavItem } from "../navigation/config";
+import { SIDEBAR_ITEMS, NavItem, isProtectedView } from "../navigation/config";
 import FilterPanel from "../filters/FilterPanel";
 import { Button } from "@/components/ui/button";
 
@@ -112,7 +112,7 @@ export default function MobileMenu({
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {activeTab === "menu" ? (
                   <nav className="space-y-1">
-                    {SIDEBAR_ITEMS.filter((item) => isAuthenticated || !["settings", "methodology"].includes(item.view)).map((item) => {
+                    {SIDEBAR_ITEMS.filter((item) => isAuthenticated || !isProtectedView(item.view)).map((item) => {
                       const Icon = item.icon;
                       const isActive = activeView === item.view;
                       return (
@@ -146,8 +146,26 @@ export default function MobileMenu({
               </div>
 
               {/* Drawer Footer */}
-              <div className="p-4 border-t border-slate-200 dark:border-cyber-border/40 bg-slate-50 dark:bg-cyber-dark/50 text-[10px] text-center text-slate-400 uppercase tracking-widest font-mono">
-                System Version: 2026.01
+              <div className="border-t border-slate-200 dark:border-cyber-border/40 bg-slate-50 dark:bg-cyber-dark/50">
+                {!isAuthenticated && (
+                  <div className="border-b border-slate-200 p-3 dark:border-cyber-border/40">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        setIsMobileOpen(false);
+                        onLogIn?.();
+                      }}
+                      className={`flex h-auto w-full items-center justify-center gap-2 rounded-lg border border-slate-200 p-3 text-[10px] font-bold uppercase tracking-widest text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:border-cyber-border/40 dark:text-slate-300 dark:hover:bg-cyber-gray/30 dark:hover:text-white ${focusRing}`}
+                    >
+                      <LogIn className="size-4 shrink-0" />
+                      <span>Log In</span>
+                    </Button>
+                  </div>
+                )}
+                <div className="p-4 text-center font-mono text-[10px] uppercase tracking-widest text-slate-400">
+                  System Version: 2026.01
+                </div>
               </div>
             </div>
           </div>
@@ -158,7 +176,10 @@ export default function MobileMenu({
       <nav
         className="md:hidden fixed bottom-0 left-0 right-0 h-16 border-t z-40 transition-colors duration-200 bg-[var(--aur-surface)]/95 border-[var(--aur-border)] text-[var(--aur-text-muted)] pb-safe-bottom backdrop-blur-md"
       >
-        <div className={`h-full grid ${isAuthenticated ? "grid-cols-4" : "grid-cols-3"} items-center max-w-lg mx-auto`}>
+        {/* Rankings and Filters are public (see PROTECTED_VIEWS), so they stay
+            in the bar for logged-out visitors too — only the last slot swaps
+            between Settings and the sign-in prompt. */}
+        <div className="h-full grid grid-cols-4 items-center max-w-lg mx-auto">
           {/* Item 1: Home */}
           <Button
             type="button"
@@ -174,7 +195,6 @@ export default function MobileMenu({
             <span className="text-[8px] font-bold uppercase tracking-wider">Home</span>
           </Button>
 
-          {isAuthenticated ? <>
           {/* Item 2: Prestige Rankings */}
           <Button
             type="button"
@@ -204,31 +224,22 @@ export default function MobileMenu({
             <span className="text-[8px] font-bold uppercase tracking-wider">Filters</span>
           </Button>
 
-          {/* Item 4: Settings */}
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => handleViewChange("settings")}
-            className={`flex h-full w-full flex-col gap-0 rounded-none border-0 items-center justify-center hover:bg-transparent transition-colors ${
-              activeView === "settings"
-                ? "text-amber-700 hover:text-amber-700 dark:text-cyber-yellow dark:hover:text-cyber-yellow"
-                : "text-[var(--aur-text-muted)] hover:text-slate-800 dark:hover:text-white"
-            } ${focusRing}`}
-          >
-            <Settings className="size-4.5 mb-1" />
-            <span className="text-[8px] font-bold uppercase tracking-wider">Settings</span>
-          </Button>
-
-          </> : <>
+          {/* Item 4: Settings when signed in, otherwise a sign-in prompt */}
+          {isAuthenticated ? (
             <Button
               type="button"
               variant="ghost"
-              onClick={onLogIn}
-              className={`flex h-full w-full flex-col gap-0 rounded-none border-0 items-center justify-center hover:bg-transparent text-[var(--aur-text-muted)] hover:text-slate-800 dark:hover:text-white ${focusRing}`}
+              onClick={() => handleViewChange("settings")}
+              className={`flex h-full w-full flex-col gap-0 rounded-none border-0 items-center justify-center hover:bg-transparent transition-colors ${
+                activeView === "settings"
+                  ? "text-amber-700 hover:text-amber-700 dark:text-cyber-yellow dark:hover:text-cyber-yellow"
+                  : "text-[var(--aur-text-muted)] hover:text-slate-800 dark:hover:text-white"
+              } ${focusRing}`}
             >
-              <LogIn className="mb-1 size-4.5" />
-              <span className="text-[8px] font-bold uppercase tracking-wider">Log In</span>
+              <Settings className="size-4.5 mb-1" />
+              <span className="text-[8px] font-bold uppercase tracking-wider">Settings</span>
             </Button>
+          ) : (
             <Button
               type="button"
               variant="ghost"
@@ -238,7 +249,7 @@ export default function MobileMenu({
               <UserPlus className="mb-1 size-4.5" />
               <span className="text-[8px] font-bold uppercase tracking-wider">Sign Up</span>
             </Button>
-          </>}
+          )}
 
         </div>
       </nav>

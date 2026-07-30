@@ -8,6 +8,7 @@ import AppLayout from "../../components/layout/AppLayout";
 import { SidebarProvider } from "../../components/navigation/SidebarContext";
 import { ToastProvider } from "../../components/feedback/ToastContext";
 import { UniversityDataProvider } from "../../components/data/UniversityDataProvider";
+import { AuthGateProvider } from "../../components/auth/AuthGate";
 import type { Article } from "../../types";
 import { getBlog, type FirestoreBlog } from "../../lib/firebase-content";
 
@@ -277,9 +278,11 @@ export default function BlogDetailsPage() {
     }>
       <ToastProvider>
         <SidebarProvider>
-          <UniversityDataProvider>
-            <BlogDetailsContent />
-          </UniversityDataProvider>
+          <AuthGateProvider>
+            <UniversityDataProvider>
+              <BlogDetailsContent />
+            </UniversityDataProvider>
+          </AuthGateProvider>
         </SidebarProvider>
       </ToastProvider>
     </React.Suspense>

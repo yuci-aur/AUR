@@ -6,12 +6,14 @@ import BlogGrid from "../components/blog/BlogGrid";
 import { SidebarProvider } from "../components/navigation/SidebarContext";
 import { ToastProvider } from "../components/feedback/ToastContext";
 import { UniversityDataProvider } from "../components/data/UniversityDataProvider";
+import { AuthGateProvider } from "../components/auth/AuthGate";
 
 export default function BlogPage() {
   return (
     <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-xs font-bold uppercase tracking-widest text-slate-400">Loading blog…</div>}>
       <ToastProvider>
         <SidebarProvider>
+          <AuthGateProvider>
           <UniversityDataProvider>
             <AppLayout>
             <section className="mx-auto w-full max-w-6xl py-4 sm:py-8">
@@ -28,6 +30,7 @@ export default function BlogPage() {
             </section>
             </AppLayout>
           </UniversityDataProvider>
+          </AuthGateProvider>
         </SidebarProvider>
       </ToastProvider>
     </Suspense>

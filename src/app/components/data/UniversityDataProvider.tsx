@@ -10,8 +10,14 @@ import {
 
 interface UniversityDataContextValue {
   universities: University[];
+  /** Institutions in the whole dataset — not just the pages loaded so far. */
   totalCount: number;
   totalCountKnown: boolean;
+  /**
+   * Distinct countries across the whole dataset. Cannot be derived from
+   * `universities`, which only holds the pages fetched so far.
+   */
+  totalCountries: number;
   loading: boolean;
   loadingMore: boolean;
   hasMore: boolean;
@@ -27,6 +33,7 @@ export function UniversityDataProvider({ children }: { children: React.ReactNode
   const [universities, setUniversities] = useState<University[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalCountKnown, setTotalCountKnown] = useState(false);
+  const [totalCountries, setTotalCountries] = useState(0);
   const [cursor, setCursor] = useState<UniversityCursor | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -61,6 +68,33 @@ export function UniversityDataProvider({ children }: { children: React.ReactNode
       })
       .finally(() => {
         if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [reloadKey]);
+
+  // Dataset-wide totals, fetched separately from the paginated list so
+  // headline figures reflect the full dataset rather than the first page.
+  useEffect(() => {
+    let isMounted = true;
+
+    fetch("/api/data/misc?resource=university-stats")
+      .then((response) => {
+        if (!response.ok) throw new Error("Stats unavailable.");
+        return response.json() as Promise<{ total: number; countries: number }>;
+      })
+      .then((stats) => {
+        if (!isMounted) return;
+        setTotalCountries(stats.countries);
+        if (stats.total > 0) {
+          setTotalCount(stats.total);
+          setTotalCountKnown(true);
+        }
+      })
+      .catch(() => {
+        // Non-fatal: consumers fall back to the paginated counts.
       });
 
     return () => {
@@ -107,6 +141,7 @@ export function UniversityDataProvider({ children }: { children: React.ReactNode
       universities,
       totalCount,
       totalCountKnown,
+      totalCountries,
       loading,
       loadingMore,
       hasMore,
@@ -118,6 +153,7 @@ export function UniversityDataProvider({ children }: { children: React.ReactNode
       universities,
       totalCount,
       totalCountKnown,
+      totalCountries,
       loading,
       loadingMore,
       hasMore,

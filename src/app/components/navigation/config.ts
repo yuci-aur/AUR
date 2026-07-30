@@ -6,10 +6,8 @@ import {
   BarChart3, 
   Bookmark, 
   Settings,
-  BookOpen,
+  // BookOpen, // re-add with the Methodology nav entry below
   Calendar,
-  Award,
-  BadgeCheck,
 } from "lucide-react";
 
 /**
@@ -75,23 +73,18 @@ export const SIDEBAR_ITEMS: NavItem[] = [
     view: "saved", // a view for saved universities or comparing ones
     icon: Bookmark,
   },
-  {
-    id: "methodology",
-    label: "Methodology",
-    view: "methodology",
-    icon: BookOpen,
-  },
+  // Methodology view is disabled in AppContent — re-add alongside it.
+  // {
+  //   id: "methodology",
+  //   label: "Methodology",
+  //   view: "methodology",
+  //   icon: BookOpen,
+  // },
   {
     id: "events",
     label: "Events & Awards",
     view: "events",
     icon: Calendar,
-  },
-  {
-    id: "faculty-awards",
-    label: "Faculty & Student Awards",
-    view: "faculty-awards",
-    icon: Award,
   },
   {
     id: "settings",

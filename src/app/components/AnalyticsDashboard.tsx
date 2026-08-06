@@ -142,7 +142,7 @@ export default function AnalyticsDashboard() {
   const a = useAnalytics();
 
   return (
-    <div className="mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 font-sans flex-grow animate-fadeIn space-y-8 bg-[var(--background)]">
+    <div className="mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8 font-sans flex-grow animate-fadeIn space-y-6 lg:space-y-8 bg-[var(--background)]">
 
       {/* ── Header ── */}
       <div className="mb-8 aur-hero-accent">
@@ -200,10 +200,10 @@ export default function AnalyticsDashboard() {
       </div>
 
       {/* ── Row: Country Comparison + Radar ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
 
         {/* Country Bar Chart */}
-        <div className="lg:col-span-3 p-8 rounded-3xl border border-[var(--aur-border)] bg-[var(--aur-surface)] shadow-[var(--aur-shadow-sm)]">
+        <div className="lg:col-span-3 p-4 sm:p-6 lg:p-8 rounded-3xl border border-[var(--aur-border)] bg-[var(--aur-surface)] shadow-[var(--aur-shadow-sm)]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
             <div>
               <span className="text-[10px] text-[var(--aur-text-muted)] font-bold uppercase tracking-widest block mb-1">
@@ -237,7 +237,7 @@ export default function AnalyticsDashboard() {
         </div>
 
         {/* Radar Chart */}
-        <div className="lg:col-span-2 p-8 rounded-3xl border border-[var(--aur-border)] bg-[var(--aur-surface)] shadow-[var(--aur-shadow-sm)]">
+        <div className="lg:col-span-2 p-4 sm:p-6 lg:p-8 rounded-3xl border border-[var(--aur-border)] bg-[var(--aur-surface)] shadow-[var(--aur-shadow-sm)]">
           <span className="text-[10px] text-[var(--aur-text-muted)] font-bold uppercase tracking-widest block mb-1">
             Average Metric Profile
           </span>
@@ -265,7 +265,7 @@ export default function AnalyticsDashboard() {
       </div>
 
       {/* ── Performance Trend ── */}
-      <div className="p-8 rounded-3xl border border-[var(--aur-border)] bg-[var(--aur-surface)] shadow-[var(--aur-shadow-sm)]">
+      <div className="p-4 sm:p-6 lg:p-8 rounded-3xl border border-[var(--aur-border)] bg-[var(--aur-surface)] shadow-[var(--aur-shadow-sm)]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
           <div>
             <span className="text-[10px] text-[var(--aur-text-muted)] font-bold uppercase tracking-widest block mb-1">
@@ -326,7 +326,7 @@ export default function AnalyticsDashboard() {
 
       {/* ── Country Summary Table ── */}
       <div className="rounded-3xl border border-[var(--aur-border)] bg-[var(--aur-surface)] shadow-[var(--aur-shadow-sm)] overflow-hidden">
-        <div className="px-8 pt-8 pb-5 border-b border-[var(--aur-border)]">
+        <div className="px-4 sm:px-8 pt-6 sm:pt-8 pb-5 border-b border-[var(--aur-border)]">
           <span className="text-[10px] text-[var(--aur-text-muted)] font-bold uppercase tracking-widest">
             Country Intelligence Summary
           </span>
@@ -336,7 +336,7 @@ export default function AnalyticsDashboard() {
             <thead>
               <tr className="bg-[var(--aur-surface-2)] border-b border-[var(--aur-border)]">
                 {["Country", "Universities", "Avg Score", "Avg Citations", "Avg Research"].map((h) => (
-                  <th key={h} className="text-left py-4 px-8 text-[10px] font-bold uppercase tracking-widest text-[var(--aur-text-muted)]">
+                  <th key={h} className="text-left py-4 px-4 sm:px-8 text-[10px] font-bold uppercase tracking-widest text-[var(--aur-text-muted)]">
                     {h}
                   </th>
                 ))}
@@ -345,22 +345,22 @@ export default function AnalyticsDashboard() {
             <tbody>
               {a.countryData.map((r, i) => (
                 <tr key={r.country} className={`border-b border-[var(--aur-border)] hover:bg-[var(--aur-surface-hover)] transition-colors ${i === a.countryData.length - 1 ? 'border-b-0' : ''}`}>
-                  <td className="py-5 px-8 font-bold text-[var(--aur-text)] text-sm">
+                  <td className="py-5 px-4 sm:px-8 font-bold text-[var(--aur-text)] text-sm">
                     <div className="flex items-center gap-3">
                       <span className="w-3 h-3 rounded-md shrink-0" style={{ backgroundColor: r.fill }} />
                       {r.country}
                     </div>
                   </td>
-                  <td className="py-5 px-8 font-mono font-bold text-[var(--aur-text-secondary)] text-sm">{r.institutions}</td>
-                  <td className="py-5 px-8">
+                  <td className="py-5 px-4 sm:px-8 font-mono font-bold text-[var(--aur-text-secondary)] text-sm">{r.institutions}</td>
+                  <td className="py-5 px-4 sm:px-8">
                     <span
                       className="font-mono font-bold text-sm px-3 py-1.5 rounded-lg border border-[var(--aur-border-strong)] bg-[var(--aur-surface-2)] text-[var(--aur-text)]"
                     >
                       {r.avgScore}%
                     </span>
                   </td>
-                  <td className="py-5 px-8 font-mono font-bold text-[var(--aur-text-secondary)] text-sm">{r.avgCitations}%</td>
-                  <td className="py-5 px-8 font-mono font-bold text-[var(--aur-text-secondary)] text-sm">{r.avgResearch}%</td>
+                  <td className="py-5 px-4 sm:px-8 font-mono font-bold text-[var(--aur-text-secondary)] text-sm">{r.avgCitations}%</td>
+                  <td className="py-5 px-4 sm:px-8 font-mono font-bold text-[var(--aur-text-secondary)] text-sm">{r.avgResearch}%</td>
                 </tr>
               ))}
             </tbody>

@@ -320,11 +320,11 @@ export default function RankingsEngine({
         header: "University Name",
         accessorKey: "name",
         cell: ({ row }) => (
-          <div className="text-left font-sans font-bold text-[var(--aur-text)] transition-all active:scale-95 cursor-pointer inline-block w-full truncate" onClick={() => onUniversitySelect(row.original.id)}>
-            <div className="truncate w-full">{row.original.name}</div>
-            <div className="flex items-center text-[10px] text-[var(--aur-text-muted)] font-mono font-medium uppercase mt-0.5">
-              <Globe className="h-3 w-3 mr-1" />
-              {row.original.location}
+          <div className="text-left font-sans font-bold text-[var(--aur-text)] transition-all active:scale-95 cursor-pointer block w-full min-w-0" onClick={() => onUniversitySelect(row.original.id)}>
+            <div className="w-full [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden leading-tight sm:truncate sm:[display:block]">{row.original.name}</div>
+            <div className="flex items-center text-[10px] text-[var(--aur-text-muted)] font-mono font-medium uppercase mt-0.5 min-w-0">
+              <Globe className="h-3 w-3 mr-1 shrink-0" />
+              <span className="truncate">{row.original.location}</span>
             </div>
           </div>
         ),
@@ -650,7 +650,7 @@ export default function RankingsEngine({
               {/* Hover Gradient Overlay */}
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-[#1A365D]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
               
-              <div className="relative z-10 grid grid-cols-[3rem_minmax(140px,1fr)_minmax(60px,1fr)_8rem] sm:grid-cols-[3rem_minmax(180px,2fr)_minmax(60px,1fr)_minmax(60px,1fr)_minmax(60px,1fr)_minmax(60px,1fr)_minmax(80px,1fr)_7rem] gap-3 items-center px-4 sm:px-6 py-4">
+              <div className="relative z-10 grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_5.5rem] sm:grid-cols-[3rem_minmax(180px,2fr)_minmax(60px,1fr)_minmax(60px,1fr)_minmax(60px,1fr)_minmax(60px,1fr)_minmax(80px,1fr)_7rem] gap-2 sm:gap-3 items-center px-3 sm:px-6 py-4">
                 {row.getVisibleCells().map((cell) => {
                   const columnId = cell.column.id;
                   const isMobileHiddenCol = ["citations", "research", "employability", "tuition"].includes(columnId);

@@ -233,8 +233,17 @@
 .lp-mobile-brand {
   display: none;
   align-items: center;
+  justify-content: center;
   gap: 0.75rem;
   margin-bottom: 2rem;
+}
+.lp-mobile-brand .lp-logo {
+  justify-content: center;
+}
+/* The mobile mark opts out of the 48px cap — its size is set inline via
+   BrandLogo's displayHeight so it reads clearly on small screens. */
+.lp-mobile-brand .lp-logo img {
+  height: auto;
 }
 
 /* Tab selector */

@@ -224,22 +224,22 @@ export default function UniversityProfile({ universityId, onBack, onViewChange, 
 
                 {/* Subject Ranking Highlights */}
                 {uni.qsSubjectRankings && uni.qsSubjectRankings.length > 0 && (
-                  <div className="mt-12 bg-[var(--aur-surface)] border border-[var(--aur-border)] rounded-3xl p-8 shadow-[var(--aur-shadow-sm)]">
+                  <div className="mt-12 bg-[var(--aur-surface)] border border-[var(--aur-border)] rounded-3xl p-5 sm:p-8 shadow-[var(--aur-shadow-sm)]">
                     <div className="flex items-center justify-between mb-8 pb-4 border-b border-[var(--aur-border)]">
                       <h4 className="font-serif text-2xl font-bold text-[var(--aur-text)]">Rankings by Subject</h4>
                       <Trophy className="h-6 w-6 text-[var(--aur-text-muted)]" />
                     </div>
-                    
+
                     <div className="space-y-4">
                       {uni.qsSubjectRankings.map((qs, i) => (
-                        <div key={i} className="flex items-center justify-between p-5 bg-[var(--aur-surface-2)] border border-[var(--aur-border)] rounded-2xl hover:border-[var(--aur-border-strong)] transition-all group">
-                          <div className="flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-xl bg-[var(--aur-surface)] border border-[var(--aur-border)] flex items-center justify-center shadow-sm">
+                        <div key={i} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between p-5 bg-[var(--aur-surface-2)] border border-[var(--aur-border)] rounded-2xl hover:border-[var(--aur-border-strong)] transition-all group">
+                          <div className="flex items-center gap-4 min-w-0">
+                            <div className="h-10 w-10 rounded-xl bg-[var(--aur-surface)] border border-[var(--aur-border)] flex items-center justify-center shadow-sm shrink-0">
                               <BookOpen className="h-5 w-5 text-[var(--aur-text-secondary)] group-hover:text-[var(--aur-text)] transition-colors" />
                             </div>
                             <span className="font-bold text-sm text-[var(--aur-text)]">{qs.subject}</span>
                           </div>
-                          <div className="flex items-center gap-6">
+                          <div className="flex items-center gap-4 sm:gap-6 shrink-0 pl-14 sm:pl-0">
                             <div className="text-right">
                               <span className="block text-[10px] uppercase tracking-widest text-[var(--aur-text-muted)] font-bold mb-1">World Rank</span>
                               <span className="font-mono text-lg font-bold text-[var(--aur-text)]">#{qs.worldRank}</span>
@@ -258,7 +258,7 @@ export default function UniversityProfile({ universityId, onBack, onViewChange, 
               </div>
 
               <div className="lg:col-span-1">
-                <div className="border border-[var(--aur-border)] bg-[var(--aur-surface)] rounded-3xl p-8 sticky top-28 shadow-[var(--aur-shadow)]">
+                <div className="border border-[var(--aur-border)] bg-[var(--aur-surface)] rounded-3xl p-5 sm:p-8 sticky top-28 shadow-[var(--aur-shadow)]">
                   <h4 className="text-[10px] font-bold uppercase tracking-widest text-[var(--aur-text-muted)] mb-6 border-b border-[var(--aur-border)] pb-4 flex items-center justify-between">
                     Fast Facts
                     <ExternalLink className="h-4 w-4" />
@@ -326,7 +326,7 @@ export default function UniversityProfile({ universityId, onBack, onViewChange, 
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
                 {[
                   { label: "Overall Score", value: uni.overall, highlight: true },
                   { label: "Academic Rep", value: uni.academicReputation || uni.research },
@@ -335,9 +335,9 @@ export default function UniversityProfile({ universityId, onBack, onViewChange, 
                   { label: "Faculty/Student", value: uni.facultyStudentRatio || uni.teaching },
                   { label: "Teaching", value: uni.teaching },
                 ].map((metric, idx) => (
-                  <div key={idx} className={`rounded-3xl p-8 flex flex-col justify-between shadow-sm transition-transform hover:-translate-y-1 ${
-                    metric.highlight 
-                      ? "bg-[var(--aur-text)] text-[var(--background)]" 
+                  <div key={idx} className={`rounded-3xl p-5 sm:p-8 flex flex-col justify-between shadow-sm transition-transform hover:-translate-y-1 ${
+                    metric.highlight
+                      ? "bg-[var(--aur-text)] text-[var(--background)]"
                       : "border border-[var(--aur-border)] bg-[var(--aur-surface)]"
                   }`}>
                     <span className={`block text-[10px] uppercase font-bold tracking-widest mb-4 ${
@@ -345,7 +345,7 @@ export default function UniversityProfile({ universityId, onBack, onViewChange, 
                     }`}>
                       {metric.label}
                     </span>
-                    <span className={`text-4xl font-black font-serif ${
+                    <span className={`text-3xl sm:text-4xl font-black font-serif ${
                       metric.highlight ? "text-[var(--background)]" : "text-[var(--aur-text)]"
                     }`}>
                       {metric.value.toFixed(1)}

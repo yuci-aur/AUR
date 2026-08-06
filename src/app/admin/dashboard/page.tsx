@@ -24,6 +24,7 @@ import {
   EyeOff,
   Trophy,
   Upload,
+  Menu,
 } from "lucide-react";
 import {
   AdminBlog,
@@ -73,11 +74,17 @@ const Sidebar = ({
   setActiveTab,
   onLogout,
   admin,
+  isOpen = false,
+  onClose,
 }: {
   activeTab: Tab;
   setActiveTab: (t: Tab) => void;
   onLogout: () => void;
   admin: AdminProfile | null;
+  /** Whether the off-canvas drawer is open on mobile (< md). */
+  isOpen?: boolean;
+  /** Dismiss the mobile drawer (also called after a tab is picked). */
+  onClose?: () => void;
 }) => {
   const tabs: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -88,8 +95,26 @@ const Sidebar = ({
     { id: "users", label: "Users", icon: Users },
   ];
 
+  const handlePick = (t: Tab) => {
+    setActiveTab(t);
+    onClose?.();
+  };
+
   return (
-    <div className="w-64 bg-[#1A365D] min-h-screen text-white flex flex-col fixed left-0 top-0 bottom-0 shadow-2xl z-20">
+    <>
+      {/* Mobile backdrop — only present while the drawer is open on < md. */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-20 bg-slate-950/50 backdrop-blur-sm md:hidden"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+      <div
+        className={`w-64 max-w-[85vw] bg-[#1A365D] min-h-screen text-white flex flex-col fixed left-0 top-0 bottom-0 shadow-2xl z-30 transition-transform duration-300 md:translate-x-0 ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
       <div className="p-6 border-b border-white/10 flex items-center space-x-3 bg-white/5">
         <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center border border-white/20">
           <ShieldCheck className="w-6 h-6 text-white" />
@@ -107,7 +132,7 @@ const Sidebar = ({
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => handlePick(tab.id)}
             className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
               activeTab === tab.id
                 ? "bg-white text-[#1A365D] shadow-lg font-bold"
@@ -137,7 +162,8 @@ const Sidebar = ({
           <span>Logout</span>
         </button>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 
@@ -454,7 +480,8 @@ const BlogsTab = () => {
         <EmptyState message="No blog posts yet. Create your first one." />
       ) : (
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-          <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-left text-sm">
             <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
               <tr>
                 <th className="px-6 py-4 font-bold uppercase tracking-wider text-xs">Title</th>
@@ -511,6 +538,7 @@ const BlogsTab = () => {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
@@ -1411,6 +1439,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [admin, setAdmin] = useState<AdminProfile | null>(null);
   const [checking, setChecking] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     verifyAdmin()
@@ -1439,12 +1468,27 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} admin={admin} />
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onLogout={handleLogout}
+        admin={admin}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-      <div className="flex-1 ml-64 flex flex-col min-h-screen">
-        <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 h-20 px-8 flex items-center justify-between sticky top-0 z-10 shadow-sm">
-          <div>
-            <h1 className="text-xl font-black text-[#1A365D] tracking-tight capitalize">
+      <div className="flex-1 md:ml-64 flex flex-col min-h-screen min-w-0">
+        <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 h-16 md:h-20 px-4 md:px-8 flex items-center justify-between gap-3 sticky top-0 z-10 shadow-sm">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open admin menu"
+            className="md:hidden shrink-0 rounded-lg p-2 text-[#1A365D] hover:bg-slate-100 transition-colors"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg md:text-xl font-black text-[#1A365D] tracking-tight capitalize truncate">
               {activeTab === "overview"
                 ? "Dashboard Overview"
                 : activeTab === "events-awards"
@@ -1464,7 +1508,7 @@ export default function Dashboard() {
           </div>
         </header>
 
-        <main className="flex-1 p-8">
+        <main className="flex-1 p-4 md:p-8">
           {activeTab === "overview" && <OverviewTab />}
           {activeTab === "blogs" && <BlogsTab />}
           {activeTab === "events-awards" && <EventsAwardsTab />}

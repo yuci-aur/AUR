@@ -39,7 +39,7 @@ export default function NewsFlashWidget() {
   }
 
   return (
-    <div className="w-full bg-aur-primary border border-aur-primary rounded-2xl p-8 lg:p-10 shadow-sm relative overflow-hidden">
+    <div className="w-full bg-aur-primary border border-aur-primary rounded-2xl p-5 sm:p-8 lg:p-10 shadow-sm relative overflow-hidden">
       {/* Subtle background decoration */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none opacity-20"></div>
 

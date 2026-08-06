@@ -433,7 +433,7 @@ export default function Homepage({
               >
                 <div><span className={`rh-rank${idx < 3 ? ` rh-rank--${idx + 1}` : ""}`}>{idx + 1}</span></div>
                 <div className="rh-name">{uni.name}</div>
-                <div className="flex items-center gap-1 text-xs text-slate-500"><span>{COUNTRY_FLAGS[uni.location] ?? ""}</span><span className="truncate">{uni.location}</span></div>
+                <div className="flex items-center gap-1 text-xs text-slate-500 min-w-0"><span className="shrink-0">{COUNTRY_FLAGS[uni.location] ?? ""}</span><span className="truncate">{uni.location}</span></div>
                 <div className="rh-score-num">{uni.overall.toFixed(1)}</div>
                 <div className="rh-bar-cell"><div className="rh-bar__val">{uni.research.toFixed(1)}</div><div className="rh-bar__track"><div className="rh-bar__fill" style={{ width: `${uni.research}%`, background: "#2563eb" }} /></div></div>
                 <div className="rh-bar-cell"><div className="rh-bar__val">{uni.employability.toFixed(1)}</div><div className="rh-bar__track"><div className="rh-bar__fill" style={{ width: `${uni.employability}%`, background: "#059669" }} /></div></div>

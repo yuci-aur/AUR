@@ -230,14 +230,14 @@ export default function ComparisonDock({
                       {/* Metadata Table */}
                       <div className="mt-8 pt-6 border-t border-[var(--aur-border)] space-y-2.5 text-xs text-[var(--aur-text-secondary)]">
                         <div className="flex justify-between">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--aur-text-muted)]">Programs:</span>
-                          <span className="text-[var(--aur-text)] text-right truncate max-w-[150px]">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--aur-text-muted)] shrink-0">Programs:</span>
+                          <span className="text-[var(--aur-text)] text-right truncate max-w-[65%]">
                             {uni.subjects.join(", ")}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--aur-text-muted)]">Languages:</span>
-                          <span className="text-[var(--aur-text)] text-right truncate max-w-[150px]">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--aur-text-muted)] shrink-0">Languages:</span>
+                          <span className="text-[var(--aur-text)] text-right truncate max-w-[65%]">
                             {uni.languages.join(", ")}
                           </span>
                         </div>

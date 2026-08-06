@@ -332,14 +332,14 @@ export default function Login({ initialMode = "login" }: { initialMode?: "login"
         <div className={`lp-glass-card ${registrationType === "institution" ? "lp-glass-card-wide" : ""}`}>
           {/* Mobile brand — click returns to the home page */}
           <div className="lp-mobile-brand">
-            <div className="lp-logo mb-6 transform scale-[0.8] origin-left">
+            <div className="lp-logo mb-6 origin-left">
               <button
                 type="button"
                 onClick={() => handleViewChange("home")}
                 aria-label="Go to home page"
                 className="cursor-pointer bg-transparent border-0 p-0"
               >
-                <BrandLogo theme="dark" />
+                <BrandLogo theme="dark" width={240} displayHeight={56} />
               </button>
             </div>
           </div>

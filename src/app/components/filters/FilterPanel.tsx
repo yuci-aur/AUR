@@ -235,7 +235,7 @@ export default function FilterPanel() {
                     max={rankMax}
                     value={filters.qsRange[0]}
                     onChange={handleRankMinChange}
-                    className="absolute pointer-events-none appearance-none w-full h-1 bg-transparent top-0 left-0 accent-slate-900 dark:accent-cyber-yellow"
+                    className="aur-range absolute pointer-events-none appearance-none w-full h-6 bg-transparent top-1/2 -translate-y-1/2 left-0 accent-slate-900 dark:accent-cyber-yellow"
                     style={{
                       zIndex: filters.qsRange[0] > rankMax * 0.8 ? 5 : 3,
                     }}
@@ -246,7 +246,7 @@ export default function FilterPanel() {
                     max={rankMax}
                     value={filters.qsRange[1]}
                     onChange={handleRankMaxChange}
-                    className="absolute pointer-events-none appearance-none w-full h-1 bg-transparent top-0 left-0 accent-slate-900 dark:accent-cyber-yellow"
+                    className="aur-range absolute pointer-events-none appearance-none w-full h-6 bg-transparent top-1/2 -translate-y-1/2 left-0 accent-slate-900 dark:accent-cyber-yellow"
                   />
                 </div>
               </div>
@@ -299,7 +299,7 @@ export default function FilterPanel() {
                     step="500"
                     value={filters.tuitionRange[0]}
                     onChange={handleTuitionMinChange}
-                    className="absolute pointer-events-none appearance-none w-full h-1 bg-transparent top-0 left-0 accent-slate-900 dark:accent-cyber-yellow"
+                    className="aur-range absolute pointer-events-none appearance-none w-full h-6 bg-transparent top-1/2 -translate-y-1/2 left-0 accent-slate-900 dark:accent-cyber-yellow"
                     style={{
                       zIndex: filters.tuitionRange[0] > 20000 ? 5 : 3,
                     }}
@@ -311,7 +311,7 @@ export default function FilterPanel() {
                     step="500"
                     value={filters.tuitionRange[1]}
                     onChange={handleTuitionMaxChange}
-                    className="absolute pointer-events-none appearance-none w-full h-1 bg-transparent top-0 left-0 accent-slate-900 dark:accent-cyber-yellow"
+                    className="aur-range absolute pointer-events-none appearance-none w-full h-6 bg-transparent top-1/2 -translate-y-1/2 left-0 accent-slate-900 dark:accent-cyber-yellow"
                   />
                 </div>
               </div>
@@ -354,10 +354,10 @@ export default function FilterPanel() {
                       
                       
                       onClick={() => setFilters((prev) => ({ ...prev, isPublic: typeItem.value }))}
-                      className={`py-1.5 text-[10px] font-bold rounded uppercase tracking-wider transition-all duration-150 ${
+                      className={`flex w-full items-center justify-center py-1.5 text-center text-[10px] font-bold rounded uppercase tracking-wider transition-all duration-150 ${
                         isSelected
                           ? "bg-white text-slate-900 shadow-sm border border-slate-200 dark:border-transparent dark:bg-cyber-yellow dark:text-cyber-black"
-                          : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white"
+                          : "border border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white"
                       }`}
                     >
                       {typeItem.label}
@@ -446,7 +446,44 @@ export default function FilterPanel() {
 
       {/* Custom range slider thumb styling hacks in React */}
       <style jsx global>{`
-        input[type="range"]::-webkit-slider-thumb {
+        /* The input is 24px tall and overlays the 4px visual track (a sibling
+           div) centered on the same row. A full-height transparent runnable
+           track + a +5px thumb margin puts the thumb on the row centerline
+           instead of riding above a short input. */
+        .aur-range {
+          -webkit-appearance: none;
+          appearance: none;
+          height: 24px;
+          background: transparent;
+        }
+        .aur-range::-webkit-slider-runnable-track {
+          height: 24px;
+          background: transparent;
+        }
+        .aur-range::-webkit-slider-thumb {
+          pointer-events: auto;
+          -webkit-appearance: none;
+          appearance: none;
+          width: 14px;
+          height: 14px;
+          /* Track is 24px (input h-6); center the 14px thumb: (24-14)/2 = 5px. */
+          margin-top: 5px;
+          border-radius: 50%;
+          border: 2px solid white;
+          background: #0f172a;
+          cursor: pointer;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.3);
+          transition: transform 0.1s ease;
+        }
+        .aur-range::-webkit-slider-thumb:hover {
+          transform: scale(1.2);
+        }
+        /* Firefox */
+        .aur-range::-moz-range-track {
+          height: 100%;
+          background: transparent;
+        }
+        .aur-range::-moz-range-thumb {
           pointer-events: auto;
           width: 14px;
           height: 14px;
@@ -454,18 +491,7 @@ export default function FilterPanel() {
           border: 2px solid white;
           background: #0f172a;
           cursor: pointer;
-          -webkit-appearance: none;
-          margin-top: -5px;
-          box-shadow: 0 1px 3px rgba(127, 86, 217, 0.3);
-          transition: transform 0.1s ease;
-        }
-
-        input[type="range"]::-webkit-slider-thumb:hover {
-          transform: scale(1.2);
-        }
-
-        input[type="range"] {
-          height: 4px;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.3);
         }
       `}</style>
     </div>

@@ -57,7 +57,7 @@ export default function DiscoveryJoinModal({
     <section
       role="region"
       aria-label="Create a free account"
-      className="fixed inset-x-3 bottom-3 z-40 mx-auto flex max-w-2xl flex-col gap-3 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-[0_12px_40px_rgba(7,26,47,0.18)] sm:flex-row sm:items-center sm:p-4"
+      className="fixed inset-x-3 bottom-20 md:bottom-3 z-40 mx-auto flex max-w-2xl flex-col gap-3 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-[0_12px_40px_rgba(7,26,47,0.18)] sm:flex-row sm:items-center sm:p-4"
     >
       <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#d8a12e] via-amber-400 to-[#1a365d]" />
       <p className="flex-1 pr-8 text-sm leading-snug text-slate-700 sm:pr-0">

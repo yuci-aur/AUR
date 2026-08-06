@@ -91,9 +91,29 @@ CREATE TABLE IF NOT EXISTS aur_institution_applications (
   representative_email text NOT NULL,
   status text NOT NULL DEFAULT 'pending'
     CHECK (status IN ('draft', 'pending', 'approved', 'rejected')),
+  description text NOT NULL DEFAULT '',
+  logo_url text,
+  campus_photo text,
+  reviewed_at timestamptz,
+  reviewed_by text,
+  rejection_reason text,
   submitted_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- Added after the initial release; kept idempotent so the file can be replayed
+-- against a database created before the public institution listing existed.
+ALTER TABLE aur_institution_applications
+  ADD COLUMN IF NOT EXISTS description text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS logo_url text,
+  ADD COLUMN IF NOT EXISTS campus_photo text,
+  ADD COLUMN IF NOT EXISTS reviewed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS reviewed_by text,
+  ADD COLUMN IF NOT EXISTS rejection_reason text;
+
+-- The public "Registered Institutions" listing reads approved rows only.
+CREATE INDEX IF NOT EXISTS aur_institution_applications_status_idx
+  ON aur_institution_applications (status, institution_name);
 
 CREATE TABLE IF NOT EXISTS aur_bookmarks (
   firebase_uid text NOT NULL REFERENCES aur_user_profiles(firebase_uid) ON DELETE CASCADE,

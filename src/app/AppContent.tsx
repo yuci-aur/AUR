@@ -18,6 +18,7 @@ import Login from "./components/Login";
 import UserDashboard from "./components/UserDashboard";
 // import Methodology from "./components/Methodology";
 import EventsAndAwards from "./components/EventsAndAwards";
+import RegisteredInstitutions from "./components/RegisteredInstitutions";
 import NewsFeed from "./components/NewsFeed";
 import BlogFeed from "./components/BlogFeed";
 import { useSidebar } from "./components/navigation/SidebarContext";
@@ -250,6 +251,10 @@ export default function AppContent() {
           {/* Events & Awards. "faculty-awards" is kept as an alias so older
               bookmarked links still resolve to the same showcase. */}
           {(view === "events" || view === "faculty-awards") && <EventsAndAwards />}
+
+          {/* Self-registered institutions that passed admin verification.
+              Kept separate from the ranked directory: these carry no score. */}
+          {view === "institutions" && <RegisteredInstitutions />}
 
           {/* Login View */}
           {view === "login" && (

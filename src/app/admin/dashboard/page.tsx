@@ -21,21 +21,28 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle2,
+  EyeOff,
   Trophy,
   Upload,
 } from "lucide-react";
 import {
   AdminBlog,
+  AdminInstitutionApplication,
   AdminProfile,
   AdminStats,
   AdminUser,
+  InstitutionApplicationStatus,
+  approveInstitution,
   clearAdminToken,
   createBlog,
   deleteBlog,
   getAdminStats,
   listAdminBlogs,
+  listInstitutionApplications,
   listUsers,
   registerUniversity,
+  rejectInstitution,
+  unpublishInstitution,
   updateBlog,
   updateUserRole,
   verifyAdmin,
@@ -52,7 +59,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-type Tab = "overview" | "blogs" | "events-awards" | "universities" | "users";
+type Tab =
+  | "overview"
+  | "blogs"
+  | "events-awards"
+  | "universities"
+  | "institutions"
+  | "users";
 
 // ------------------------------------------------------------------ Sidebar
 const Sidebar = ({
@@ -71,6 +84,7 @@ const Sidebar = ({
     { id: "blogs", label: "Manage Blogs", icon: BookOpen },
     { id: "events-awards", label: "Events & Awards", icon: Trophy },
     { id: "universities", label: "Universities", icon: Building2 },
+    { id: "institutions", label: "Institution Requests", icon: FileCheck },
     { id: "users", label: "Users", icon: Users },
   ];
 
@@ -882,6 +896,333 @@ const UniversitiesTab = () => {
 };
 
 // -------------------------------------------------------------- Users tab
+const InstitutionsTab = () => {
+  const [applications, setApplications] = useState<AdminInstitutionApplication[]>([]);
+  const [statusFilter, setStatusFilter] = useState<InstitutionApplicationStatus | "">("pending");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState("");
+  const [rejecting, setRejecting] = useState<AdminInstitutionApplication | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+
+  const load = useCallback(() => {
+    setLoading(true);
+    setError("");
+    listInstitutionApplications(statusFilter || undefined)
+      .then((res) => setApplications(res.data))
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [statusFilter]);
+
+  useEffect(load, [load]);
+
+  const approve = async (application: AdminInstitutionApplication) => {
+    if (
+      !confirm(
+        `Approve "${application.institutionName}"? It will appear publicly under Registered Institutions.`,
+      )
+    ) {
+      return;
+    }
+    setBusyId(application.id);
+    try {
+      await approveInstitution(application.id);
+      load();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to approve institution.");
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  const unpublish = async (application: AdminInstitutionApplication) => {
+    if (
+      !confirm(
+        `Remove "${application.institutionName}" from the public listing?\n\nIt returns to the pending queue with all details kept, so you can approve it again later.`,
+      )
+    ) {
+      return;
+    }
+    setBusyId(application.id);
+    try {
+      await unpublishInstitution(application.id);
+      load();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to remove institution.");
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  const confirmReject = async () => {
+    if (!rejecting) return;
+    setBusyId(rejecting.id);
+    try {
+      await rejectInstitution(rejecting.id, rejectReason.trim());
+      setRejecting(null);
+      setRejectReason("");
+      load();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to reject institution.");
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h2 className="text-2xl font-black text-[#1A365D]">
+          Institution Applications{" "}
+          <span className="text-slate-400 text-lg font-bold">({applications.length})</span>
+        </h2>
+        <div className="flex items-center gap-3">
+          <select
+            value={statusFilter}
+            onChange={(e) =>
+              setStatusFilter(e.target.value as InstitutionApplicationStatus | "")
+            }
+            className="bg-white border border-slate-200 text-sm rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A365D]/30"
+          >
+            <option value="pending">Pending review</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="">All applications</option>
+          </select>
+          <button
+            onClick={load}
+            className="flex items-center gap-2 bg-white border border-slate-200 text-sm font-semibold rounded-xl px-3 py-2 text-slate-600 hover:bg-slate-50"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <PanelLoader />
+      ) : error ? (
+        <PanelError message={error} onRetry={load} />
+      ) : applications.length === 0 ? (
+        <EmptyState
+          message={
+            statusFilter === "pending"
+              ? "No institutions are waiting for review."
+              : "No institution applications match this filter."
+          }
+        />
+      ) : (
+        <div className="space-y-4">
+          {applications.map((application) => (
+            <article
+              key={application.id}
+              className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden"
+            >
+              <div className="flex flex-col lg:flex-row">
+                {application.campusPhoto ? (
+                  // Institution-supplied Cloudinary asset; hosts vary, so skip next/image.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={application.campusPhoto}
+                    alt=""
+                    className="h-44 w-full lg:h-auto lg:w-56 shrink-0 object-cover bg-slate-100"
+                  />
+                ) : null}
+                <div className="flex-1 p-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {application.logoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={application.logoUrl}
+                          alt=""
+                          className="h-12 w-12 shrink-0 rounded-lg border border-slate-200 bg-white object-contain"
+                        />
+                      ) : (
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50">
+                          <Building2 className="w-5 h-5 text-slate-400" />
+                        </span>
+                      )}
+                      <div className="min-w-0">
+                        <h3 className="font-black text-[#1A365D] truncate">
+                          {application.institutionName}
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          {application.institutionType} · {application.country}
+                        </p>
+                      </div>
+                    </div>
+                    <StatusBadge status={application.status} />
+                  </div>
+
+                  {application.description && (
+                    <p className="mt-4 text-sm text-slate-600 leading-relaxed line-clamp-3">
+                      {application.description}
+                    </p>
+                  )}
+
+                  <dl className="mt-4 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+                    <DetailRow label="Website">
+                      <a
+                        href={application.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#1A365D] underline underline-offset-2 break-all"
+                      >
+                        {application.website}
+                      </a>
+                    </DetailRow>
+                    <DetailRow label="Accreditation ID">
+                      {application.accreditationId}
+                    </DetailRow>
+                    <DetailRow label="Representative">
+                      {application.representativeName}
+                    </DetailRow>
+                    <DetailRow label="Contact">
+                      {application.representativeEmail}
+                    </DetailRow>
+                    <DetailRow label="Submitted">
+                      {new Date(application.submittedAt).toLocaleDateString()}
+                    </DetailRow>
+                    {application.reviewedBy && (
+                      <DetailRow label="Reviewed by">
+                        {application.reviewedBy}
+                      </DetailRow>
+                    )}
+                  </dl>
+
+                  {application.rejectionReason && (
+                    <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
+                      <strong className="font-bold">Rejection reason:</strong>{" "}
+                      {application.rejectionReason}
+                    </p>
+                  )}
+
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    {application.status === "approved" ? (
+                      <button
+                        disabled={busyId === application.id}
+                        onClick={() => unpublish(application)}
+                        className="flex items-center gap-2 rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-60"
+                      >
+                        {busyId === application.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <EyeOff className="w-4 h-4" />
+                        )}
+                        Remove from public listing
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          disabled={busyId === application.id}
+                          onClick={() => approve(application)}
+                          className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                        >
+                          {busyId === application.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="w-4 h-4" />
+                          )}
+                          Approve &amp; publish
+                        </button>
+                        {application.status !== "rejected" && (
+                          <button
+                            disabled={busyId === application.id}
+                            onClick={() => {
+                              setRejecting(application);
+                              setRejectReason("");
+                            }}
+                            className="flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60"
+                          >
+                            <AlertCircle className="w-4 h-4" />
+                            Reject
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+
+      <Dialog
+        open={Boolean(rejecting)}
+        onOpenChange={(open) => {
+          if (!open) setRejecting(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject institution application</DialogTitle>
+            <DialogDescription>
+              {rejecting
+                ? `Tell ${rejecting.institutionName} why their application was not approved. They can correct the details and resubmit.`
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <textarea
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            rows={4}
+            maxLength={500}
+            placeholder="e.g. The accreditation ID could not be verified with the national registry."
+            className="w-full resize-y rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A365D]/30"
+          />
+          <DialogFooter>
+            <DialogClose asChild>
+              <button className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                Cancel
+              </button>
+            </DialogClose>
+            <button
+              onClick={confirmReject}
+              disabled={Boolean(busyId)}
+              className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+            >
+              Confirm rejection
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+const DetailRow = ({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) => (
+  <div className="min-w-0">
+    <dt className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+      {label}
+    </dt>
+    <dd className="text-slate-700 truncate">{children}</dd>
+  </div>
+);
+
+const StatusBadge = ({ status }: { status: InstitutionApplicationStatus }) => {
+  const styles: Record<InstitutionApplicationStatus, string> = {
+    approved: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    pending: "bg-amber-50 text-amber-700 border-amber-200",
+    rejected: "bg-red-50 text-red-700 border-red-200",
+    draft: "bg-slate-100 text-slate-600 border-slate-200",
+  };
+  return (
+    <span
+      className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-wider ${styles[status]}`}
+    >
+      {status}
+    </span>
+  );
+};
+
 const UsersTab = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [total, setTotal] = useState(0);
@@ -1108,7 +1449,9 @@ export default function Dashboard() {
                 ? "Dashboard Overview"
                 : activeTab === "events-awards"
                   ? "Events & Awards"
-                  : activeTab}
+                  : activeTab === "institutions"
+                    ? "Institution Requests"
+                    : activeTab}
             </h1>
             <p className="text-xs text-slate-500 font-medium mt-0.5">
               Advanced University Ranking — Admin
@@ -1126,6 +1469,7 @@ export default function Dashboard() {
           {activeTab === "blogs" && <BlogsTab />}
           {activeTab === "events-awards" && <EventsAwardsTab />}
           {activeTab === "universities" && <UniversitiesTab />}
+          {activeTab === "institutions" && <InstitutionsTab />}
           {activeTab === "users" && <UsersTab />}
         </main>
       </div>

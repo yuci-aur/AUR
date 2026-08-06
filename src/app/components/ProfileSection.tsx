@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
-import { Building2, Camera, Check, ExternalLink, FileCheck2, Globe2, Loader2, Mail, MapPin, Pencil, ShieldCheck, UserRound, X } from "lucide-react";
+import { AlertCircle, Building2, Camera, Check, ExternalLink, FileCheck2, Globe2, Loader2, Mail, MapPin, Pencil, ShieldCheck, UserRound, X } from "lucide-react";
 import { firebaseAuth } from "../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { uploadToCloudinary } from "../lib/cloudinary-upload";
@@ -33,9 +33,38 @@ type InstitutionApplication = {
   representativeName: string;
   representativeEmail: string;
   status: string;
+  rejectionReason?: string | null;
   submittedAt: string;
 };
 type Draft = { name: string; country: string; profile_role: ProfileRole; profile_photo: string | null };
+
+/**
+ * Announces an institution verification outcome once per change.
+ *
+ * There is no email on status changes, so a representative would otherwise only
+ * discover an approval or rejection by re-reading their profile. The last status
+ * seen is kept per account so the toast fires on the change, not every visit.
+ */
+function announceStatusChange(
+  uid: string,
+  status: string,
+  showToast: (message: string, variant?: "info" | "success" | "warning") => void,
+) {
+  if (status !== "approved" && status !== "rejected") return;
+  const key = `aur:institution-status:${uid}`;
+  try {
+    if (window.localStorage.getItem(key) === status) return;
+    window.localStorage.setItem(key, status);
+  } catch {
+    return; // Private browsing blocks storage; skip rather than repeat the toast.
+  }
+  showToast(
+    status === "approved"
+      ? "Your institution has been verified and is now listed publicly."
+      : "Your institution application needs changes — see the reviewer feedback below.",
+    status === "approved" ? "success" : "warning",
+  );
+}
 
 const fullName = (profile: Profile) => [profile.first_name, profile.last_name === "-" ? "" : profile.last_name].filter(Boolean).join(" ");
 const toDraft = (profile: Profile): Draft => ({ name: fullName(profile), country: profile.country, profile_role: profile.profile_role, profile_photo: profile.profile_photo });
@@ -93,12 +122,20 @@ export default function ProfileSection() {
           isInstitution ? account.institutionApplication : null,
         );
         setProfile(data); setDraft(toDraft(data));
+        if (isInstitution) {
+          announceStatusChange(
+            user.uid,
+            account.institutionApplication?.status ??
+              data.institution_application_status,
+            showToast,
+          );
+        }
       } catch (reason) {
         setError(reason instanceof Error ? reason.message : "Unable to load your profile.");
       } finally { setLoading(false); }
     });
     return unsubscribe;
-  }, [profileReloadKey]);
+  }, [profileReloadKey, showToast]);
 
   const activePhoto = editing ? draft?.profile_photo : profile?.profile_photo;
 
@@ -331,7 +368,7 @@ function InstitutionProfile({
     rejected: {
       label: "Needs attention",
       description:
-        "The submitted details require correction before verification can continue.",
+        "The submitted details need correction. Update the application and resubmit — it returns to AUR for review.",
       className: "border-red-200 bg-red-50 text-red-800",
     },
   }[status];
@@ -471,6 +508,27 @@ function InstitutionProfile({
             <p className="mt-3 text-sm leading-6 text-slate-600">
               {statusCopy.description}
             </p>
+
+            {/* A rejection is only actionable if the reviewer's reason is shown. */}
+            {status === "rejected" && application?.rejectionReason && (
+              <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4">
+                <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-red-700">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  Reviewer feedback
+                </p>
+                <p className="mt-2 whitespace-pre-line text-sm leading-6 text-red-900">
+                  {application.rejectionReason}
+                </p>
+                <button
+                  type="button"
+                  onClick={onManageApplication}
+                  className="mt-4 inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700"
+                >
+                  Update and resubmit
+                </button>
+              </div>
+            )}
+
             <div className="mt-6 border-t border-slate-200 pt-5">
               <p className="text-xs font-semibold text-slate-700">
                 Institutional tools and billing activate only after verification.

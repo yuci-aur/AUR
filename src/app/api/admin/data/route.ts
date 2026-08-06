@@ -85,6 +85,38 @@ export async function GET(request: Request) {
       return Response.json({ total: rows.length, data: rows });
     }
 
+    if (action === "institution-applications") {
+      const status = new URL(request.url).searchParams.get("status") ?? "";
+      const filter = ["draft", "pending", "approved", "rejected"].includes(status)
+        ? status
+        : null;
+      const rows = await sql`
+        SELECT
+          firebase_uid AS id,
+          institution_name AS "institutionName",
+          institution_type AS "institutionType",
+          country,
+          website,
+          accreditation_id AS "accreditationId",
+          representative_name AS "representativeName",
+          representative_email AS "representativeEmail",
+          description,
+          logo_url AS "logoUrl",
+          campus_photo AS "campusPhoto",
+          status,
+          rejection_reason AS "rejectionReason",
+          reviewed_at AS "reviewedAt",
+          reviewed_by AS "reviewedBy",
+          submitted_at AS "submittedAt"
+        FROM aur_institution_applications
+        WHERE ${filter}::text IS NULL OR status = ${filter}
+        ORDER BY
+          CASE WHEN status = 'pending' THEN 0 ELSE 1 END,
+          submitted_at DESC
+      `;
+      return Response.json({ total: rows.length, data: rows });
+    }
+
     if (action === "blogs") {
       return Response.json(
         await sql`SELECT * FROM aur_blogs ORDER BY created_at DESC`,
@@ -201,6 +233,58 @@ export async function POST(request: Request) {
     if (action === "delete-event") {
       await sql`DELETE FROM aur_events WHERE id = ${String(body.id ?? "")}`;
       return Response.json({ success: true });
+    }
+
+    if (
+      action === "approve-institution" ||
+      action === "reject-institution" ||
+      action === "unpublish-institution"
+    ) {
+      const targetUid = String(body.id ?? "");
+      if (!targetUid) {
+        return Response.json(
+          { message: "An institution application id is required." },
+          { status: 400 },
+        );
+      }
+      // Unpublishing returns an approved listing to the review queue: it leaves
+      // the public directory but keeps every submitted detail for re-approval.
+      const status =
+        action === "approve-institution"
+          ? "approved"
+          : action === "reject-institution"
+            ? "rejected"
+            : "pending";
+      const reason =
+        action === "reject-institution"
+          ? String(payload.reason ?? "").trim().slice(0, 500) || null
+          : null;
+
+      const updated = await sql`
+        UPDATE aur_institution_applications
+        SET
+          status = ${status},
+          rejection_reason = ${reason},
+          reviewed_at = now(),
+          reviewed_by = ${String(user.email ?? user.uid)},
+          updated_at = now()
+        WHERE firebase_uid = ${targetUid}
+        RETURNING firebase_uid
+      `;
+      if (updated.length === 0) {
+        return Response.json(
+          { message: "That institution application no longer exists." },
+          { status: 404 },
+        );
+      }
+
+      // The applicant's profile mirrors this status, so keep the two in step.
+      await sql`
+        UPDATE aur_user_profiles
+        SET institution_application_status = ${status}, updated_at = now()
+        WHERE firebase_uid = ${targetUid}
+      `;
+      return Response.json({ success: true, status });
     }
 
     if (action === "create-university") {

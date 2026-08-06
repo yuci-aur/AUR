@@ -1,10 +1,11 @@
-import { 
-  LayoutDashboard, 
-  GraduationCap, 
-  Trophy, 
-  Globe, 
-  BarChart3, 
-  Bookmark, 
+import {
+  LayoutDashboard,
+  GraduationCap,
+  Trophy,
+  Globe,
+  BarChart3,
+  BadgeCheck,
+  Bookmark,
   Settings,
   // BookOpen, // re-add with the Methodology nav entry below
   Calendar,
@@ -81,6 +82,12 @@ export const SIDEBAR_ITEMS: NavItem[] = [
   //   icon: BookOpen,
   // },
   {
+    id: "institutions",
+    label: "Registered Institutions",
+    view: "institutions",
+    icon: BadgeCheck,
+  },
+  {
     id: "events",
     label: "Events & Awards",
     view: "events",
@@ -100,6 +107,7 @@ export const TOP_NAV_LINKS = [
   { label: "Rankings Engine", view: "rankings" },
   // { label: "Methodology", view: "methodology" },
   { label: "Comparison Matrix", view: "saved" },
+  { label: "Registered Institutions", view: "institutions" },
   { label: "Events & Awards", view: "events" },
   { label: "Blog", view: "blog" },
   { label: "News", view: "news" },

@@ -4,8 +4,10 @@ import { FormEvent, useEffect, useState } from "react";
 import {
   Building2,
   CheckCircle2,
+  FileText,
   Globe2,
   GraduationCap,
+  Image as ImageIcon,
   Loader2,
   Lock,
   Mail,
@@ -31,6 +33,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authErrorMessage } from "../lib/auth-error-message";
 import { authenticatedFetch } from "../lib/authenticated-fetch";
+import { uploadToCloudinary } from "../lib/cloudinary-upload";
 import { firebaseAuth } from "../lib/firebase";
 
 type FormState = {
@@ -42,6 +45,7 @@ type FormState = {
   representativeName: string;
   representativeEmail: string;
   password: string;
+  description: string;
 };
 
 const initialForm: FormState = {
@@ -53,7 +57,11 @@ const initialForm: FormState = {
   representativeName: "",
   representativeEmail: "",
   password: "",
+  description: "",
 };
+
+/** Cloudinary rejects oversized originals, so fail early with a clear message. */
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 export default function InstitutionRegistration({
   onBackToSignIn,
@@ -76,6 +84,11 @@ export default function InstitutionRegistration({
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [error, setError] = useState("");
+  // Held as files and uploaded during submit: Cloudinary signing needs a signed-in
+  // user, which does not exist yet while a new institution account is being created.
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [campusFile, setCampusFile] = useState<File | null>(null);
+  const [uploadStep, setUploadStep] = useState("");
 
   useEffect(
     () =>
@@ -202,6 +215,23 @@ export default function InstitutionRegistration({
         await updateProfile(user, { displayName: form.representativeName.trim() });
       }
 
+      // Uploads run after authentication so the signing endpoint can verify the
+      // representative, and before the insert so the URLs land with the record.
+      let logoUrl: string | null = null;
+      let campusPhoto: string | null = null;
+      if (logoFile) {
+        setUploadStep("Uploading logo…");
+        logoUrl = (await uploadToCloudinary(logoFile, { folder: "aur/logos" }))
+          .secure_url;
+      }
+      if (campusFile) {
+        setUploadStep("Uploading campus photo…");
+        campusPhoto = (
+          await uploadToCloudinary(campusFile, { folder: "aur/campuses" })
+        ).secure_url;
+      }
+      setUploadStep("");
+
       await authenticatedFetch("/api/account", {
         method: "POST",
         body: JSON.stringify({
@@ -211,6 +241,9 @@ export default function InstitutionRegistration({
           website,
           accreditationId: form.accreditationId.trim(),
           representativeName: form.representativeName.trim(),
+          description: form.description.trim(),
+          logoUrl,
+          campusPhoto,
         }),
       });
 
@@ -228,6 +261,7 @@ export default function InstitutionRegistration({
       );
     } finally {
       setSubmitting(false);
+      setUploadStep("");
     }
   }
 
@@ -526,6 +560,52 @@ export default function InstitutionRegistration({
                 />
               </FormField>
 
+              <FormField
+                id="institution-description"
+                label="About the institution"
+                icon={FileText}
+                className="sm:col-span-2"
+              >
+                <textarea
+                  id="institution-description"
+                  value={form.description}
+                  onChange={(event) => updateField("description", event.target.value)}
+                  maxLength={2000}
+                  rows={4}
+                  placeholder="A short profile shown on your public listing once approved."
+                  className="w-full resize-y rounded-lg border border-input bg-white px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  Optional · {form.description.length}/2000 characters
+                </p>
+              </FormField>
+
+              <ImageField
+                id="institution-logo"
+                label="Institution logo"
+                hint="Square works best · PNG or JPG up to 5 MB"
+                file={logoFile}
+                disabled={submitting}
+                onSelect={(file) => {
+                  setError("");
+                  setLogoFile(file);
+                }}
+                onInvalid={setError}
+              />
+
+              <ImageField
+                id="institution-campus"
+                label="Campus photo"
+                hint="Wide image works best · PNG or JPG up to 5 MB"
+                file={campusFile}
+                disabled={submitting}
+                onSelect={(file) => {
+                  setError("");
+                  setCampusFile(file);
+                }}
+                onInvalid={setError}
+              />
+
               {!currentUser && (
                 <FormField
                   id="institution-password"
@@ -574,7 +654,9 @@ export default function InstitutionRegistration({
                 className="h-auto gap-2 rounded-xl bg-[#17365f] px-6 py-3 text-sm font-semibold text-white hover:bg-[#102a4c]"
               >
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Building2 className="h-4 w-4" />}
-                {submitting ? "Submitting…" : "Submit for verification"}
+                {submitting
+                  ? uploadStep || "Submitting…"
+                  : "Submit for verification"}
               </Button>
             </div>
           </form>
@@ -592,6 +674,83 @@ function GoogleMark() {
       <path fill="#FBBC05" d="M6.39 13.92A6 6 0 0 1 6.08 12c0-.67.12-1.32.31-1.92V7.46H3.04A10 10 0 0 0 2 12c0 1.61.39 3.13 1.04 4.54l3.35-2.62Z" />
       <path fill="#EA4335" d="M12 5.95c1.47 0 2.79.5 3.82 1.49l2.87-2.87A9.63 9.63 0 0 0 12 2a10 10 0 0 0-8.96 5.46l3.35 2.62C7.18 7.71 9.39 5.95 12 5.95Z" />
     </svg>
+  );
+}
+
+/**
+ * Picks a single image and previews it locally. The file is uploaded during
+ * submit rather than on selection, because Cloudinary signing requires the
+ * representative account to exist first.
+ */
+function ImageField({
+  id,
+  label,
+  hint,
+  file,
+  disabled,
+  onSelect,
+  onInvalid,
+}: {
+  id: string;
+  label: string;
+  hint: string;
+  file: File | null;
+  disabled: boolean;
+  onSelect: (file: File | null) => void;
+  onInvalid: (message: string) => void;
+}) {
+  const [preview, setPreview] = useState("");
+
+  useEffect(() => {
+    if (!file) {
+      setPreview("");
+      return;
+    }
+    const objectUrl = URL.createObjectURL(file);
+    setPreview(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file]);
+
+  return (
+    <FormField id={id} label={label} icon={ImageIcon}>
+      <div className="flex items-center gap-3">
+        {preview ? (
+          // Blob preview of a not-yet-uploaded file, so next/image cannot optimise it.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={preview}
+            alt=""
+            className="h-14 w-14 shrink-0 rounded-lg border border-slate-200 bg-white object-contain"
+          />
+        ) : (
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50">
+            <ImageIcon className="h-5 w-5 text-slate-400" aria-hidden="true" />
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          <input
+            id={id}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            disabled={disabled}
+            onChange={(event) => {
+              const selected = event.target.files?.[0] ?? null;
+              if (selected && selected.size > MAX_IMAGE_BYTES) {
+                onInvalid(`${label} must be 5 MB or smaller.`);
+                event.target.value = "";
+                onSelect(null);
+                return;
+              }
+              onSelect(selected);
+            }}
+            className="w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#17365f] file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-[#17365f]/90 disabled:opacity-60"
+          />
+          <p className="mt-1 truncate text-xs text-slate-500">
+            {file ? file.name : `Optional · ${hint}`}
+          </p>
+        </div>
+      </div>
+    </FormField>
   );
 }
 

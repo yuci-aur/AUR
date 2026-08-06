@@ -120,6 +120,31 @@ export type UniversityRegisterPayload = {
   has_scholarship?: boolean | null;
 };
 
+export type InstitutionApplicationStatus =
+  | "draft"
+  | "pending"
+  | "approved"
+  | "rejected";
+
+export type AdminInstitutionApplication = {
+  id: string;
+  institutionName: string;
+  institutionType: string;
+  country: string;
+  website: string;
+  accreditationId: string;
+  representativeName: string;
+  representativeEmail: string;
+  description: string;
+  logoUrl: string | null;
+  campusPhoto: string | null;
+  status: InstitutionApplicationStatus;
+  rejectionReason: string | null;
+  reviewedAt: string | null;
+  reviewedBy: string | null;
+  submittedAt: string;
+};
+
 export class AdminApiError extends Error {
   status: number;
 
@@ -149,11 +174,13 @@ async function requireAdminUser() {
   return user;
 }
 
-async function adminGet<T>(action: string): Promise<T> {
+async function adminGet<T>(
+  action: string,
+  params: Record<string, string> = {},
+): Promise<T> {
   await requireAdminUser();
-  const response = await authenticatedFetch(
-    `/api/admin/data?action=${encodeURIComponent(action)}`,
-  );
+  const query = new URLSearchParams({ action, ...params });
+  const response = await authenticatedFetch(`/api/admin/data?${query}`);
   return response.json() as Promise<T>;
 }
 
@@ -282,6 +309,37 @@ export async function updateEventOrAward(
 
 export async function deleteEventOrAward(itemId: string) {
   await adminPost("delete-event", { id: itemId });
+}
+
+export async function listInstitutionApplications(
+  status?: InstitutionApplicationStatus,
+): Promise<{ total: number; data: AdminInstitutionApplication[] }> {
+  return adminGet<{ total: number; data: AdminInstitutionApplication[] }>(
+    "institution-applications",
+    status ? { status } : {},
+  );
+}
+
+export async function approveInstitution(applicationId: string) {
+  return adminPost<{ success: boolean; status: string }>(
+    "approve-institution",
+    { id: applicationId },
+  );
+}
+
+/** Returns an approved institution to the pending queue and unlists it. */
+export async function unpublishInstitution(applicationId: string) {
+  return adminPost<{ success: boolean; status: string }>(
+    "unpublish-institution",
+    { id: applicationId },
+  );
+}
+
+export async function rejectInstitution(applicationId: string, reason: string) {
+  return adminPost<{ success: boolean; status: string }>("reject-institution", {
+    id: applicationId,
+    payload: { reason },
+  });
 }
 
 export async function registerUniversity(payload: UniversityRegisterPayload) {

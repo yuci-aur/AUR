@@ -5,6 +5,17 @@ function tokenName(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+/**
+ * Institution logos and campus photos are rendered in the public listing, so
+ * only accept the https URLs our own signed upload endpoint hands back. Any
+ * other value (including javascript: and data: URLs) is stored as null.
+ */
+function mediaUrl(value: unknown) {
+  const url = tokenName(value);
+  if (!url) return null;
+  return /^https:\/\/res\.cloudinary\.com\//i.test(url) ? url : null;
+}
+
 function errorResponse(error: unknown) {
   if (error instanceof Response) return error;
   return Response.json(
@@ -187,7 +198,11 @@ export async function GET(request: Request) {
         accreditation_id AS "accreditationId",
         representative_name AS "representativeName",
         representative_email AS "representativeEmail",
+        description,
+        logo_url AS "logoUrl",
+        campus_photo AS "campusPhoto",
         status,
+        rejection_reason AS "rejectionReason",
         submitted_at AS "submittedAt"
       FROM aur_institution_applications
       WHERE firebase_uid = ${user.uid}
@@ -249,6 +264,7 @@ export async function POST(request: Request) {
       INSERT INTO aur_institution_applications (
         firebase_uid, institution_name, institution_type, country, website,
         accreditation_id, representative_name, representative_email,
+        description, logo_url, campus_photo,
         status, submitted_at, updated_at
       )
       VALUES (
@@ -256,6 +272,8 @@ export async function POST(request: Request) {
         ${tokenName(body.institutionType)}, ${tokenName(body.country)},
         ${website}, ${tokenName(body.accreditationId)},
         ${tokenName(body.representativeName)}, ${String(user.email ?? "")},
+        ${tokenName(body.description).slice(0, 2000)},
+        ${mediaUrl(body.logoUrl)}, ${mediaUrl(body.campusPhoto)},
         'pending', now(), now()
       )
       ON CONFLICT (firebase_uid) DO UPDATE SET
@@ -266,10 +284,19 @@ export async function POST(request: Request) {
         accreditation_id = EXCLUDED.accreditation_id,
         representative_name = EXCLUDED.representative_name,
         representative_email = EXCLUDED.representative_email,
+        description = EXCLUDED.description,
+        -- Keep the stored media when a resubmission omits a new upload.
+        logo_url = COALESCE(EXCLUDED.logo_url, aur_institution_applications.logo_url),
+        campus_photo = COALESCE(
+          EXCLUDED.campus_photo, aur_institution_applications.campus_photo
+        ),
         status = CASE
           WHEN aur_institution_applications.status = 'approved' THEN 'approved'
           ELSE 'pending'
         END,
+        -- A resubmission supersedes the previous review, so the old feedback
+        -- must not linger next to the new pending state.
+        rejection_reason = NULL,
         updated_at = now()
     `;
     await sql`

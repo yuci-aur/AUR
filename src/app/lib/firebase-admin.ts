@@ -12,12 +12,37 @@ if (!projectId) {
 /**
  * Service account for verifying ID tokens and reading the admin custom claim.
  *
- * Supplied as inline JSON so the same value works on hosts without a writable
- * filesystem. When absent the SDK falls back to application default
- * credentials, which is what a local `gcloud auth` setup provides; without
- * either, every authenticated route fails with `app/invalid-credential`.
+ * Credentials come from discrete variables rather than inline JSON: pasting a
+ * key file into a dashboard field turns the `\n` escapes inside `private_key`
+ * into real line breaks, which breaks `JSON.parse` before the SDK ever sees the
+ * key. Only the three fields `cert()` actually reads are needed. Inline JSON in
+ * FIREBASE_SERVICE_ACCOUNT is still honoured for existing deployments.
+ *
+ * When none are set the SDK falls back to application default credentials,
+ * which is what a local `gcloud auth` setup provides; without either, every
+ * authenticated route fails with `app/invalid-credential`.
  */
 function serviceAccountCredential() {
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+  if (clientEmail && privateKey) {
+    return cert({
+      projectId,
+      clientEmail,
+      // Accept the key with either literal `\n` escapes or real newlines, so
+      // the value survives both single-line dashboard fields and .env quoting.
+      privateKey: privateKey.replace(/\\n/g, "\n"),
+    });
+  }
+
+  if (clientEmail || privateKey) {
+    throw new Error(
+      "Firebase service account is half-configured. Set both " +
+        "FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY.",
+    );
+  }
+
   const inline = process.env.FIREBASE_SERVICE_ACCOUNT;
   if (!inline) return undefined;
   try {

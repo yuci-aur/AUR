@@ -1,4 +1,9 @@
 export const runtime = "nodejs";
+// Serve from the cache but never bake a response into the build: a
+// parameterless GET is otherwise prerendered, which freezes the build
+// machine's articles into the deployment -- and if GNEWS_API_KEY is absent at
+// build time, freezes an empty list for the whole revalidate window.
+export const dynamic = "force-dynamic";
 export const revalidate = 900;
 
 const HIGHER_ED_KEYWORDS = [

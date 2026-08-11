@@ -1,8 +1,13 @@
 import { verifyFirebaseRequest } from "@/app/lib/firebase-admin";
 import { sql } from "@/app/lib/neon";
 
+// firebase-admin is not edge-compatible, so pin the runtime rather than leaving
+// it to inference.
+export const runtime = "nodejs";
+
 function errorResponse(error: unknown) {
   if (error instanceof Response) return error;
+  console.error("[/api/account/bookmarks]", error);
   return Response.json({ message: "Bookmark request failed." }, { status: 500 });
 }
 

@@ -1,6 +1,10 @@
 import { verifyFirebaseRequest } from "@/app/lib/firebase-admin";
 import { sql } from "@/app/lib/neon";
 
+// firebase-admin is not edge-compatible, so pin the runtime rather than leaving
+// it to inference.
+export const runtime = "nodejs";
+
 function tokenName(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }

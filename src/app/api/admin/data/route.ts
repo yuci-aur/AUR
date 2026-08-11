@@ -3,6 +3,10 @@ import { randomUUID } from "node:crypto";
 import { verifyFirebaseRequest } from "@/app/lib/firebase-admin";
 import { sql } from "@/app/lib/neon";
 
+// firebase-admin is not edge-compatible, so pin the runtime rather than leaving
+// it to inference.
+export const runtime = "nodejs";
+
 function slugify(value: string) {
   return value
     .toLowerCase()

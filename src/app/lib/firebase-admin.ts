@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getApp, getApps, initializeApp } from "firebase-admin/app";
+import { cert, getApp, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 
 const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
@@ -9,7 +9,31 @@ if (!projectId) {
   throw new Error("NEXT_PUBLIC_FIREBASE_PROJECT_ID is not configured.");
 }
 
-const app = getApps().length ? getApp() : initializeApp({ projectId });
+/**
+ * Service account for verifying ID tokens and reading the admin custom claim.
+ *
+ * Supplied as inline JSON so the same value works on hosts without a writable
+ * filesystem. When absent the SDK falls back to application default
+ * credentials, which is what a local `gcloud auth` setup provides; without
+ * either, every authenticated route fails with `app/invalid-credential`.
+ */
+function serviceAccountCredential() {
+  const inline = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (!inline) return undefined;
+  try {
+    return cert(JSON.parse(inline));
+  } catch {
+    throw new Error(
+      "FIREBASE_SERVICE_ACCOUNT is set but is not valid JSON. It must be the " +
+        "service account key on a single line.",
+    );
+  }
+}
+
+const credential = serviceAccountCredential();
+const app = getApps().length
+  ? getApp()
+  : initializeApp(credential ? { projectId, credential } : { projectId });
 
 export const firebaseAdminAuth = getAuth(app);
 

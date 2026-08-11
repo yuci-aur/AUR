@@ -18,6 +18,9 @@ function mediaUrl(value: unknown) {
 
 function errorResponse(error: unknown) {
   if (error instanceof Response) return error;
+  // Without this the cause is invisible: the client maps any failure to a
+  // generic notice, so an unlogged throw leaves nothing to diagnose from.
+  console.error("[/api/account]", error);
   return Response.json(
     { message: "Your account information could not be updated." },
     { status: 500 },

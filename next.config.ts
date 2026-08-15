@@ -19,6 +19,9 @@ const contentSecurityPolicy = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Hides the dev-only on-screen route indicator, which overlapped the mobile
+  // bottom nav. Compile and runtime errors are still surfaced.
+  devIndicators: false,
   images: {
     qualities: [75, 90],
     remotePatterns: [

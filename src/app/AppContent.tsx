@@ -190,7 +190,7 @@ export default function AppContent() {
         {/* Main Content Area — Full Width */}
         <main
           id="main-content"
-          className={`flex-1 flex flex-col min-w-0 pb-20 md:pb-0 ${
+          className={`flex-1 flex flex-col min-w-0 ${
             view === "home" || view === "login" ? "p-0" : "px-4 pt-4 lg:px-8 lg:pt-8"
           }`}
           style={{ isolation: "isolate" }}
@@ -282,12 +282,11 @@ export default function AppContent() {
         </main>
       </div>
 
-      {/* Mobile Responsive Navigation Drawer & Bottom Bar */}
+      {/* Mobile Responsive Navigation Drawer */}
       {view !== "login" && view !== "admin" && (
         <MobileMenu
           isAuthenticated={isAuthenticated}
           onLogIn={() => openAuth("login")}
-          onSignUp={() => openAuth("signup")}
         />
       )}
 

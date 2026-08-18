@@ -171,7 +171,7 @@ export default function EventsAndAwards() {
 
           {/* ── Empty state ── */}
           {!loading && events.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-white/60 p-10 text-center">
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-white/60 p-6 sm:p-10 text-center">
               <Calendar className="mx-auto mb-3 h-8 w-8 text-slate-300" aria-hidden="true" />
               <p className="text-sm font-semibold text-slate-700">No events or awards are currently listed.</p>
               <p className="mt-1 text-sm text-slate-500">
@@ -392,7 +392,7 @@ export default function EventsAndAwards() {
                   </h2>
 
                   {applicationStatus === "success" ? (
-                    <div className="flex flex-col items-center rounded-xl border border-green-200 bg-green-50 p-8 text-center">
+                    <div className="flex flex-col items-center rounded-xl border border-green-200 bg-green-50 p-6 sm:p-8 text-center">
                       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
                         <CheckCircle className="h-8 w-8 text-green-600" aria-hidden="true" />
                       </div>

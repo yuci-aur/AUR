@@ -730,7 +730,6 @@ a,
 }
 
 /* Prevent text selection jank during rapid interactions */
-.aur-card,
 nav,
 header {
   user-select: none;
@@ -767,9 +766,16 @@ img {
     border-radius: 12px;
   }
 
-  /* Touch targets: minimum 44px for accessibility */
+  /* Touch targets: minimum 44px for accessibility.
+     Deliberately excludes bare <a>: forcing a display value on every anchor
+     pulled inline links out of the text flow (they stopped wrapping mid-
+     sentence) and gave each one a 44px box. Buttons are block-level controls
+     already, so centring them here is safe -- and any Tailwind display
+     utility still wins on specificity. */
   button,
-  a {
+  [role="button"],
+  input[type="button"],
+  input[type="submit"] {
     min-height: 44px;
     display: inline-flex;
     align-items: center;

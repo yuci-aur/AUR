@@ -322,9 +322,9 @@ export default function RankingsEngine({
         cell: ({ row }) => (
           <div className="text-left font-sans font-bold text-[var(--aur-text)] transition-all active:scale-95 cursor-pointer inline-block w-full truncate" onClick={() => onUniversitySelect(row.original.id)}>
             <div className="truncate w-full">{row.original.name}</div>
-            <div className="flex items-center text-[10px] text-[var(--aur-text-muted)] font-mono font-medium uppercase mt-0.5">
-              <Globe className="h-3 w-3 mr-1" />
-              {row.original.location}
+            <div className="flex min-w-0 items-center text-[10px] text-[var(--aur-text-muted)] font-mono font-medium uppercase mt-0.5">
+              <Globe className="h-3 w-3 mr-1 shrink-0" />
+              <span className="truncate">{row.original.location}</span>
             </div>
           </div>
         ),
@@ -382,19 +382,25 @@ export default function RankingsEngine({
             <button
               type="button"
               onClick={() => onToggleCompare(row.original.id)}
+              aria-label={
+                isSelected
+                  ? `Remove ${row.original.name} from comparison`
+                  : `Add ${row.original.name} to comparison`
+              }
+              aria-pressed={isSelected}
               className={`aur-btn-ghost aur-focus-ring ${focusRing} ${
                 isSelected ? "aur-btn-ghost--active" : ""
               }`}
             >
               {isSelected ? (
                 <>
-                  <CheckSquare className="h-3.5 w-3.5 text-[var(--aur-text)]" />
-                  <span className="text-[10px]">Added</span>
+                  <CheckSquare className="h-3.5 w-3.5 shrink-0 text-[var(--aur-text)]" />
+                  <span className="hidden text-[10px] sm:inline">Added</span>
                 </>
               ) : (
                 <>
-                  <Square className="h-3.5 w-3.5" />
-                  <span className="text-[10px]">Compare</span>
+                  <Square className="h-3.5 w-3.5 shrink-0" />
+                  <span className="hidden text-[10px] sm:inline">Compare</span>
                 </>
               )}
             </button>
@@ -650,7 +656,7 @@ export default function RankingsEngine({
               {/* Hover Gradient Overlay */}
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-[#1A365D]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
               
-              <div className="relative z-10 grid grid-cols-[3rem_minmax(140px,1fr)_minmax(60px,1fr)_8rem] sm:grid-cols-[3rem_minmax(180px,2fr)_minmax(60px,1fr)_minmax(60px,1fr)_minmax(60px,1fr)_minmax(60px,1fr)_minmax(80px,1fr)_7rem] gap-3 items-center px-4 sm:px-6 py-4">
+              <div className="relative z-10 grid grid-cols-[2.25rem_minmax(0,1fr)_3rem_2.75rem] sm:grid-cols-[3rem_minmax(180px,2fr)_minmax(60px,1fr)_minmax(60px,1fr)_minmax(60px,1fr)_minmax(60px,1fr)_minmax(80px,1fr)_7rem] gap-2 sm:gap-3 items-center px-3 sm:px-6 py-4">
                 {row.getVisibleCells().map((cell) => {
                   const columnId = cell.column.id;
                   const isMobileHiddenCol = ["citations", "research", "employability", "tuition"].includes(columnId);

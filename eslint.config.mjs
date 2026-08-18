@@ -24,6 +24,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Python virtualenv with vendored JS — not ours to lint.
+    "backend/**",
   ]),
 ]);
 

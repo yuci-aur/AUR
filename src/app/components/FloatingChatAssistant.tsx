@@ -20,8 +20,25 @@ interface Message {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function FloatingChatAssistant() {
-  const {activeView } = useSidebar();
+  const { activeView, selectedUniIds } = useSidebar();
+
+  // The comparison dock is a full-width bar on phones, so lift the launcher
+  // clear of it while a comparison is active. On md+ the dock is centred and
+  // the launcher sits beside it, so no offset is needed.
+  const dockVisible = selectedUniIds.length > 0;
   const [isChatOpen, setIsChatOpen] = useState(false);
+
+  // Dragging is a desktop affordance. On touch it swallows the gesture that
+  // should scroll the transcript, which leaves the conversation unreadable
+  // once it runs past one screen.
+  const [isDraggable, setIsDraggable] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 768px) and (pointer: fine)");
+    const sync = () => setIsDraggable(query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
 
 
   const [isIdle, setIsIdle] = useState(true);
@@ -138,19 +155,20 @@ export default function FloatingChatAssistant() {
         {isChatOpen && (
           <motion.div
             key="chat-panel"
-            drag
+            drag={isDraggable}
             dragMomentum={false}
             role="dialog"
             aria-label="AUR Helping Hand chat assistant"
             className={[
-              "fixed bottom-20 md:bottom-24 right-3 sm:right-6 z-50",
+              dockVisible ? "fixed bottom-28 md:bottom-24" : "fixed bottom-20 md:bottom-24",
+              "right-3 sm:right-6 z-50",
               "max-w-[calc(100vw-1.5rem)] w-80 sm:w-[360px]",
               "flex flex-col rounded-xl overflow-hidden",
               "border",
               border,
               panelBg,
               dragGlow,
-              "cursor-grab select-none",
+              isDraggable ? "cursor-grab select-none" : "select-none",
               "will-change-transform",
             ].join(" ")}
           >
@@ -295,9 +313,9 @@ export default function FloatingChatAssistant() {
       <>
         {!isChatOpen && (
           <motion.div
-            drag
+            drag={isDraggable}
             dragMomentum={false}
-            className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50 flex flex-col items-end gap-2 cursor-grab active:cursor-grabbing"
+            className={`fixed ${dockVisible ? "bottom-28" : "bottom-20"} right-4 md:bottom-6 md:right-6 z-50 flex flex-col items-end gap-2 ${isDraggable ? "cursor-grab active:cursor-grabbing" : ""}`}
             style={{
               opacity: isIdle ? 1 : 0,
               pointerEvents: isIdle ? "auto" : "none",
@@ -307,7 +325,7 @@ export default function FloatingChatAssistant() {
             {activeView === "home" && (
               <div
                 className={[
-                  "relative px-3.5 py-2.5 rounded-2xl text-[11px] font-bold pointer-events-none mr-2",
+                  "relative hidden px-3.5 py-2.5 rounded-2xl text-[11px] font-bold pointer-events-none mr-2 sm:block",
                   "bg-white border border-slate-200 text-aur-primary shadow-[0_8px_24px_rgba(26,54,93,0.16)]",
                 ].join(" ")}
               >

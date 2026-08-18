@@ -224,7 +224,7 @@ export default function UniversityProfile({ universityId, onBack, onViewChange, 
 
                 {/* Subject Ranking Highlights */}
                 {uni.qsSubjectRankings && uni.qsSubjectRankings.length > 0 && (
-                  <div className="mt-12 bg-[var(--aur-surface)] border border-[var(--aur-border)] rounded-3xl p-8 shadow-[var(--aur-shadow-sm)]">
+                  <div className="mt-12 bg-[var(--aur-surface)] border border-[var(--aur-border)] rounded-3xl p-5 sm:p-8 shadow-[var(--aur-shadow-sm)]">
                     <div className="flex items-center justify-between mb-8 pb-4 border-b border-[var(--aur-border)]">
                       <h4 className="font-serif text-2xl font-bold text-[var(--aur-text)]">Rankings by Subject</h4>
                       <Trophy className="h-6 w-6 text-[var(--aur-text-muted)]" />
@@ -258,7 +258,7 @@ export default function UniversityProfile({ universityId, onBack, onViewChange, 
               </div>
 
               <div className="lg:col-span-1">
-                <div className="border border-[var(--aur-border)] bg-[var(--aur-surface)] rounded-3xl p-8 sticky top-28 shadow-[var(--aur-shadow)]">
+                <div className="border border-[var(--aur-border)] bg-[var(--aur-surface)] rounded-3xl p-5 sm:p-8 lg:sticky lg:top-28 shadow-[var(--aur-shadow)]">
                   <h4 className="text-[10px] font-bold uppercase tracking-widest text-[var(--aur-text-muted)] mb-6 border-b border-[var(--aur-border)] pb-4 flex items-center justify-between">
                     Fast Facts
                     <ExternalLink className="h-4 w-4" />

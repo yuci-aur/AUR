@@ -53,6 +53,8 @@ lint_errors.txt
 
 # python tooling
 /.pytest_cache/
+.venv/
+venv/
 
 # pnpm is the only package manager here. A stray npm lockfile makes the build
 # host's package-manager detection ambiguous, which breaks the file tracing that

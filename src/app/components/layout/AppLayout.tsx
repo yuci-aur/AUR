@@ -66,6 +66,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <MobileMenu
         isAuthenticated={isAuthenticated}
         onLogIn={() => openAuth("login")}
+        onSignUp={() => openAuth("signup")}
       />
 
       <FloatingChatAssistant />

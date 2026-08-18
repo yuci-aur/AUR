@@ -19,7 +19,7 @@ export default function NewsFlashWidget() {
 
   if (loading) {
     return (
-      <div className="w-full bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
+      <div className="w-full bg-white border border-gray-200 rounded-2xl p-5 sm:p-8 shadow-sm">
         <div className="space-y-6">
           <Skeleton className="h-8 w-48 bg-gray-200 rounded" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

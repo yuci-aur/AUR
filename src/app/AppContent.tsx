@@ -287,6 +287,7 @@ export default function AppContent() {
         <MobileMenu
           isAuthenticated={isAuthenticated}
           onLogIn={() => openAuth("login")}
+          onSignUp={() => openAuth("signup")}
         />
       )}
 

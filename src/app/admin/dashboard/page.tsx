@@ -24,6 +24,7 @@ import {
   EyeOff,
   Trophy,
   Upload,
+  Menu,
 } from "lucide-react";
 import {
   AdminBlog,
@@ -73,11 +74,15 @@ const Sidebar = ({
   setActiveTab,
   onLogout,
   admin,
+  isOpen,
+  onClose,
 }: {
   activeTab: Tab;
   setActiveTab: (t: Tab) => void;
   onLogout: () => void;
   admin: AdminProfile | null;
+  isOpen: boolean;
+  onClose: () => void;
 }) => {
   const tabs: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -89,7 +94,20 @@ const Sidebar = ({
   ];
 
   return (
-    <div className="w-64 bg-[#1A365D] min-h-screen text-white flex flex-col fixed left-0 top-0 bottom-0 shadow-2xl z-20">
+    <>
+      {/* Backdrop — drawer only exists below lg, where the rail is off-canvas */}
+      {isOpen && (
+        <div
+          onClick={onClose}
+          aria-hidden
+          className="fixed inset-0 z-20 bg-slate-950/60 backdrop-blur-sm lg:hidden"
+        />
+      )}
+      <div
+        className={`w-64 max-w-[85vw] bg-[#1A365D] min-h-screen text-white flex flex-col fixed left-0 top-0 bottom-0 shadow-2xl z-30 transition-transform duration-300 lg:translate-x-0 ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
       <div className="p-6 border-b border-white/10 flex items-center space-x-3 bg-white/5">
         <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center border border-white/20">
           <ShieldCheck className="w-6 h-6 text-white" />
@@ -107,7 +125,10 @@ const Sidebar = ({
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => {
+              setActiveTab(tab.id);
+              onClose();
+            }}
             className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
               activeTab === tab.id
                 ? "bg-white text-[#1A365D] shadow-lg font-bold"
@@ -130,14 +151,18 @@ const Sidebar = ({
           </div>
         )}
         <button
-          onClick={onLogout}
+          onClick={() => {
+            onClose();
+            onLogout();
+          }}
           className="w-full flex items-center justify-center space-x-2 px-4 py-3 text-red-300 hover:bg-red-500/20 hover:text-red-100 rounded-xl transition-all font-bold"
         >
           <LogOut className="w-5 h-5" />
           <span>Logout</span>
         </button>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 
@@ -453,8 +478,8 @@ const BlogsTab = () => {
       ) : blogs.length === 0 ? (
         <EmptyState message="No blog posts yet. Create your first one." />
       ) : (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-          <table className="w-full text-left text-sm">
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
+          <table className="w-full min-w-[42rem] text-left text-sm">
             <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
               <tr>
                 <th className="px-6 py-4 font-bold uppercase tracking-wider text-xs">Title</th>
@@ -1295,7 +1320,7 @@ const UsersTab = () => {
         <EmptyState message="No users match your search." />
       ) : (
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full min-w-[42rem] text-left text-sm">
             <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
               <tr>
                 <th className="px-6 py-4 font-bold uppercase tracking-wider text-xs">User</th>
@@ -1409,6 +1434,7 @@ const EmptyState = ({ message }: { message: string }) => (
 export default function Dashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [admin, setAdmin] = useState<AdminProfile | null>(null);
   const [checking, setChecking] = useState(true);
 
@@ -1439,12 +1465,27 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} admin={admin} />
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onLogout={handleLogout}
+        admin={admin}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-      <div className="flex-1 ml-64 flex flex-col min-h-screen">
-        <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 h-20 px-8 flex items-center justify-between sticky top-0 z-10 shadow-sm">
-          <div>
-            <h1 className="text-xl font-black text-[#1A365D] tracking-tight capitalize">
+      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen min-w-0">
+        <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 h-20 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-10 shadow-sm gap-3">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open admin menu"
+            className="shrink-0 rounded-lg p-2 text-[#1A365D] transition-colors hover:bg-slate-100 lg:hidden"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-base sm:text-xl font-black text-[#1A365D] tracking-tight capitalize">
               {activeTab === "overview"
                 ? "Dashboard Overview"
                 : activeTab === "events-awards"
@@ -1453,18 +1494,18 @@ export default function Dashboard() {
                     ? "Institution Requests"
                     : activeTab}
             </h1>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
+            <p className="hidden truncate text-xs text-slate-500 font-medium mt-0.5 sm:block">
               Advanced University Ranking — Admin
             </p>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex shrink-0 items-center space-x-3">
             <div className="w-10 h-10 bg-[#1A365D] rounded-full flex items-center justify-center text-white font-black">
               {admin ? admin.first_name.charAt(0).toUpperCase() : "A"}
             </div>
           </div>
         </header>
 
-        <main className="flex-1 p-8">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
           {activeTab === "overview" && <OverviewTab />}
           {activeTab === "blogs" && <BlogsTab />}
           {activeTab === "events-awards" && <EventsAwardsTab />}

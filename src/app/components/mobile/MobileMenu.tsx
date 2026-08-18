@@ -5,16 +5,18 @@ import { useSidebar } from "../navigation/SidebarContext";
 import { SIDEBAR_ITEMS, NavItem, isProtectedView } from "../navigation/config";
 import { Button } from "@/components/ui/button";
 
-import { X, LogIn } from "lucide-react";
+import { X, LogIn, UserPlus } from "lucide-react";
 
 interface MobileMenuProps {
   isAuthenticated?: boolean;
   onLogIn?: () => void;
+  onSignUp?: () => void;
 }
 
 export default function MobileMenu({
   isAuthenticated = true,
   onLogIn,
+  onSignUp,
 }: MobileMenuProps) {
   const focusRing =
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-cyber-yellow dark:focus-visible:ring-offset-cyber-black";
@@ -35,7 +37,7 @@ export default function MobileMenu({
       {/* 1. Mobile Left Drawer (Sidebar Navigation) */}
       <>
         {isMobileOpen && (
-          <div className="fixed inset-0 z-50 md:hidden flex font-sans">
+          <div className="fixed inset-0 z-50 lg:hidden flex font-sans">
 
             {/* Backdrop Blur Overlay */}
             <div
@@ -109,7 +111,19 @@ export default function MobileMenu({
               {/* Drawer Footer */}
               <div className="border-t border-slate-200 dark:border-cyber-border/40 bg-slate-50 dark:bg-cyber-dark/50">
                 {!isAuthenticated && (
-                  <div className="border-b border-slate-200 p-3 dark:border-cyber-border/40">
+                  <div className="flex flex-col gap-2 border-b border-slate-200 p-3 dark:border-cyber-border/40">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        setIsMobileOpen(false);
+                        onSignUp?.();
+                      }}
+                      className={`flex h-auto w-full items-center justify-center gap-2 rounded-lg bg-aur-primary p-3 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-aur-primary/90 hover:text-white ${focusRing}`}
+                    >
+                      <UserPlus className="size-4 shrink-0" />
+                      <span>Sign Up</span>
+                    </Button>
                     <Button
                       type="button"
                       variant="ghost"

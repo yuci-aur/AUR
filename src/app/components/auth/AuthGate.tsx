@@ -85,7 +85,7 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
           onClick={closeDialog}
         >
           <div
-            className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-2xl"
+            className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button

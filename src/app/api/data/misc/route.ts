@@ -49,6 +49,21 @@ export async function GET(request: Request) {
     );
   }
 
+  // Every country in the dataset. The directory's country filter cannot build
+  // this from the loaded universities, which are only the current page.
+  if (resource === "university-countries") {
+    const rows = await sql`
+      SELECT DISTINCT location
+      FROM aur_universities
+      WHERE location IS NOT NULL AND location <> ''
+      ORDER BY location ASC
+    `;
+    return Response.json(
+      rows.map((row) => String(row.location)),
+      { headers: { "Cache-Control": "public, s-maxage=600, stale-while-revalidate=1800" } },
+    );
+  }
+
   if (resource === "methodology") {
     try {
       const rows = await sql`

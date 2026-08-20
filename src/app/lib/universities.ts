@@ -2,6 +2,13 @@ import type { University } from "../types";
 
 export const UNIVERSITY_PAGE_SIZE = 20;
 
+/**
+ * Ceiling for a filtered query. Matches the API's own cap so a search or
+ * country filter returns its full result set in one request instead of a
+ * silently truncated slice. Paginated browsing still uses UNIVERSITY_PAGE_SIZE.
+ */
+export const MAX_SEARCH_PAGE_SIZE = 1000;
+
 export type UniversityCursor = number;
 
 export interface UniversityPage {
@@ -21,6 +28,8 @@ type BackendUniversity = Record<string, unknown> & {
   subregion?: string;
   rank?: number | string | null;
   rank_2025?: number | string | null;
+  /** True position in the full rankings, computed server-side. */
+  aurRank?: number | string | null;
   overall?: number | string | null;
   academicReputation?: number | string | null;
   employerReputation?: number | string | null;
@@ -47,6 +56,9 @@ type BackendUniversity = Record<string, unknown> & {
 function toNumber(value: unknown, fallback = 0): number {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string") {
+    // `Number("")` is 0, not NaN, so a blank metric would read as a real score
+    // of zero and suppress the fallback to `overall` in `score()`.
+    if (value.trim() === "") return fallback;
     const parsed = Number(value);
     if (Number.isFinite(parsed)) return parsed;
   }
@@ -56,7 +68,13 @@ function toNumber(value: unknown, fallback = 0): number {
 function score(...values: unknown[]): number {
   for (const value of values) {
     const parsed = toNumber(value, NaN);
-    if (Number.isFinite(parsed)) return Math.max(0, Math.min(100, parsed));
+    if (!Number.isFinite(parsed)) continue;
+    // Some records carry a rank (e.g. 701) where a 0-100 indicator is expected.
+    // Clamping would turn that into a perfect 100 and outrank genuinely
+    // top-scoring institutions, so out-of-range values are skipped in favour of
+    // the next fallback.
+    if (parsed < 0 || parsed > 100) continue;
+    return parsed;
   }
   return 0;
 }
@@ -101,7 +119,10 @@ export function mapBackendUniversity(uni: BackendUniversity, index: number): Uni
   const citations = score(uni.citations, uni.papersPerFaculty, overall);
   const intlStudents = score(uni.intlStudents, overall);
   const research = score(uni.academicReputation, uni.intlResearchNetwork, uni.papersPerFaculty, overall);
-  const aurRank = index + 1;
+  // The server ranks over the whole table, so filtered/searched pages keep each
+  // institution's true position. Falls back to list position when absent.
+  const serverRank = toNumber(uni.aurRank, NaN);
+  const aurRank = Number.isFinite(serverRank) && serverRank > 0 ? serverRank : index + 1;
   const sourceWorldRank = toNumber(uni.rank, NaN);
 
   return {
@@ -142,6 +163,60 @@ export function mapBackendUniversity(uni: BackendUniversity, index: number): Uni
     isPublic: typeof uni.isPublic === "boolean" ? uni.isPublic : undefined,
     hasScholarship:
       typeof uni.hasScholarship === "boolean" ? uni.hasScholarship : undefined,
+  };
+}
+
+export interface UniversityFilters {
+  search?: string;
+  country?: string;
+  medicineOnly?: boolean;
+}
+
+function buildQuery(
+  offset: number,
+  pageSize: number,
+  filters: UniversityFilters,
+): string {
+  const params = new URLSearchParams({
+    offset: String(offset),
+    limit: String(pageSize),
+  });
+  if (filters.search?.trim()) params.set("search", filters.search.trim());
+  if (filters.country && filters.country !== "All") {
+    params.set("country", filters.country);
+  }
+  if (filters.medicineOnly) params.set("medicineOnly", "true");
+  return params.toString();
+}
+
+/**
+ * Searches the entire dataset in the database rather than filtering the pages
+ * already loaded in the browser, which would only ever match the current page.
+ */
+export async function searchUniversities(
+  filters: UniversityFilters,
+  offset = 0,
+  pageSize = UNIVERSITY_PAGE_SIZE,
+): Promise<UniversityPage> {
+  const normalizedPageSize = Math.max(1, Math.min(pageSize, MAX_SEARCH_PAGE_SIZE));
+  const response = await fetch(
+    `/api/data/universities?${buildQuery(offset, normalizedPageSize, filters)}`,
+  );
+  if (!response.ok) throw new Error("Unable to search university rankings.");
+  const payload = (await response.json()) as {
+    items: BackendUniversity[];
+    total: number;
+    nextOffset: number;
+    hasMore: boolean;
+  };
+
+  return {
+    universities: payload.items.map((university, index) =>
+      mapBackendUniversity(university, offset + index),
+    ),
+    cursor: payload.hasMore ? payload.nextOffset : null,
+    hasMore: payload.hasMore,
+    total: payload.total,
   };
 }
 

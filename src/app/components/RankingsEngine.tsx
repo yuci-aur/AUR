@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo, useEffect, useDeferredValue } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import {
   useReactTable,
   getCoreRowModel,
@@ -18,17 +17,15 @@ import {
   ChevronUp,
   RotateCcw,
   Search,
-  Filter,
   CheckSquare,
   Square,
-  ChevronRight,
-  DollarSign,
   Globe,
   X,
   FilterX,
   Lock,
 } from "lucide-react";
 import type { University } from "../types";
+import { searchUniversities, MAX_SEARCH_PAGE_SIZE } from "../lib/universities";
 import { useUniversityData } from "./data/UniversityDataProvider";
 import { useAuthGate } from "./auth/AuthGate";
 import { PREVIEW_LIMIT } from "./navigation/config";
@@ -41,6 +38,30 @@ interface RankingsEngineProps {
   selectedUniIds: string[];
   onToggleCompare: (id: string) => void;
   onUniversitySelect: (id: string) => void;
+}
+
+/**
+ * Rows fetched per server-side country or search query. Set to the API's cap so
+ * a filtered result arrives complete: at 50 a search for "IIT" or a country
+ * filter silently dropped everything past the 50th match, which reads as
+ * missing data rather than as a page limit.
+ */
+const MAX_FILTER_ROWS = MAX_SEARCH_PAGE_SIZE;
+
+/**
+ * Renders a 0-100 indicator. Many records in the long tail carry no indicator
+ * data, which reaches the table as 0; showing "0" there reads as a measured
+ * score of zero rather than "not rated", so it is dashed out instead.
+ */
+function renderMetric(value: number) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return <span className="aur-tabular text-slate-300">—</span>;
+  }
+  return (
+    <span className="font-mono text-[var(--aur-text-secondary)] aur-tabular">
+      {value.toFixed(0)}
+    </span>
+  );
 }
 
 // Preset weights
@@ -77,8 +98,6 @@ export default function RankingsEngine({
   // 1. Core State
   const [sorting, setSorting] = useState<SortingState>([{ id: "calculatedRank", desc: false }]);
   const [locations, setLocations] = useState<string[]>([]);
-  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
-  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [isWeightsDrawerOpen, setIsWeightsDrawerOpen] = useState(false);
 
   // Custom metric weights state
@@ -87,8 +106,6 @@ export default function RankingsEngine({
   // 2. Deserialize state from URL Search Params on mount
   useEffect(() => {
     const locParam = searchParams.get("locations");
-    const subParam = searchParams.get("subjects");
-    const langParam = searchParams.get("languages");
     const searchParam = searchParams.get("search");
 
     const wCit = searchParams.get("w_cit");
@@ -97,8 +114,6 @@ export default function RankingsEngine({
     const wTeach = searchParams.get("w_teach");
 
     if (locParam) setLocations(locParam.split(","));
-    if (subParam) setSelectedSubjects(subParam.split(","));
-    if (langParam) setSelectedLanguages(langParam.split(","));
     if (searchParam) onSearchQueryChange(searchParam);
 
     if (wCit || wRes || wEmp || wTeach) {
@@ -117,16 +132,13 @@ export default function RankingsEngine({
   const serializeStateToUrl = (
     newSearch: string,
     newLocs: string[],
-    newSubs: string[],
-    newLangs: string[],
     newWeights: typeof weights
   ) => {
     const params = new URLSearchParams();
     if (newSearch) params.set("search", newSearch);
     if (newLocs.length > 0) params.set("locations", newLocs.join(","));
-    if (newSubs.length > 0) params.set("subjects", newSubs.join(","));
-    if (newLangs.length > 0) params.set("languages", newLangs.join(","));
-    
+
+
     // Only serialize  weights if they differ from default
     if (JSON.stringify(newWeights) !== JSON.stringify(DEFAULT_WEIGHTS)) {
       params.set("w_cit", newWeights.citations.toString());
@@ -142,7 +154,7 @@ export default function RankingsEngine({
 
   const handleSearchChange = (val: string) => {
     onSearchQueryChange(val);
-    serializeStateToUrl(val, locations, selectedSubjects, selectedLanguages, weights);
+    serializeStateToUrl(val, locations, weights);
   };
 
   const handleLocationToggle = (loc: string) => {
@@ -150,41 +162,88 @@ export default function RankingsEngine({
       ? locations.filter((l) => l !== loc)
       : [...locations, loc];
     setLocations(next);
-    serializeStateToUrl(searchQuery, next, selectedSubjects, selectedLanguages, weights);
-  };
-
-  const handleSubjectToggle = (sub: string) => {
-    const next = selectedSubjects.includes(sub)
-      ? selectedSubjects.filter((s) => s !== sub)
-      : [...selectedSubjects, sub];
-    setSelectedSubjects(next);
-    serializeStateToUrl(searchQuery, locations, next, selectedLanguages, weights);
-  };
-
-  const handleLanguageToggle = (lang: string) => {
-    const next = selectedLanguages.includes(lang)
-      ? selectedLanguages.filter((l) => l !== lang)
-      : [...selectedLanguages, lang];
-    setSelectedLanguages(next);
-    serializeStateToUrl(searchQuery, locations, selectedSubjects, next, weights);
+    serializeStateToUrl(searchQuery, next, weights);
   };
 
   const handleWeightChange = (key: keyof typeof weights, val: number) => {
     const next = { ...weights, [key]: val };
     setWeights(next);
-    serializeStateToUrl(searchQuery, locations, selectedSubjects, selectedLanguages, next);
+    serializeStateToUrl(searchQuery, locations, next);
   };
 
   const handleResetFilters = () => {
     setLocations([]);
-    setSelectedSubjects([]);
-    setSelectedLanguages([]);
     onSearchQueryChange("");
     setWeights(DEFAULT_WEIGHTS);
     router.replace("?view=rankings");
   };
 
+  // Country and search matches are fetched from the database rather than
+  // filtered out of `universities`, which only holds the pages loaded so far
+  // (20 at a time). Most countries — and most search terms — have no
+  // institution in the global top 20, so filtering the loaded rows would report
+  // "no institutions match" for them.
+  const [countryRows, setCountryRows] = useState<University[] | null>(null);
+  const [countryLoading, setCountryLoading] = useState(false);
+  const countryKey = locations.join(",");
+  const trimmedSearch = searchQuery.trim();
+
+  useEffect(() => {
+    if (locations.length === 0 && !trimmedSearch) {
+      setCountryRows(null);
+      setCountryLoading(false);
+      return;
+    }
+
+    let active = true;
+    setCountryLoading(true);
+
+    // The API filters by a single country, so a multi-select fans out into one
+    // request per country and merges the results. With no country selected the
+    // search runs once across the whole dataset.
+    const countries = countryKey ? countryKey.split(",") : [""];
+
+    // Debounced so each keystroke does not issue a query.
+    const timer = setTimeout(() => {
+      Promise.all(
+        countries.map((country) =>
+          searchUniversities(
+            { country: country || undefined, search: trimmedSearch || undefined },
+            0,
+            MAX_FILTER_ROWS,
+          )
+            .then((page) => page.universities)
+            .catch(() => [] as University[])
+        )
+      )
+        .then((pages) => {
+          if (!active) return;
+          const merged = new Map<string, University>();
+          for (const university of pages.flat()) {
+            merged.set(university.id, university);
+          }
+          setCountryRows(Array.from(merged.values()));
+        })
+        .finally(() => {
+          if (active) setCountryLoading(false);
+        });
+    }, trimmedSearch ? 300 : 0);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+    // `countryKey` is the stable serialization of `locations`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countryKey, trimmedSearch]);
+
   // 4. Data Processing: Client-Side Custom Weights Recalculation Engine
+  // When a country is selected the source rows come from the database query
+  // rather than the loaded pages, so institutions outside the loaded top 20
+  // still appear.
+  const isServerFiltered = countryRows !== null;
+  const sourceUniversities = countryRows ?? universities;
+
   const processedData = useMemo(() => {
     const totalWeight =
       weights.citations +
@@ -193,7 +252,7 @@ export default function RankingsEngine({
       weights.teaching;
 
     // Apply  formula weights to recalculate scores dynamically
-    const recalculated = universities.map((uni) => {
+    const recalculated = sourceUniversities.map((uni) => {
       let calculatedScore = uni.overall;
       if (totalWeight > 0) {
         calculatedScore =
@@ -210,43 +269,58 @@ export default function RankingsEngine({
       };
     });
 
-    // Re-rank based on recalculated scores
-    const sorted = [...recalculated].sort((a, b) => b.calculatedScore - a.calculatedScore);
+    // Re-rank based on recalculated scores. For a country subset the position
+    // within the subset would be misleading (every country would start at 1),
+    // so the institution's true dataset rank is kept instead.
+    // Unrated records all compute to 0 and would otherwise tie in arbitrary
+    // order; the dataset rank keeps them in a stable, meaningful sequence.
+    const sorted = [...recalculated].sort(
+      (a, b) =>
+        b.calculatedScore - a.calculatedScore ||
+        (a.history[0] ?? Infinity) - (b.history[0] ?? Infinity)
+    );
     return sorted.map((uni, index) => ({
       ...uni,
-      calculatedRank: index + 1,
+      calculatedRank: isServerFiltered ? uni.history[0] ?? index + 1 : index + 1,
     }));
-  }, [weights, universities]);
+  }, [weights, sourceUniversities, isServerFiltered]);
 
   // 5. Apply filters
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const filteredData = useMemo(() => {
     return processedData.filter((uni) => {
-      // 1. Search Query
+      // 1. Search Query. When rows came from the server they are already
+      // filtered by the same term, and re-checking here would drop acronym
+      // matches ("IIT" is not a substring of "Indian Institute of Technology").
       const query = (deferredSearchQuery || "").toLowerCase();
       const matchesSearch =
+        isServerFiltered ||
         query === "" ||
         uni.name.toLowerCase().includes(query) ||
         uni.location.toLowerCase().includes(query);
 
-      // 2. Location (combine locations state and filters.country)
+      // 2. Country (combine locations state and filters.country)
       const matchesLoc =
         (locations.length === 0 || locations.includes(uni.location)) &&
         (filters.country === "" || uni.location === filters.country);
 
-      // 3. Subject (combine selectedSubjects state and filters.subjects)
+      // 3. Subject — sidebar filter only; the in-card subject dropdown was removed.
       const matchesSub =
-        (selectedSubjects.length === 0 || uni.subjects.some((sub) => selectedSubjects.includes(sub))) &&
-        (filters.subjects.length === 0 || uni.subjects.some((sub) => filters.subjects.includes(sub)));
+        filters.subjects.length === 0 ||
+        uni.subjects.some((sub) => filters.subjects.includes(sub));
 
-      // 4. Language filter (keep existing local language filter)
-      const matchesLang =
-        selectedLanguages.length === 0 ||
-        uni.languages.some((lang) => selectedLanguages.includes(lang));
-
-      // 5. QS Rank Range (calculatedRank is from processedData)
+      // 5. QS Rank Range (calculatedRank is from processedData).
+      // Under a server-side country or search filter the ranks are true dataset
+      // positions, which run well past the slider's default [1, 50] span
+      // (IIT Delhi is #53). Applying that default —
+      // which the user reads as "no restriction", since it is the full span —
+      // would hide every institution ranked below 50 and empty the table.
       const rank = uni.calculatedRank;
-      const matchesRank = rank >= filters.qsRange[0] && rank <= filters.qsRange[1];
+      const rankFilterActive =
+        !isServerFiltered || filters.qsRange[0] !== 1 || filters.qsRange[1] !== 50;
+      const matchesRank =
+        !rankFilterActive ||
+        (rank >= filters.qsRange[0] && rank <= filters.qsRange[1]);
 
       // 6. Tuition Range
       const tuitionVal = parseInt(uni.tuition.replace(/[^0-9]/g, "")) || 0;
@@ -275,14 +349,13 @@ export default function RankingsEngine({
         matchesSearch &&
         matchesLoc &&
         matchesSub &&
-        matchesLang &&
         matchesRank &&
         matchesTuition &&
         matchesType &&
         matchesScholarship
       );
     });
-  }, [processedData, deferredSearchQuery, locations, selectedSubjects, selectedLanguages, filters]);
+  }, [processedData, deferredSearchQuery, locations, filters, isServerFiltered]);
 
   // Only the Firestore pages requested so far are processed in the browser.
   const isPreviewCapped =
@@ -292,10 +365,44 @@ export default function RankingsEngine({
     [filteredData, isPreviewCapped]
   );
 
-  // 6. Extract unique values for filter dropdown options
-  const uniqueLocations = useMemo(() => Array.from(new Set(universities.map((u) => u.location))).sort(), [universities]);
-  const uniqueSubjects = useMemo(() => Array.from(new Set(universities.flatMap((u) => u.subjects))).sort(), [universities]);
-  const uniqueLanguages = useMemo(() => Array.from(new Set(universities.flatMap((u) => u.languages))).sort(), [universities]);
+  // 6. Country filter options.
+  // The list must cover every country in the dataset, not just those appearing
+  // in the pages loaded so far (20 at a time), so it is fetched from the API and
+  // merged with whatever the loaded rows already show as a fallback.
+  const [countryOptions, setCountryOptions] = useState<string[]>([]);
+  useEffect(() => {
+    let active = true;
+    fetch("/api/data/misc?resource=university-countries")
+      .then((response) => {
+        if (!response.ok) throw new Error("Countries unavailable.");
+        return response.json() as Promise<string[]>;
+      })
+      .then((list) => {
+        if (active) setCountryOptions(list);
+      })
+      .catch(() => {
+        // Non-fatal: fall back to countries seen in the loaded universities.
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const uniqueLocations = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...countryOptions,
+          ...universities.map((u) => u.location),
+          // Keep any country restored from the URL selectable even if the API
+          // request has not resolved yet.
+          ...locations,
+        ])
+      )
+        .filter(Boolean)
+        .sort(),
+    [countryOptions, universities, locations]
+  );
 
 
   // 7. Column Definitions for @tanstack/react-table
@@ -333,35 +440,35 @@ export default function RankingsEngine({
         id: "calculatedScore",
         header: "Score",
         accessorKey: "calculatedScore",
-        cell: ({ getValue }) => (
-          <span className="aur-score-pill aur-tabular text-[var(--aur-text)]">
-            {(getValue() as number).toFixed(1)}
-          </span>
-        ),
+        cell: ({ getValue }) => {
+          const value = getValue() as number;
+          // A zero here means the record carries no indicator data at all, not
+          // that the institution scored zero — show it as unrated instead.
+          if (value <= 0) return <span className="aur-tabular text-slate-300">—</span>;
+          return (
+            <span className="aur-score-pill aur-tabular text-[var(--aur-text)]">
+              {value.toFixed(1)}
+            </span>
+          );
+        },
       },
       {
         id: "citations",
         header: "Citations",
         accessorKey: "citations",
-        cell: ({ getValue }) => (
-          <span className="font-mono text-[var(--aur-text-secondary)] aur-tabular">{(getValue() as number).toFixed(0)}</span>
-        ),
+        cell: ({ getValue }) => renderMetric(getValue() as number),
       },
       {
         id: "research",
         header: "Research",
         accessorKey: "research",
-        cell: ({ getValue }) => (
-          <span className="font-mono text-[var(--aur-text-secondary)] aur-tabular">{(getValue() as number).toFixed(0)}</span>
-        ),
+        cell: ({ getValue }) => renderMetric(getValue() as number),
       },
       {
         id: "employability",
         header: "Employability",
         accessorKey: "employability",
-        cell: ({ getValue }) => (
-          <span className="font-mono text-[var(--aur-text-secondary)] aur-tabular">{(getValue() as number).toFixed(0)}</span>
-        ),
+        cell: ({ getValue }) => renderMetric(getValue() as number),
       },
       {
         id: "tuition",
@@ -435,13 +542,16 @@ export default function RankingsEngine({
       table.nextPage();
       return;
     }
-    if (!hasMore || loadingMore) return;
+    // Under a country filter the whole result set is already in memory;
+    // loadMore() would page the unfiltered dataset instead.
+    if (isServerFiltered || !hasMore || loadingMore) return;
 
     const nextPageIndex = table.getState().pagination.pageIndex + 1;
     await loadMore();
     window.requestAnimationFrame(() => table.setPageIndex(nextPageIndex));
   };
-  const canGoNext = table.getCanNextPage() || (isAuthenticated && hasMore);
+  const canGoNext =
+    table.getCanNextPage() || (isAuthenticated && hasMore && !isServerFiltered);
   const remainingCount = Math.max(totalCount - universities.length, 0);
   const totalLabel = totalCountKnown ? String(totalCount) : `${universities.length}+`;
 
@@ -460,7 +570,12 @@ export default function RankingsEngine({
             Asia Institutional Ranking Table
           </h2>
           <p className="text-[11px] text-white/50 font-mono mt-3 tracking-wide">
-            {dataError ? "Live index unavailable" : "Live index"} &middot; {universities.length} of {totalLabel} universities loaded
+            {dataError ? "Live index unavailable" : "Live index"} &middot;{" "}
+            {isServerFiltered
+              ? locations.length > 0
+                ? `${filteredData.length} universities in ${locations.join(", ")}`
+                : `${filteredData.length} universities matching "${trimmedSearch}"`
+              : `${universities.length} of ${totalLabel} universities loaded`}
           </p>
         </div>
 
@@ -468,13 +583,14 @@ export default function RankingsEngine({
         <div className="mb-6 h-px w-full bg-white/10" />
 
         {/* 9. Elite Filtering Bar Layout */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5 items-start">
-          <p className="sm:col-span-2 xl:col-span-4 text-[10px] uppercase font-bold tracking-widest text-white/50 -mb-2">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-4 items-start">
+          <p className="w-full text-[10px] uppercase font-bold tracking-widest text-white/50 -mb-2">
             Refine index
           </p>
 
-          {/* Search Field */}
-          <div className="relative flex min-h-[5.75rem] flex-col">
+          {/* Search Field — takes the leftover width so Country sits beside it
+              rather than being pushed to the far edge of the card. */}
+          <div className="relative flex min-h-[5.75rem] w-full flex-col sm:flex-1 sm:min-w-[16rem]">
             <label className="text-[10px] uppercase font-bold tracking-widest text-white/60 mb-2">
               Search
             </label>
@@ -491,101 +607,39 @@ export default function RankingsEngine({
             </div>
           </div>
 
-          {/* Location Dropdown */}
-          <div className="flex min-h-[5.75rem] flex-col">
+          {/* Country Dropdown — kept narrow; country names are short, so a full
+              grid column reads as an oversized empty field on wide screens. */}
+          <div className="flex min-h-[5.75rem] w-full flex-col sm:w-60 sm:shrink-0">
             <label className="text-[10px] uppercase font-bold tracking-widest text-white/60 mb-2">
-              Location
+              Country
             </label>
-          <div className="relative z-30">
-            <MultiSelectDropdown
-              options={uniqueLocations}
-              selected={locations}
-              onChange={(next) => {
-                setLocations(next);
-                serializeStateToUrl(searchQuery, next, selectedSubjects, selectedLanguages, weights);
-              }}
-              placeholder="Filter Location..."
-            />
-          </div>
-          {/* Active Locations tags */}
-          {locations.length > 0 && (
-            <div className="min-h-6 flex flex-wrap gap-1 mt-1.5">
-              {locations.map((loc) => (
-                <span
-                  key={loc}
-                  onClick={() => handleLocationToggle(loc)}
-                  className="inline-flex max-w-full items-center rounded-full text-[10px] font-mono border border-white/20 bg-white/10 text-white/90 px-2 py-0.5 cursor-pointer hover:border-red-400 hover:text-red-300 transition-colors"
-                >
-                  {loc} <X className="h-2.5 w-2.5 ml-1" />
-                </span>
-              ))}
+            <div className="relative z-30">
+              <MultiSelectDropdown
+                options={uniqueLocations}
+                selected={locations}
+                onChange={(next) => {
+                  setLocations(next);
+                  serializeStateToUrl(searchQuery, next, weights);
+                }}
+                placeholder="Filter Country..."
+              />
             </div>
-          )}
-        </div>
+            {/* Active Country tags */}
+            {locations.length > 0 && (
+              <div className="min-h-6 flex flex-wrap gap-1 mt-1.5">
+                {locations.map((loc) => (
+                  <span
+                    key={loc}
+                    onClick={() => handleLocationToggle(loc)}
+                    className="inline-flex max-w-full items-center rounded-full text-[10px] font-mono border border-white/20 bg-white/10 text-white/90 px-2 py-0.5 cursor-pointer hover:border-red-400 hover:text-red-300 transition-colors"
+                  >
+                    {loc} <X className="h-2.5 w-2.5 ml-1" />
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
 
-        {/* Program / Subject Dropdown */}
-        <div className="flex min-h-[5.75rem] flex-col">
-          <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-2">
-            Subject Focus
-          </label>
-          <div className="relative z-20">
-            <MultiSelectDropdown
-              options={uniqueSubjects}
-              selected={selectedSubjects}
-              onChange={(next) => {
-                setSelectedSubjects(next);
-                serializeStateToUrl(searchQuery, locations, next, selectedLanguages, weights);
-              }}
-              placeholder="Filter Subject..."
-            />
-          </div>
-          {/* Active Subjects tags */}
-          {selectedSubjects.length > 0 && (
-            <div className="min-h-6 flex flex-wrap gap-1 mt-1.5">
-              {selectedSubjects.map((sub) => (
-                <span
-                  key={sub}
-                  onClick={() => handleSubjectToggle(sub)}
-                  className="inline-flex max-w-full items-center rounded-full text-[10px] font-mono border border-white/20 bg-white/10 text-white/90 px-2 py-0.5 cursor-pointer hover:border-red-400 hover:text-red-300 transition-colors"
-                >
-                  {sub} <X className="h-2.5 w-2.5 ml-1" />
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Medium of Instruction */}
-        <div className="flex min-h-[5.75rem] flex-col">
-          <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-2">
-            Language
-          </label>
-          <div className="relative z-10">
-            <MultiSelectDropdown
-              options={uniqueLanguages}
-              selected={selectedLanguages}
-              onChange={(next) => {
-                setSelectedLanguages(next);
-                serializeStateToUrl(searchQuery, locations, selectedSubjects, next, weights);
-              }}
-              placeholder="Filter Language..."
-            />
-          </div>
-          {/* Active Language tags */}
-          {selectedLanguages.length > 0 && (
-            <div className="min-h-6 flex flex-wrap gap-1 mt-1.5">
-              {selectedLanguages.map((lang) => (
-                <span
-                  key={lang}
-                  onClick={() => handleLanguageToggle(lang)}
-                  className="inline-flex max-w-full items-center rounded-full text-[10px] font-mono border border-white/20 bg-white/10 text-white/90 px-2 py-0.5 cursor-pointer hover:border-red-400 hover:text-red-300 transition-colors"
-                >
-                  {lang} <X className="h-2.5 w-2.5 ml-1" />
-                </span>
-              ))}
-            </div>
-          )}
-          </div>
         </div>
       </div>
 
@@ -597,7 +651,8 @@ export default function RankingsEngine({
 
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4">
         <span className="text-[10px] text-[var(--aur-text-muted)] font-bold uppercase tracking-wider">
-          Loaded: <span className="text-[var(--aur-text)] font-mono">{filteredData.length}</span> matching institutions
+          {isServerFiltered ? "Found: " : "Loaded: "}
+          <span className="text-[var(--aur-text)] font-mono">{filteredData.length}</span> matching institutions
         </span>
         <button
           onClick={handleResetFilters}
@@ -644,27 +699,20 @@ export default function RankingsEngine({
 
         {/* List Items */}
         <div className="flex flex-col gap-3">
-          {table.getRowModel().rows.map((row, rowIdx) => (
-            <motion.div
+          {table.getRowModel().rows.map((row) => (
+            <div
               key={row.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.6, delay: (rowIdx % 10) * 0.05, ease: [0.25, 0.46, 0.45, 0.94] }}
-              className="group relative overflow-hidden bg-white/40 backdrop-blur-xl border border-white/60 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-500"
+              className="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white/80 transition-colors duration-150 hover:border-aur-primary/25 hover:bg-white"
             >
-              {/* Hover Gradient Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-[#1A365D]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-              
-              <div className="relative z-10 grid grid-cols-[2.25rem_minmax(0,1fr)_3rem_2.75rem] sm:grid-cols-[3rem_minmax(180px,2fr)_minmax(60px,1fr)_minmax(60px,1fr)_minmax(60px,1fr)_minmax(60px,1fr)_minmax(80px,1fr)_7rem] gap-2 sm:gap-3 items-center px-3 sm:px-6 py-4">
+              <div className="relative z-10 grid grid-cols-[2.25rem_minmax(0,1fr)_3rem_2.75rem] sm:grid-cols-[3rem_minmax(180px,2fr)_minmax(60px,1fr)_minmax(60px,1fr)_minmax(60px,1fr)_minmax(60px,1fr)_minmax(80px,1fr)_7rem] gap-2 sm:gap-3 items-center px-3 sm:px-6 py-3.5">
                 {row.getVisibleCells().map((cell) => {
                   const columnId = cell.column.id;
                   const isMobileHiddenCol = ["citations", "research", "employability", "tuition"].includes(columnId);
                   const alignRight = ["calculatedScore", "citations", "research", "employability", "tuition"].includes(columnId);
-                  
+
                   return (
-                    <div 
-                      key={cell.id} 
+                    <div
+                      key={cell.id}
                       className={`min-w-0 ${isMobileHiddenCol ? "hidden sm:block" : ""} ${alignRight ? "text-right" : ""}`}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -672,10 +720,18 @@ export default function RankingsEngine({
                   );
                 })}
               </div>
-            </motion.div>
+            </div>
           ))}
 
-          {filteredData.length === 0 && (
+          {/* Country results are fetched, so the table is briefly empty while the
+              request is in flight — showing "no match" there would be wrong. */}
+          {countryLoading && filteredData.length === 0 && (
+            <div className="py-16 px-6 bg-white/40 backdrop-blur-xl border border-white/60 rounded-2xl text-center text-sm text-slate-500">
+              Loading institutions…
+            </div>
+          )}
+
+          {!countryLoading && filteredData.length === 0 && (
             <div className="py-16 px-6 bg-white/40 backdrop-blur-xl border border-white/60 rounded-2xl flex flex-col items-center text-center">
               <div className="flex h-12 w-12 items-center justify-center border border-white bg-white/50 rounded-xl mb-4 shadow-sm">
                 <FilterX className="h-5 w-5 text-slate-400" />
@@ -684,7 +740,7 @@ export default function RankingsEngine({
                 No institutions match your filters
               </h3>
               <p className="text-xs text-slate-500 leading-relaxed mb-6 max-w-sm">
-                Try widening location, subject, or rank ranges—or reset all filters to browse the full index.
+                Try a different country or search term—or reset all filters to browse the full index.
               </p>
               <button
                 type="button"
@@ -749,9 +805,34 @@ export default function RankingsEngine({
         <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
           <div>
             <p className="text-[10px] text-[var(--aur-text-muted)] font-bold uppercase tracking-widest">
-              Showing page <span className="font-mono text-[var(--aur-text)]">{table.getState().pagination.pageIndex + 1}</span>
-              {" "}&middot; <span className="font-mono text-[var(--aur-text)]">{universities.length}</span> of{" "}
-              <span className="font-mono text-[var(--aur-text)]">{totalLabel}</span> loaded
+              {isServerFiltered ? (
+                // The full server-side result is already in memory, so the page
+                // count is exact — "of N loaded" would describe the unfiltered
+                // provider rather than what the table is showing.
+                <>
+                  Page{" "}
+                  <span className="font-mono text-[var(--aur-text)]">
+                    {table.getState().pagination.pageIndex + 1}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-mono text-[var(--aur-text)]">
+                    {table.getPageCount() || 1}
+                  </span>{" "}
+                  &middot;{" "}
+                  <span className="font-mono text-[var(--aur-text)]">{filteredData.length}</span>{" "}
+                  {filteredData.length === 1 ? "result" : "results"}
+                  {locations.length > 0 ? ` in ${locations.join(", ")}` : ""}
+                </>
+              ) : (
+                <>
+                  Showing page{" "}
+                  <span className="font-mono text-[var(--aur-text)]">
+                    {table.getState().pagination.pageIndex + 1}
+                  </span>{" "}
+                  &middot; <span className="font-mono text-[var(--aur-text)]">{universities.length}</span> of{" "}
+                  <span className="font-mono text-[var(--aur-text)]">{totalLabel}</span> loaded
+                </>
+              )}
             </p>
           </div>
           <div>
@@ -845,7 +926,7 @@ export default function RankingsEngine({
                 <button
                   onClick={() => {
                     setWeights(DEFAULT_WEIGHTS);
-                    serializeStateToUrl(searchQuery, locations, selectedSubjects, selectedLanguages, DEFAULT_WEIGHTS);
+                    serializeStateToUrl(searchQuery, locations, DEFAULT_WEIGHTS);
                   }}
                   className="inline-flex items-center text-xs font-bold uppercase tracking-wider text-[var(--aur-text-muted)] hover:text-[var(--aur-text)] transition-colors"
                 >

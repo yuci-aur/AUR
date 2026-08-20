@@ -4,7 +4,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Search, MapPin, Lock, ChevronLeft, ChevronRight } from "lucide-react";
 import type { University } from "../types";
-import { fetchUniversityPage, UNIVERSITY_PAGE_SIZE } from "../lib/universities";
+import {
+  searchUniversities,
+  UNIVERSITY_PAGE_SIZE,
+} from "../lib/universities";
 import { useSidebar } from "./navigation/SidebarContext";
 import { useUniversityData } from "./data/UniversityDataProvider";
 import { useAuthGate } from "./auth/AuthGate";
@@ -159,78 +162,110 @@ export default function InstitutionDirectory({ onUniversitySelect }: Props) {
     error,
   } = useUniversityData();
   const { isAuthenticated, promptSignIn } = useAuthGate();
-  const ALL_COUNTRIES = useMemo(
-    () => ["All", ...Array.from(new Set(universities.map((u) => u.location))).sort()],
-    [universities]
-  );
   const { searchQuery: search, setSearchQuery: setSearch } = useSidebar();
   const [country, setCountry] = useState("All");
   const [medOnly, setMedOnly] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
-  const [pageUniversities, setPageUniversities] = useState<University[] | null>(null);
+  const [results, setResults] = useState<University[] | null>(null);
+  const [resultTotal, setResultTotal] = useState<number | null>(null);
   const [pageLoading, setPageLoading] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
-  const directoryUniversities = pageUniversities ?? universities;
 
+  // The country filter must offer every country in the dataset, not just those
+  // appearing in the page currently loaded.
+  const [countries, setCountries] = useState<string[]>([]);
   useEffect(() => {
-    if (pageIndex === 0) setPageUniversities(universities);
-  }, [pageIndex, universities]);
+    let active = true;
+    fetch("/api/data/misc?resource=university-countries")
+      .then((response) => {
+        if (!response.ok) throw new Error("Countries unavailable.");
+        return response.json() as Promise<string[]>;
+      })
+      .then((list) => {
+        if (active) setCountries(list);
+      })
+      .catch(() => {
+        // Non-fatal: fall back to countries seen in the loaded results.
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
-  const goToPage = async (nextPageIndex: number) => {
-    if (pageLoading || nextPageIndex === pageIndex || nextPageIndex < 0) return;
+  const ALL_COUNTRIES = useMemo(() => {
+    const fromResults = (results ?? universities).map((u) => u.location);
+    return ["All", ...Array.from(new Set([...countries, ...fromResults])).sort()];
+  }, [countries, results, universities]);
+
+  // Any filter change returns to the first page; keeping the old page index
+  // would request an offset past the end of the new, smaller result set.
+  useEffect(() => {
+    setPageIndex(0);
+  }, [search, country, medOnly]);
+
+  // Search runs against the database so it covers all institutions, not the 20
+  // rows held in memory. Debounced so each keystroke does not issue a query.
+  useEffect(() => {
+    let active = true;
+    const filters = { search, country, medicineOnly: medOnly };
+    const isDefaultView = !search.trim() && country === "All" && !medOnly && pageIndex === 0;
+
+    if (isDefaultView) {
+      setResults(null);
+      setResultTotal(null);
+      setPageError(null);
+      setPageLoading(false);
+      return;
+    }
 
     setPageLoading(true);
-    setPageError(null);
-    try {
-      const offset = nextPageIndex * UNIVERSITY_PAGE_SIZE;
-      const page = await fetchUniversityPage(
-        offset,
-        UNIVERSITY_PAGE_SIZE,
-        offset,
-      );
-      setPageUniversities(page.universities);
-      setPageIndex(nextPageIndex);
-      setSearch("");
-      setCountry("All");
-      setMedOnly(false);
-      document
-        .getElementById("institution-directory-results")
-        ?.scrollIntoView({ block: "start", behavior: "smooth" });
-    } catch {
-      setPageError("That page could not be loaded. Please try again.");
-    } finally {
-      setPageLoading(false);
-    }
+    const timer = setTimeout(() => {
+      searchUniversities(filters, pageIndex * UNIVERSITY_PAGE_SIZE, UNIVERSITY_PAGE_SIZE)
+        .then((page) => {
+          if (!active) return;
+          setResults(page.universities);
+          setResultTotal(page.total);
+          setPageError(null);
+        })
+        .catch(() => {
+          if (!active) return;
+          setResults([]);
+          setResultTotal(0);
+          setPageError("Those results could not be loaded. Please try again.");
+        })
+        .finally(() => {
+          if (active) setPageLoading(false);
+        });
+    }, search.trim() ? 300 : 0);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [search, country, medOnly, pageIndex]);
+
+  const goToPage = (nextPageIndex: number) => {
+    if (pageLoading || nextPageIndex === pageIndex || nextPageIndex < 0) return;
+    setPageIndex(nextPageIndex);
+    document
+      .getElementById("institution-directory-results")
+      ?.scrollIntoView({ block: "start", behavior: "smooth" });
   };
 
-  const filtered = useMemo(() =>
-    directoryUniversities.filter((u) => {
-      const q = search.toLowerCase();
-      return (
-        (!search || u.name.toLowerCase().includes(q) || u.location.toLowerCase().includes(q)) &&
-        (country === "All" || u.location === country) &&
-        (!medOnly || u.hasMedicine)
-      );
-    }),
-    [directoryUniversities, search, country, medOnly]
-  );
-
-  // Only the loaded Firestore pages are filtered in the browser.
-  const totalMatches = filtered.length;
+  const filtered = results ?? universities;
+  // Total across the whole dataset for the active filters — the server reports
+  // it, so it is not capped by the page size.
+  const matchTotal = resultTotal ?? totalCount;
+  const isFiltering = Boolean(search.trim()) || country !== "All" || medOnly;
   const isPreviewCapped =
-    !isAuthenticated && (hasMore || totalCount > universities.length);
+    !isAuthenticated && (hasMore || totalCount > filtered.length);
   const visible = isPreviewCapped ? filtered.slice(0, PREVIEW_LIMIT) : filtered;
-  const remainingCount = Math.max(totalCount - universities.length, 0);
+  const remainingCount = Math.max(matchTotal - visible.length, 0);
   const totalLabel = totalCountKnown ? String(totalCount) : `${universities.length}+`;
-  const totalPages = totalCountKnown
-    ? Math.max(1, Math.ceil(totalCount / UNIVERSITY_PAGE_SIZE))
-    : 1;
+  const totalPages = Math.max(1, Math.ceil(matchTotal / UNIVERSITY_PAGE_SIZE));
   const paginationItems = getPaginationItems(pageIndex + 1, totalPages);
-  const pageStart = pageIndex * UNIVERSITY_PAGE_SIZE + 1;
-  const pageEnd = Math.min(
-    pageStart + directoryUniversities.length - 1,
-    totalCount,
-  );
+  const pageStart = matchTotal === 0 ? 0 : pageIndex * UNIVERSITY_PAGE_SIZE + 1;
+  const pageEnd = Math.min(pageStart + filtered.length - 1, matchTotal);
 
   return (
     <div className="w-full min-h-screen bg-[var(--background)] pb-12">
@@ -245,7 +280,8 @@ export default function InstitutionDirectory({ onUniversitySelect }: Props) {
               <p className="text-[12px] text-white/60 mt-1">{totalLabel} universities across Asia</p>
             </div>
             <span className="text-[11px] text-white font-bold bg-white/10 border border-white/15 px-3 py-1.5 rounded-lg self-start md:self-auto backdrop-blur-sm">
-              {filtered.length} loaded result{filtered.length !== 1 ? "s" : ""}
+              {matchTotal} {isFiltering ? "match" : "result"}
+              {matchTotal !== 1 ? (isFiltering ? "es" : "s") : ""}
             </span>
           </div>
 
@@ -303,7 +339,7 @@ export default function InstitutionDirectory({ onUniversitySelect }: Props) {
             {pageError}
           </div>
         )}
-        {loading ? (
+        {loading || (pageLoading && filtered.length === 0) ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <div
@@ -352,7 +388,7 @@ export default function InstitutionDirectory({ onUniversitySelect }: Props) {
                 <div className="mb-4 flex items-center justify-between sm:mb-0">
                   <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
                     Showing <span className="text-[#1A365D]">{pageStart}–{pageEnd}</span> of{" "}
-                    <span className="text-[#1A365D]">{totalCount}</span>
+                    <span className="text-[#1A365D]">{matchTotal}</span>
                   </p>
                   <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400 sm:hidden">
                     Page {pageIndex + 1} / {totalPages}
@@ -424,10 +460,15 @@ export default function InstitutionDirectory({ onUniversitySelect }: Props) {
                   <Lock className="h-6 w-6" />
                 </div>
                 <h3 className="font-serif text-xl font-bold text-[#1A365D]">
-                  {totalCountKnown ? `${remainingCount} more institutions` : "More institutions available"}
+                  {remainingCount > 0
+                    ? `${remainingCount} more ${isFiltering ? "matches" : "institutions"}`
+                    : "More institutions available"}
                 </h3>
                 <p className="mx-auto mt-2 mb-6 max-w-sm text-sm leading-relaxed text-slate-500">
-                  You&apos;re viewing {universities.length} of {totalLabel}. Create a free account to explore more of the directory, compare institutions, and save your shortlist.
+                  {isFiltering
+                    ? `You're viewing ${visible.length} of ${matchTotal} matching institutions.`
+                    : `You're viewing ${visible.length} of ${totalLabel}.`}{" "}
+                  Create a free account to explore more of the directory, compare institutions, and save your shortlist.
                 </p>
                 <button
                   type="button"

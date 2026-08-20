@@ -3,7 +3,6 @@ import {
   GraduationCap,
   Trophy,
   Globe,
-  BarChart3,
   BadgeCheck,
   Bookmark,
   Settings,
@@ -13,8 +12,8 @@ import {
 
 /**
  * Views that require an authenticated user (personal / account features).
- * Every other view — rankings, analytics, universities, saved comparison,
- * events, methodology, etc. — is open for logged-out visitors to browse.
+ * Every other view — rankings, universities, saved comparison, events,
+ * methodology, etc. — is open for logged-out visitors to browse.
  */
 export const PROTECTED_VIEWS = new Set<string>(["profile", "settings"]);
 
@@ -61,12 +60,6 @@ export const SIDEBAR_ITEMS: NavItem[] = [
     view: "rankings",
     icon: Trophy,
     badge: "Live",
-  },
-  {
-    id: "analytics",
-    label: "Analytics",
-    view: "analytics",
-    icon: BarChart3,
   },
   {
     id: "saved",

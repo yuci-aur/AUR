@@ -144,7 +144,7 @@ function NewsSkeleton() {
 
 /**
  * In-app News feed. Renders inside the main app shell (navbar + layout stay put),
- * matching how Rankings, Analytics, and other tabs behave — no standalone page header.
+ * matching how Rankings and other tabs behave — no standalone page header.
  */
 export default function NewsFeed() {
   const { externalNews, loading, error } = useExternalNewsData();

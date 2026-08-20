@@ -5,7 +5,7 @@ import BlogGrid from "./blog/BlogGrid";
 
 /**
  * In-app Blog feed. Renders inside the main app shell (navbar + layout stay put),
- * matching how Rankings, Analytics, and News tabs behave — no standalone page header.
+ * matching how Rankings and News tabs behave — no standalone page header.
  */
 export default function BlogFeed() {
   return (

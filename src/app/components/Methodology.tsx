@@ -630,8 +630,8 @@ export default function Methodology() {
             country-specific weight adjustments. Whether an institution is based in China, the UAE,
             India, or any other Asian country, the same five-metric formula, normalisation method,
             and eligibility criteria apply. Regional context (such as country-level trend data) is
-            surfaced separately in the Analytics Dashboard for reference, but it does not alter how
-            an individual institution's score is calculated.
+            tracked separately for reference, but it does not alter how an individual institution&apos;s
+            score is calculated.
           </p>
         </div>
       </div>

@@ -13,7 +13,6 @@ import ComparisonMatrix from "./components/ComparisonMatrix";
 import UniversityProfile from "./components/UniversityProfile";
 import Footer from "./components/Footer";
 import FloatingChatAssistant from "./components/FloatingChatAssistant";
-import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import Login from "./components/Login";
 import UserDashboard from "./components/UserDashboard";
 // import Methodology from "./components/Methodology";
@@ -86,7 +85,11 @@ export default function AppContent() {
       ? isAuthenticated
         ? "profile"
         : "login"
-      : activeView;
+      : // The Analytics dashboard was removed; existing links and bookmarks
+        // still carry ?view=analytics and would otherwise render an empty page.
+        activeView === "analytics"
+        ? "home"
+        : activeView;
   const view = !isAuthenticated && isProtectedView(requestedView)
     ? "login"
     : requestedView;
@@ -234,9 +237,6 @@ export default function AppContent() {
               onToggleSave={handleToggleSave}
             />
           )}
-
-          {/* Analytics Dashboard */}
-          {view === "analytics" && <AnalyticsDashboard />}
 
           {/* News (in-app feed) */}
           {view === "news" && <NewsFeed />}

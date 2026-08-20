@@ -40,12 +40,20 @@ const socialLinks = [
   { label: "Instagram", imgSrc: "/instagram-logo.png", href: "https://www.instagram.com/asiauniversityrankings/" },
 ];
 
-// Generic hero backdrops — no university is named or promoted.
+/**
+ * Hero backdrops, all >=3000px wide. The hero is full-bleed, so the previous
+ * 547-1024px sources were being upscaled ~3x and looked visibly soft.
+ *
+ * Sourced from Wikimedia Commons under CC0 / CC BY(-SA); see docs/hero-images.md
+ * for the per-file attribution the share-alike licences require. Keep any
+ * replacement at >=2400px wide and in landscape, since `object-cover` crops to
+ * the container's aspect ratio.
+ */
 const HERO_SLIDES = [
-  "/hero/hero_new_1.png",
-  "/hero/hero_new_2.jpg",
-  "/hero/hero_new_3.png",
-  "/hero/hero_new_4.png",
+  "/hero/hero_tokyo_hongo.jpg",
+  "/hero/hero_ntu_singapore.jpg",
+  "/hero/hero_cuhk.jpg",
+  "/hero/hero_iit_kharagpur.jpg",
 ];
 
 
@@ -524,7 +532,7 @@ export default function Homepage({
               <div>
                 <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-900 mb-6">Platform</h4>
                 <ul className="space-y-4">
-                  {([{ label: "Rankings", kind: "view", target: "rankings" }, { label: "Discovery", kind: "view", target: "home" }, { label: "Analytics", kind: "view", target: "analytics" }, { label: "Compare", kind: "view", target: "saved" }] as const).map(item => <li key={item.label}><FooterLink item={item} onViewChange={onViewChange} /></li>)}
+                  {([{ label: "Rankings", kind: "view", target: "rankings" }, { label: "Discovery", kind: "view", target: "home" }, { label: "Compare", kind: "view", target: "saved" }] as const).map(item => <li key={item.label}><FooterLink item={item} onViewChange={onViewChange} /></li>)}
                 </ul>
               </div>
               <div>
